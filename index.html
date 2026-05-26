@@ -2918,7 +2918,8 @@
 
             try {
                 const dateRaw = document.getElementById('form-date').value;
-                const dObj = new Date(dateRaw);
+                const [year, month, day] = dateRaw.split('-').map(Number);
+                const dObj = new Date(year, month - 1, day);
                 const dateStr = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
                 const winnersData = [];
