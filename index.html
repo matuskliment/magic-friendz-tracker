@@ -909,7 +909,8 @@
         window.groupIdRaw = urlParams.get('group') || 'magic-friendz';
         
         function updateGroupContext() {
-            const displayGroupName = window.groupIdRaw.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            const slugDisplayName = window.groupIdRaw.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            const displayGroupName = window.groupDisplayName || slugDisplayName;
             const groupNameDisplay = document.getElementById('group-name-display');
             const inviteLinkDisplay = document.getElementById('invite-link-display');
             if (groupNameDisplay) groupNameDisplay.innerText = displayGroupName;
@@ -922,11 +923,15 @@
             try {
                 const groupSnap = await getDoc(groupDocRef);
                 if (groupSnap.exists()) {
+                    window.groupDisplayName = groupSnap.data().name || null;
+                    updateGroupContext();
                     window.isGroupValid = true;
                     startMatchListener();
                     return true;
                 } else if (window.groupIdRaw === 'magic-friendz') {
                     await setDoc(groupDocRef, { name: "Magic Friendz", createdAt: Date.now() });
+                    window.groupDisplayName = "Magic Friendz";
+                    updateGroupContext();
                     window.isGroupValid = true;
                     startMatchListener();
                     return true;
@@ -973,6 +978,8 @@
                 }
             }
         }
+
+        bootApplication();
 
         window.directEnterApp = async function(event) {
             const btn = event ? event.currentTarget : null;
@@ -1051,6 +1058,7 @@
 
         function softRouteToGroup(formattedString, btn) {
             window.groupIdRaw = formattedString;
+            window.groupDisplayName = null;
             updateGroupContext();
             
             try { window.history.pushState({}, '', '?group=' + formattedString); } catch(e) { console.warn("Sandbox prevented URL update"); }
@@ -1784,6 +1792,28 @@
                         `;
                     }).join('');
 
+                    const isSessionCollapsible = latestSessionMatches.length >= 2;
+                    const matchCountLabel = latestSessionMatches.length === 1 ? '1 match' : `${latestSessionMatches.length} matches`;
+                    const matchesSectionHeader = isSessionCollapsible
+                        ? `<button type="button" onclick="window.toggleSessionMatches(this)" aria-expanded="false" data-match-count="${latestSessionMatches.length}" class="session-matches-toggle w-full flex items-center justify-between gap-3 text-left mb-4 px-4 py-3.5 min-h-[56px] rounded-xl border border-slate-600/80 bg-slate-800/80 hover:bg-slate-800 hover:border-purple-500/40 active:bg-slate-700 active:scale-[0.98] transition-all duration-200 group shadow-sm touch-manipulation">
+                                <div class="flex items-center gap-3 min-w-0 flex-1">
+                                    <div class="w-10 h-10 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0 text-purple-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <span class="block text-sm md:text-base font-bold text-white leading-tight">Session Matches</span>
+                                        <span class="session-matches-hint block text-xs md:text-sm text-purple-300/90 font-medium mt-0.5">Tap to show ${matchCountLabel}</span>
+                                    </div>
+                                </div>
+                                <div class="chevron flex items-center justify-center w-10 h-10 rounded-full bg-slate-700/90 border border-slate-500/80 text-slate-200 group-hover:text-purple-300 group-hover:border-purple-500/50 group-hover:bg-purple-500/10 transition-all duration-300 shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                           </button>`
+                        : `<p class="text-sm md:text-base font-bold text-slate-300 mb-3 pl-1">Session Matches</p>`;
+                    const matchesSectionBodyClass = isSessionCollapsible
+                        ? 'hidden opacity-0 transition-opacity duration-300'
+                        : '';
+
                     sessionContainerHTML = `
                         <div class="glass p-5 md:p-6 rounded-2xl border border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.1)] relative overflow-hidden">
                             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
@@ -1795,7 +1825,7 @@
                                     </div>
                                     <div>
                                         <h3 class="text-base md:text-lg font-black text-white leading-tight">Session: ${latestSessionDate}</h3>
-                                        <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mt-0.5">${latestSessionMatches.length} Matches Logged</p>
+                                        <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mt-0.5">${latestSessionMatches.length} Match${latestSessionMatches.length === 1 ? '' : 'es'} Logged</p>
                                     </div>
                                 </div>
                             </div>
@@ -1821,8 +1851,10 @@
                             </div>` : ''}
 
                             <div>
-                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-3 pl-1">Session Matches</p>
-                                ${matchesHTML}
+                                ${matchesSectionHeader}
+                                <div class="${matchesSectionBodyClass}">
+                                    ${matchesHTML}
+                                </div>
                             </div>
                         </div>
                     `;
@@ -2020,14 +2052,24 @@
 
         window.toggleSessionMatches = function(btn) {
             const container = btn.nextElementSibling;
+            if (!container) return;
             const chevron = btn.querySelector('.chevron');
+            const hint = btn.querySelector('.session-matches-hint');
+            const count = parseInt(btn.getAttribute('data-match-count') || '0', 10);
+            const matchLabel = count === 1 ? '1 match' : `${count} matches`;
             if (container.classList.contains('hidden')) {
                 container.classList.remove('hidden');
                 setTimeout(() => container.classList.remove('opacity-0'), 10);
                 if (chevron) chevron.style.transform = 'rotate(180deg)';
+                btn.setAttribute('aria-expanded', 'true');
+                btn.classList.add('border-purple-500/50', 'bg-slate-800');
+                if (hint) hint.textContent = 'Tap to hide matches';
             } else {
                 container.classList.add('opacity-0');
                 if (chevron) chevron.style.transform = 'rotate(0deg)';
+                btn.setAttribute('aria-expanded', 'false');
+                btn.classList.remove('border-purple-500/50');
+                if (hint) hint.textContent = `Tap to show ${matchLabel}`;
                 setTimeout(() => container.classList.add('hidden'), 300);
             }
         }
