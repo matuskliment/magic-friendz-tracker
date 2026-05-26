@@ -2054,12 +2054,12 @@
                         
                         const cardsArray = [card1, card2, card3, card4].filter(c => c && c.trim() !== "");
 
-                        // Parse the date robustly
-                        const dObj = new Date(rawDate);
+                        // Parse the date robustly (ISO YYYY-MM-DD uses local calendar day)
                         let dateStr = "Unknown Date";
                         let timestamp = Date.now();
+                        const { dObj, dateStr: parsedDateStr } = parseCalendarDateToLocal(rawDate);
                         if (!isNaN(dObj.getTime())) {
-                            dateStr = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            dateStr = parsedDateStr;
                             timestamp = dObj.getTime();
                         }
 
@@ -2310,6 +2310,16 @@
             return (select.value === 'new' || select.value === 'guest') ? input.value : select.value;
         }
 
+        /** Parse YYYY-MM-DD (date input / ISO date-only) as local calendar day, not UTC midnight. */
+        function parseCalendarDateToLocal(dateRaw) {
+            const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateRaw).trim());
+            const dObj = iso
+                ? new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
+                : new Date(dateRaw);
+            const dateStr = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            return { dObj, dateStr };
+        }
+
         window.submitMatchForm = async function(event) {
             const btn = event.target;
             const originalText = btn.innerText;
@@ -2318,8 +2328,7 @@
 
             try {
                 const dateRaw = document.getElementById('form-date').value;
-                const dObj = new Date(dateRaw);
-                const dateStr = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const { dObj, dateStr } = parseCalendarDateToLocal(dateRaw);
 
                 const wPlayer = getVal(document.getElementById('form-winner-player'), document.getElementById('form-winner-player').nextElementSibling);
                 const wDeck = getVal(document.getElementById('form-winner-deck'), document.getElementById('form-winner-deck').nextElementSibling);
