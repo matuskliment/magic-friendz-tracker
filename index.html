@@ -260,6 +260,13 @@
                     <div>
                         <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-blue-400">📊</span> The Meta
+                            <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <span class="sr-only">What is The Meta?</span>
+                                <div role="tooltip" class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100">
+                                    Your group's three most-played commanders, ranked by how many games have been logged with each deck. Win rate shows how successful that deck has been across all pilots.
+                                </div>
+                            </div>
                         </h2>
                         <div id="analytics-meta" class="space-y-2">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
@@ -388,9 +395,9 @@
                         <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Owner:</span>
                         <span id="cmd-view-owner" class="text-sm font-bold text-slate-200 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"></span>
                     </div>
-                    <div id="cmd-view-proxy-badge-container" class="hidden flex items-center gap-2">
-                        <span class="text-xs text-amber-500 uppercase tracking-widest font-bold">Proxying:</span>
-                        <span id="cmd-view-proxy-name" class="text-xs font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20"></span>
+                    <div id="cmd-view-alt-names-container" class="hidden flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 max-w-full">
+                        <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Also known as:</span>
+                        <span id="cmd-view-alt-names" class="text-xs font-bold text-blue-300 bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20 text-center sm:text-left"></span>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap justify-center md:justify-start">
                         <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Pilots:</span>
@@ -478,7 +485,7 @@
                 <div id="plr-view-icon" class="w-20 h-20 rounded-full bg-slate-800 border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.3)] flex items-center justify-center text-4xl flex-shrink-0"></div>
                 <div>
                     <h2 id="plr-view-name" class="text-4xl font-black text-white tracking-tight">Player</h2>
-                    <p class="text-slate-400 text-sm font-medium mt-1">Armory & Statistics</p>
+                    <p class="text-slate-400 text-sm font-medium mt-1">Decks & win record</p>
                 </div>
             </div>
 
@@ -743,20 +750,124 @@
             return String(str).trim().replace(/\s+/g, " ");
         }
 
-        window.artCache = JSON.parse(localStorage.getItem('mf_art_cache_v6') || '{}');
-        window.saveArtCache = function() { localStorage.setItem('mf_art_cache_v6', JSON.stringify(window.artCache)); };
+        window.artCache = JSON.parse(localStorage.getItem('mf_art_cache_v7') || '{}');
+        window.saveArtCache = function() { localStorage.setItem('mf_art_cache_v7', JSON.stringify(window.artCache)); };
 
-        function getRealCardName(cardName) {
-            const proxyMap = {
-                "Amazing Spider-man": "Peter Parker", "Hope Estheim": "Hope of Ghirapur",
-                "Kilo Apogee Mind": "Mind's Dilation", "Koma, World Eater": "Koma, Cosmos Serpent"
+        function normalizeCardSearchName(cardName) {
+            if (!cardName) return "";
+            return String(cardName).trim().replace(/\s+/g, " ").replace(/ \([^)]+\)/g, '').trim();
+        }
+
+        function normalizeCardNameKey(name) {
+            return normalizeCardSearchName(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function pickFaceIndexForLoggedName(loggedName, card) {
+            const loggedKey = normalizeCardNameKey(loggedName);
+            if (!loggedKey) return 0;
+            const faces = card.card_faces;
+            if (!faces || faces.length === 0) return 0;
+
+            for (let i = 0; i < faces.length; i++) {
+                if (normalizeCardNameKey(faces[i].name) === loggedKey) return i;
+            }
+            for (let i = 0; i < faces.length; i++) {
+                const faceKey = normalizeCardNameKey(faces[i].name);
+                if (faceKey.includes(loggedKey) || loggedKey.includes(faceKey)) return i;
+            }
+            const nameParts = card.name.split(/\s*\/\/\s*/);
+            for (let i = 0; i < nameParts.length; i++) {
+                if (normalizeCardNameKey(nameParts[i]) === loggedKey) return Math.min(i, faces.length - 1);
+            }
+            return 0;
+        }
+
+        function buildArtCacheEntry(loggedName, card) {
+            const faceIndex = pickFaceIndexForLoggedName(loggedName, card);
+            const faces = card.card_faces;
+            let frontUris = null;
+            let backUris = null;
+            let otherNames = [];
+
+            if (faces && faces.length > 0) {
+                frontUris = faces[faceIndex]?.image_uris || null;
+                for (let i = 0; i < faces.length; i++) {
+                    if (i !== faceIndex && faces[i].image_uris) {
+                        backUris = faces[i].image_uris;
+                        break;
+                    }
+                }
+                otherNames = faces.map(f => f.name).filter(n => normalizeCardNameKey(n) !== normalizeCardNameKey(loggedName));
+            } else {
+                frontUris = card.image_uris || null;
+            }
+
+            if (!frontUris) return { art_crop: 'error', normal: 'error' };
+
+            return {
+                art_crop: frontUris.art_crop || '',
+                normal: frontUris.normal || '',
+                art_crop_back: backUris ? backUris.art_crop || '' : '',
+                normal_back: backUris ? backUris.normal || '' : '',
+                scryfallName: card.name,
+                scryfallId: card.id,
+                otherNames
             };
-            const searchName = proxyMap[cardName] || cardName;
-            return searchName.replace(/ \([^)]+\)/g, '').trim(); 
+        }
+
+        async function fetchCardFromScryfall(loggedName) {
+            const query = normalizeCardSearchName(loggedName);
+            if (!query) return null;
+
+            let res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`);
+            if (res.status === 429) return { rateLimited: true };
+            if (res.ok) return await res.json();
+            if (res.status === 404) {
+                res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=cards&order=released`);
+                if (res.status === 429) return { rateLimited: true };
+                if (res.ok) {
+                    const searchData = await res.json();
+                    if (searchData.data && searchData.data.length > 0) return searchData.data[0];
+                }
+            }
+            return null;
+        }
+
+        function updateCommanderAltNamesBadge(loggedName) {
+            const container = document.getElementById('cmd-view-alt-names-container');
+            const nameEl = document.getElementById('cmd-view-alt-names');
+            const cmdNameEl = document.getElementById('cmd-view-name');
+            if (!container || !nameEl || !cmdNameEl || cmdNameEl.innerText !== loggedName) return;
+
+            const cache = window.artCache[loggedName];
+            if (cache?.otherNames?.length) {
+                container.classList.remove('hidden');
+                nameEl.innerText = cache.otherNames.join(' · ');
+            } else {
+                container.classList.add('hidden');
+            }
         }
 
         let isFetchingArt = false;
         let artQueuePending = false;
+        const MAX_ART_FETCH_PER_RUN = 8;
+
+        function isElementVisibleForArt(el) {
+            if (!el || !el.isConnected) return false;
+            let node = el;
+            while (node && node !== document.documentElement) {
+                if (node.id === 'landing-page' && node.classList.contains('hidden')) return false;
+                if (node.classList && node.classList.contains('hidden')) return false;
+                const style = window.getComputedStyle(node);
+                if (style.display === 'none' || style.visibility === 'hidden') return false;
+                node = node.parentElement;
+            }
+            return true;
+        }
+
+        function collectArtElements() {
+            return [...document.querySelectorAll('.set-bg:not(.art-loaded), .set-src:not(.art-loaded), .set-src-back:not(.art-loaded)')];
+        }
         
         window.applyArtToElement = function(el) {
             const rawName = el.getAttribute('data-card');
@@ -799,6 +910,9 @@
                             const flipBtn = document.getElementById('cmd-flip-btn');
                             if (flipBtn) flipBtn.classList.remove('hidden');
                         }
+                        if (el.id === 'cmd-view-card-img') {
+                            updateCommanderAltNamesBadge(rawName);
+                        }
                     }
                 } else if (isBack) {
                     el.classList.add('art-loaded');
@@ -815,84 +929,71 @@
             artQueuePending = false;
             
             try {
-                document.querySelectorAll('.set-bg:not(.art-loaded), .set-src:not(.art-loaded), .set-src-back:not(.art-loaded)').forEach(el => {
+                const allElements = collectArtElements();
+                const visibleElements = allElements.filter(isElementVisibleForArt);
+
+                visibleElements.forEach(el => {
                     if (window.artCache[el.getAttribute('data-card')]) {
                         window.applyArtToElement(el);
                     }
                 });
-
-                const bgElements = document.querySelectorAll('.set-bg:not(.art-loaded)');
-                const srcElements = document.querySelectorAll('.set-src:not(.art-loaded), .set-src-back:not(.art-loaded)');
-                const allElements = [...bgElements, ...srcElements];
                 
-                if (allElements.length === 0) { 
+                if (visibleElements.length === 0) { 
                     isFetchingArt = false; 
                     if (artQueuePending) setTimeout(() => window.processArtQueue(), 250);
                     return; 
                 }
 
-                const neededNames = new Set();
-                allElements.forEach(el => {
+                const neededNames = [];
+                const seen = new Set();
+                visibleElements.forEach(el => {
                     const rawName = el.getAttribute('data-card');
-                    if (rawName && !window.artCache[rawName]) {
-                        neededNames.add(rawName);
+                    if (rawName && !window.artCache[rawName] && !seen.has(rawName)) {
+                        seen.add(rawName);
+                        neededNames.push(rawName);
                     }
                 });
 
+                let fetchedThisRun = 0;
+                let rateLimited = false;
+
                 for (const rawName of neededNames) {
+                    if (fetchedThisRun >= MAX_ART_FETCH_PER_RUN) {
+                        artQueuePending = true;
+                        break;
+                    }
                     if (window.artCache[rawName]) continue;
 
-                    const realName = getRealCardName(rawName);
                     try {
-                        const res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(realName)}`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            let frontUris, backUris;
-
-                            if (data.image_uris) {
-                                frontUris = data.image_uris;
-                            } else if (data.card_faces) {
-                                frontUris = data.card_faces[0].image_uris;
-                                if (data.card_faces.length > 1 && data.card_faces[1].image_uris) {
-                                    backUris = data.card_faces[1].image_uris;
-                                }
-                            }
-
-                            if (frontUris) {
-                                window.artCache[rawName] = { 
-                                    art_crop: frontUris.art_crop || '', 
-                                    normal: frontUris.normal || '',
-                                    art_crop_back: backUris ? backUris.art_crop || '' : '',
-                                    normal_back: backUris ? backUris.normal || '' : ''
-                                };
-                            } else { 
-                                window.artCache[rawName] = { art_crop: 'error', normal: 'error' }; 
-                            }
-                        } else if (res.status === 404) { 
-                            window.artCache[rawName] = { art_crop: 'error', normal: 'error' }; 
-                        } else if (res.status === 429) {
-                            console.warn("Scryfall Rate Limit Hit. Pausing Art Queue...");
+                        const data = await fetchCardFromScryfall(rawName);
+                        if (data && data.rateLimited) {
+                            console.warn("Scryfall rate limit hit. Pausing art queue...");
+                            rateLimited = true;
+                            artQueuePending = true;
                             await new Promise(r => setTimeout(r, 3000));
-                            break; 
-                        } else { 
-                            console.warn(`Scryfall error HTTP ${res.status}`);
+                            break;
+                        }
+                        if (data) {
+                            window.artCache[rawName] = buildArtCacheEntry(rawName, data);
+                        } else {
                             window.artCache[rawName] = { art_crop: 'error', normal: 'error' };
                         }
                     } catch(e) { 
-                        // Silently catch the error without breaking the loop or spamming the console
                         window.artCache[rawName] = { art_crop: 'error', normal: 'error' };
                     }
                     
+                    fetchedThisRun++;
+
                     if (window.artCache[rawName]) {
                         window.saveArtCache();
-                        document.querySelectorAll('.set-bg:not(.art-loaded), .set-src:not(.art-loaded), .set-src-back:not(.art-loaded)').forEach(el => {
-                            if (el.getAttribute('data-card') === rawName) {
+                        collectArtElements().forEach(el => {
+                            if (el.getAttribute('data-card') === rawName && isElementVisibleForArt(el)) {
                                 window.applyArtToElement(el);
                             }
                         });
                     }
                     
-                    if (neededNames.size > 0) { await new Promise(r => setTimeout(r, 150)); }
+                    if (!rateLimited) { await new Promise(r => setTimeout(r, 150)); }
                 }
 
             } catch (e) { console.error("Art queue error", e); }
@@ -971,8 +1072,8 @@
 
         async function bootApplication() {
             updateGroupContext();
-            window.processArtQueue();
             if (!hasGroupParam) {
+                window.processArtQueue();
                 const landingPage = document.getElementById('landing-page');
                 if (landingPage) {
                     landingPage.classList.remove('hidden');
@@ -2127,6 +2228,7 @@
                 activeInd.classList.remove('opacity-0');
             }
             window.scrollTo({top: 0, behavior: 'smooth'});
+            window.processArtQueue();
         }
 
         let currentLeaderboardView = 'commander';
@@ -2238,23 +2340,7 @@
             }
 
             window.processArtQueue();
-            
-            const proxyMap = {
-                "Amazing Spider-man": "Peter Parker", 
-                "Hope Estheim": "Hope of Ghirapur",
-                "Kilo Apogee Mind": "Mind's Dilation", 
-                "Koma, World Eater": "Koma, Cosmos Serpent"
-            };
-            const proxyBadgeContainer = document.getElementById('cmd-view-proxy-badge-container');
-            const proxyNameEl = document.getElementById('cmd-view-proxy-name');
-            if (proxyBadgeContainer && proxyNameEl) {
-                if (proxyMap[cmd.name]) {
-                    proxyBadgeContainer.classList.remove('hidden');
-                    proxyNameEl.innerText = proxyMap[cmd.name];
-                } else {
-                    proxyBadgeContainer.classList.add('hidden');
-                }
-            }
+            updateCommanderAltNamesBadge(cmd.name);
             
             const pilotsList = cmd.pilots || [cmd.owner];
             if(pilotsEl) {
@@ -2471,8 +2557,8 @@
             const sortedDecks = [...window.appData.commanders].sort((a,b) => a.name.localeCompare(b.name));
 
             sortedDecks.forEach(cmd => {
-                const searchedName = getRealCardName(cmd.name);
                 const cache = window.artCache[cmd.name];
+                const scryfallLabel = cache?.scryfallName || normalizeCardSearchName(cmd.name);
                 const imgUrl = cache && cache.art_crop && cache.art_crop !== 'error' ? cache.art_crop : '';
                 
                 let statusIcon = imgUrl ? '✅' : '❌';
@@ -2483,8 +2569,8 @@
                     <div class="w-14 h-14 rounded-full bg-slate-800 bg-cover bg-center border border-slate-600 flex-shrink-0 art-fallback" style="${imgUrl ? `background-image: url('${imgUrl}')` : ''}"></div>
                     <div class="flex-grow min-w-0">
                         <h4 class="font-bold text-white text-sm truncate">${cmd.name}</h4>
-                        <p class="text-[10px] text-slate-400 mt-0.5">Searched Scryfall API for: <span class="text-purple-400 font-mono bg-slate-950 px-1 rounded border border-slate-800">${searchedName}</span></p>
-                        <a href="https://scryfall.com/search?q=${encodeURIComponent(searchedName)}" target="_blank" class="text-[10px] text-blue-400 hover:text-blue-300 transition hover:underline mt-1.5 inline-flex items-center gap-1 font-bold bg-blue-500/10 px-2 py-1 rounded">
+                        <p class="text-[10px] text-slate-400 mt-0.5">Scryfall match: <span class="text-purple-400 font-mono bg-slate-950 px-1 rounded border border-slate-800">${scryfallLabel}</span></p>
+                        <a href="https://scryfall.com/search?q=${encodeURIComponent(scryfallLabel)}" target="_blank" class="text-[10px] text-blue-400 hover:text-blue-300 transition hover:underline mt-1.5 inline-flex items-center gap-1 font-bold bg-blue-500/10 px-2 py-1 rounded">
                             Test Search on Scryfall 
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                         </a>
