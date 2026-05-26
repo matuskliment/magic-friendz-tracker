@@ -63,9 +63,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
                 Magic<span class="text-purple-500">Friendz</span>
             </div>
-            <div class="space-x-2 md:space-x-4">
-                <button onclick="window.openGroupModal()" class="text-sm text-slate-300 hover:text-white transition hidden md:inline-block">Change Group</button>
-                <button onclick="window.directEnterApp(event)" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30">Enter App</button>
+            <div>
+                <button onclick="window.openGroupModal()" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation">Enter App</button>
             </div>
         </nav>
 
@@ -80,7 +79,7 @@
                         The ultimate multiplayer stat tracker for your tabletop group. Log games, track commander Elo, and find out who your true nemesis is.
                     </p>
                     <div class="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
-                        <button onclick="window.directEnterApp(event)" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 group">
+                        <button onclick="window.openGroupModal()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 active:scale-[0.98] shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 group min-h-[52px] w-full sm:w-auto touch-manipulation">
                             Enter App & View Data <span class="text-xl group-hover:translate-x-1 transition">→</span>
                         </button>
                     </div>
@@ -674,18 +673,18 @@
     </div>
 
     <!-- GROUP ENTRY MODAL (LOBBY) -->
-    <div id="view-group-modal" class="fixed inset-0 z-[150] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-center justify-center p-4">
-        <div class="glass p-6 md:p-8 rounded-2xl w-full max-w-md transform scale-95 transition-transform duration-300 shadow-2xl border border-purple-500/30">
-            <h2 class="text-2xl font-black text-white mb-2">Access Group</h2>
-            <p class="text-sm text-slate-400 mb-6">Enter a group name to load its dashboard, or type a new name to create one instantly.</p>
+    <div id="view-group-modal" class="fixed inset-0 z-[150] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target === this) window.closeGroupModal()">
+        <div class="glass p-6 md:p-8 rounded-t-2xl sm:rounded-2xl w-full max-w-md transform scale-95 transition-transform duration-300 shadow-2xl border border-purple-500/30 border-b-0 sm:border-b" onclick="event.stopPropagation()">
+            <h2 class="text-2xl font-black text-white mb-2">Join Your Playgroup</h2>
+            <p class="text-sm text-slate-400 mb-6 leading-relaxed">Enter the group name your host shared. Only people who know the name can view the stats.</p>
             
-            <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1 ml-1">Group Name / ID</label>
-            <input type="text" id="group-name-input" placeholder="e.g. magic-friendz" class="w-full bg-slate-900 border border-slate-700 text-white font-bold rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all mb-6 shadow-inner" onkeypress="if(event.key === 'Enter') window.joinGroup()">
+            <label for="group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Group name</label>
+            <input type="text" id="group-name-input" placeholder="Your group name…" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all mb-5 shadow-inner touch-manipulation" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.joinGroup(event); }">
             
-            <div class="flex justify-end gap-3">
-                <button onclick="window.closeGroupModal()" class="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition bg-slate-800 hover:bg-slate-700 rounded-xl">Cancel</button>
-                <button onclick="window.createGroup(event)" class="px-4 py-2 text-sm font-bold text-green-400 hover:text-green-300 transition bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-xl">Create New</button>
-                <button onclick="window.joinGroup(event)" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-purple-500/30">Enter App</button>
+            <div class="flex flex-col gap-3">
+                <button id="group-join-btn" onclick="window.joinGroup(event)" class="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white px-6 py-3.5 rounded-xl text-base font-bold transition shadow-lg shadow-purple-500/30 min-h-[52px] touch-manipulation">Enter Existing Group</button>
+                <button id="group-create-btn" onclick="window.createGroup(event)" class="w-full px-6 py-3.5 text-base font-bold text-green-400 hover:text-green-300 active:text-green-200 transition bg-green-500/10 hover:bg-green-500/20 active:bg-green-500/25 border border-green-500/30 rounded-xl min-h-[52px] touch-manipulation">Create New Group</button>
+                <button type="button" onclick="window.closeGroupModal()" class="w-full py-2 text-sm font-semibold text-slate-500 hover:text-slate-300 transition touch-manipulation">Cancel</button>
             </div>
         </div>
     </div>
@@ -906,19 +905,42 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const hasGroupParam = urlParams.has('group');
-        window.groupIdRaw = urlParams.get('group') || 'magic-friendz';
+        window.groupIdRaw = urlParams.get('group') || '';
         
         function updateGroupContext() {
-            const slugDisplayName = window.groupIdRaw.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            const displayGroupName = window.groupDisplayName || slugDisplayName;
             const groupNameDisplay = document.getElementById('group-name-display');
             const inviteLinkDisplay = document.getElementById('invite-link-display');
+            if (!window.groupIdRaw) {
+                if (groupNameDisplay) groupNameDisplay.innerText = '—';
+                if (inviteLinkDisplay) inviteLinkDisplay.value = '';
+                return;
+            }
+            const slugDisplayName = window.groupIdRaw.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            const displayGroupName = window.groupDisplayName || slugDisplayName;
             if (groupNameDisplay) groupNameDisplay.innerText = displayGroupName;
             if (inviteLinkDisplay) inviteLinkDisplay.value = `${window.location.origin}${window.location.pathname}?group=${window.groupIdRaw}`;
         }
 
+        function resetGroupSession() {
+            window.groupIdRaw = '';
+            window.groupDisplayName = null;
+            window.isGroupValid = false;
+            if (matchUnsubscribe) { matchUnsubscribe(); matchUnsubscribe = null; }
+            if (rosterUnsubscribe) { rosterUnsubscribe(); rosterUnsubscribe = null; }
+            if (settingsUnsubscribe) { settingsUnsubscribe(); settingsUnsubscribe = null; }
+            updateGroupContext();
+        }
+
+        function formatGroupSlug(input) {
+            return input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        }
+
         async function initAppRouting() {
             firebaseErrorMsg = "";
+            if (!window.groupIdRaw) {
+                window.isGroupValid = false;
+                return false;
+            }
             const groupDocRef = doc(db, "groups", window.groupIdRaw);
             try {
                 const groupSnap = await getDoc(groupDocRef);
@@ -950,10 +972,16 @@
         async function bootApplication() {
             updateGroupContext();
             window.processArtQueue();
-            if (hasGroupParam) {
+            if (!hasGroupParam) {
                 const landingPage = document.getElementById('landing-page');
-                if (landingPage) landingPage.classList.add('hidden', 'opacity-0');
+                if (landingPage) {
+                    landingPage.classList.remove('hidden');
+                    setTimeout(() => landingPage.classList.remove('opacity-0'), 50);
+                }
+                return;
             }
+            const landingPage = document.getElementById('landing-page');
+            if (landingPage) landingPage.classList.add('hidden', 'opacity-0');
             const isValid = await initAppRouting();
             if (hasGroupParam) {
                 if (isValid) {
@@ -970,58 +998,35 @@
                         window.show404();
                     }
                 }
-            } else if (!hasGroupParam) {
-                const landingPage = document.getElementById('landing-page');
-                if (landingPage) {
-                    landingPage.classList.remove('hidden');
-                    setTimeout(() => landingPage.classList.remove('opacity-0'), 50);
-                }
             }
         }
 
         bootApplication();
 
-        window.directEnterApp = async function(event) {
-            const btn = event ? event.currentTarget : null;
-            const originalText = btn ? btn.innerText : "Enter App";
-
-            if (window.isGroupValid) {
-                window.showDashboard();
-            } else {
-                if (btn) btn.innerText = "Connecting...";
-
-                const isValid = await initAppRouting();
-
-                if (btn) btn.innerText = originalText;
-
-                if (isValid) {
-                    window.showDashboard();
-                } else if (firebaseErrorMsg) {
-                    window.showAppAlert("Database connection failed. If you own this database, check if your Firebase Security Rules have expired in Test Mode.\n\nError: " + firebaseErrorMsg, "Database Error", "❌");
-                } else {
-                    window.openGroupModal();
-                }
-            }
-        }
-
         window.joinGroup = function(event) {
             const inputEl = document.getElementById('group-name-input');
             if(!inputEl) return;
-            let input = inputEl.value.trim();
+            const input = inputEl.value.trim();
             if(!input) {
-                input = 'magic-friendz';
-                inputEl.value = input;
+                window.showAppAlert("Enter your group name to continue.", "Group Required", "🔑");
+                inputEl.focus();
+                return;
             }
-            const formatted = input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const formatted = formatGroupSlug(input);
+            if (!formatted) {
+                window.showAppAlert("Use letters or numbers in your group name.", "Invalid Name", "⚠️");
+                return;
+            }
             
-            const btn = event ? event.currentTarget : null;
+            const btn = event ? event.currentTarget : document.getElementById('group-join-btn');
+            const originalText = btn ? btn.innerText : "Enter Existing Group";
 
             if (formatted === window.groupIdRaw && window.isGroupValid) {
                 window.closeGroupModal();
                 window.showDashboard();
             } else {
-                if(btn) { btn.innerText = "Loading..."; }
-                softRouteToGroup(formatted, btn);
+                if(btn) { btn.disabled = true; btn.innerText = "Connecting…"; }
+                softRouteToGroup(formatted, btn, originalText);
             }
         }
 
@@ -1029,34 +1034,45 @@
             const inputEl = document.getElementById('group-name-input');
             if(!inputEl) return;
             const input = inputEl.value.trim();
-            if(!input) return;
-            const formatted = input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            if(!input) {
+                window.showAppAlert("Pick a name for your new group.", "Group Required", "🔑");
+                inputEl.focus();
+                return;
+            }
+            const formatted = formatGroupSlug(input);
+            if (!formatted) {
+                window.showAppAlert("Use letters or numbers in your group name.", "Invalid Name", "⚠️");
+                return;
+            }
             
-            const btn = event.target;
+            const btn = event ? event.currentTarget : document.getElementById('group-create-btn');
             const originalText = btn.innerText;
-            btn.innerText = "Creating...";
+            btn.disabled = true;
+            btn.innerText = "Creating…";
             
             try {
                 const checkRef = doc(db, "groups", formatted);
                 const checkSnap = await getDoc(checkRef);
                 
                 if (checkSnap.exists()) {
-                    window.showAppAlert("This group name is already taken! Click 'Enter App' to join it instead.", "Name Taken", "⚠️");
+                    window.showAppAlert("This group name is already taken. Tap \"Enter Existing Group\" to join it.", "Name Taken", "⚠️");
+                    btn.disabled = false;
                     btn.innerText = originalText;
                     return;
                 }
                 
                 await setDoc(checkRef, { name: input, createdAt: Date.now() });
-                softRouteToGroup(formatted, btn);
+                softRouteToGroup(formatted, btn, originalText);
 
             } catch (error) {
                 console.error("Error creating group:", error);
                 window.showAppAlert("Could not create group. Your Firebase rules might be restricting access.\n\nDetails: " + error.message, "Database Error", "❌");
+                btn.disabled = false;
                 btn.innerText = originalText;
             }
         }
 
-        function softRouteToGroup(formattedString, btn) {
+        function softRouteToGroup(formattedString, btn, originalText = "Enter Existing Group") {
             window.groupIdRaw = formattedString;
             window.groupDisplayName = null;
             updateGroupContext();
@@ -1066,7 +1082,7 @@
             window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
             
             initAppRouting().then((isValid) => {
-                if (btn) btn.innerText = "Enter App";
+                if (btn) { btn.disabled = false; btn.innerText = originalText; }
                 window.closeGroupModal();
                 if (isValid) {
                     window.showDashboard();
@@ -1081,7 +1097,11 @@
         window.openGroupModal = function() {
             const modal = document.getElementById('view-group-modal');
             const input = document.getElementById('group-name-input');
-            if (input) input.value = window.isGroupValid ? window.groupIdRaw : ''; 
+            const joinBtn = document.getElementById('group-join-btn');
+            const createBtn = document.getElementById('group-create-btn');
+            if (input) input.value = '';
+            if (joinBtn) { joinBtn.disabled = false; joinBtn.innerText = "Enter Existing Group"; }
+            if (createBtn) { createBtn.disabled = false; createBtn.innerText = "Create New Group"; }
             
             if (modal) {
                 modal.classList.remove('hidden');
@@ -1127,6 +1147,7 @@
         window.showLanding = function() {
             const landing = document.getElementById('landing-page'); 
             const dashboard = document.getElementById('dashboard-view');
+            resetGroupSession();
             if (dashboard) dashboard.classList.add('opacity-0');
             setTimeout(() => { 
                 if(dashboard) dashboard.classList.add('hidden'); 
@@ -1151,9 +1172,9 @@
         window.returnToLobby = function() {
             const v404 = document.getElementById('view-404');
             if (v404) v404.classList.add('hidden');
-            window.groupIdRaw = 'magic-friendz';
             try { window.history.pushState({}, '', window.location.pathname); } catch(e) { }
             window.showLanding();
+            setTimeout(() => window.openGroupModal(), 350);
         }
 
         let modalConfirmCallback = null;
