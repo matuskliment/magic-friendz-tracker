@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mf-app-version" content="1.1.0">
     <title>Magic Friendz | Tracker</title>
     <!-- Inline SVG Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a855f7'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3C/svg%3E">
@@ -547,9 +548,13 @@
             </div>
 
             <div class="glass p-5 rounded-xl border border-blue-500/30 bg-blue-950/10">
-                <h3 class="font-bold text-white mb-2 flex items-center gap-2"><span class="text-blue-500">🖼️</span> Art Diagnostics</h3>
-                <p class="text-xs text-slate-400 mb-4">View how Scryfall interprets your deck names to easily spot artwork mismatches or typos.</p>
-                <button onclick="window.openArtDiagnostics()" class="w-full bg-blue-900/40 hover:bg-blue-900/60 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-xl text-sm font-bold transition">View Art Links</button>
+                <h3 class="font-bold text-white mb-2 flex items-center gap-2"><span class="text-blue-500">🖼️</span> Card Art</h3>
+                <p class="text-xs text-slate-400 mb-2">If images look wrong or stuck loading, clear the local art cache and fetch fresh copies from Scryfall.</p>
+                <p class="text-[10px] text-slate-500 mb-4 font-mono">App version: <span id="admin-app-version">—</span></p>
+                <div class="space-y-2">
+                    <button onclick="window.refreshAllCardArt()" class="w-full bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Refresh All Card Art</button>
+                    <button onclick="window.openArtDiagnostics()" class="w-full bg-blue-900/40 hover:bg-blue-900/60 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-xl text-sm font-bold transition">View Art Diagnostics</button>
+                </div>
             </div>
 
             <div class="glass p-5 rounded-xl border border-red-500/30 bg-red-950/10">
@@ -752,8 +757,78 @@
             return String(str).trim().replace(/\s+/g, " ");
         }
 
-        window.artCache = JSON.parse(localStorage.getItem('mf_art_cache_v7') || '{}');
-        window.saveArtCache = function() { localStorage.setItem('mf_art_cache_v7', JSON.stringify(window.artCache)); };
+        const MF_APP_VERSION = document.querySelector('meta[name="mf-app-version"]')?.content || '1.1.0';
+        const ART_CACHE_KEY = 'mf_art_cache_v8';
+        const ART_CACHE_SCHEMA_KEY = 'mf_art_cache_schema';
+        const ART_CACHE_SCHEMA = 8;
+        const SCRYFALL_FETCH_HEADERS = {
+            'Accept': 'application/json',
+            'User-Agent': `MagicFriendzTracker/${MF_APP_VERSION} (playgroup-stat-tracker)`
+        };
+
+        function purgeLegacyArtCaches() {
+            ['mf_art_cache', 'mf_art_cache_v6', 'mf_art_cache_v7'].forEach(key => {
+                try { localStorage.removeItem(key); } catch (_) {}
+            });
+        }
+
+        function isValidPersistedArtEntry(entry) {
+            return entry && typeof entry.art_crop === 'string' && entry.art_crop.startsWith('http');
+        }
+
+        function loadArtCacheFromStorage() {
+            purgeLegacyArtCaches();
+            try {
+                const schema = parseInt(localStorage.getItem(ART_CACHE_SCHEMA_KEY) || '0', 10);
+                if (schema !== ART_CACHE_SCHEMA) {
+                    localStorage.removeItem(ART_CACHE_KEY);
+                    localStorage.setItem(ART_CACHE_SCHEMA_KEY, String(ART_CACHE_SCHEMA));
+                    return {};
+                }
+                const raw = JSON.parse(localStorage.getItem(ART_CACHE_KEY) || '{}');
+                const clean = {};
+                Object.keys(raw).forEach(name => {
+                    if (isValidPersistedArtEntry(raw[name])) clean[name] = raw[name];
+                });
+                return clean;
+            } catch (e) {
+                console.warn('Art cache unreadable, starting fresh.', e);
+                return {};
+            }
+        }
+
+        window.artCache = loadArtCacheFromStorage();
+        window.saveArtCache = function() {
+            try {
+                const toSave = {};
+                Object.keys(window.artCache).forEach(name => {
+                    const entry = window.artCache[name];
+                    if (isValidPersistedArtEntry(entry)) toSave[name] = entry;
+                });
+                localStorage.setItem(ART_CACHE_KEY, JSON.stringify(toSave));
+                localStorage.setItem(ART_CACHE_SCHEMA_KEY, String(ART_CACHE_SCHEMA));
+            } catch (e) {
+                console.warn('Could not save art cache.', e);
+            }
+        };
+
+        window.refreshAllCardArt = function() {
+            window.artCache = {};
+            try {
+                localStorage.removeItem(ART_CACHE_KEY);
+                localStorage.setItem(ART_CACHE_SCHEMA_KEY, String(ART_CACHE_SCHEMA));
+            } catch (_) {}
+            document.querySelectorAll('.set-bg, .set-src, .set-src-back').forEach(el => {
+                el.classList.remove('art-loaded', 'art-error');
+                if (el.classList.contains('set-bg')) el.style.backgroundImage = '';
+                if (el.tagName === 'IMG') {
+                    el.removeAttribute('src');
+                    el.style.opacity = '0';
+                }
+            });
+            window.processArtQueue();
+            window.showAppAlert('Card art cache cleared. Images will reload from Scryfall over the next few seconds.', 'Art Refreshed', '🖼️');
+        };
 
         function normalizeCardSearchName(cardName) {
             if (!cardName) return "";
@@ -821,11 +896,11 @@
             const query = normalizeCardSearchName(loggedName);
             if (!query) return null;
 
-            let res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`);
+            let res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`, { headers: SCRYFALL_FETCH_HEADERS });
             if (res.status === 429) return { rateLimited: true };
             if (res.ok) return await res.json();
             if (res.status === 404) {
-                res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=cards&order=released`);
+                res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=cards&order=released`, { headers: SCRYFALL_FETCH_HEADERS });
                 if (res.status === 429) return { rateLimited: true };
                 if (res.ok) {
                     const searchData = await res.json();
@@ -951,7 +1026,9 @@
                 const visibleElements = allElements.filter(isElementVisibleForArt);
 
                 visibleElements.forEach(el => {
-                    if (window.artCache[el.getAttribute('data-card')]) {
+                    const name = el.getAttribute('data-card');
+                    const cache = name ? window.artCache[name] : null;
+                    if (cache && cache.art_crop !== 'error') {
                         window.applyArtToElement(el);
                     }
                 });
@@ -966,7 +1043,10 @@
                 const seen = new Set();
                 visibleElements.forEach(el => {
                     const rawName = el.getAttribute('data-card');
-                    if (rawName && !window.artCache[rawName] && !seen.has(rawName)) {
+                    if (!rawName || seen.has(rawName)) return;
+                    const cached = window.artCache[rawName];
+                    if (!cached || cached.art_crop === 'error') {
+                        if (cached?.art_crop === 'error') delete window.artCache[rawName];
                         seen.add(rawName);
                         neededNames.push(rawName);
                     }
@@ -993,23 +1073,30 @@
                         }
                         if (data) {
                             window.artCache[rawName] = buildArtCacheEntry(rawName, data);
+                            window.saveArtCache();
+                            collectArtElements().forEach(el => {
+                                if (el.getAttribute('data-card') === rawName && isElementVisibleForArt(el)) {
+                                    window.applyArtToElement(el);
+                                }
+                            });
                         } else {
                             window.artCache[rawName] = { art_crop: 'error', normal: 'error' };
+                            collectArtElements().forEach(el => {
+                                if (el.getAttribute('data-card') === rawName && isElementVisibleForArt(el)) {
+                                    window.applyArtToElement(el);
+                                }
+                            });
                         }
                     } catch(e) { 
                         window.artCache[rawName] = { art_crop: 'error', normal: 'error' };
-                    }
-                    
-                    fetchedThisRun++;
-
-                    if (window.artCache[rawName]) {
-                        window.saveArtCache();
                         collectArtElements().forEach(el => {
                             if (el.getAttribute('data-card') === rawName && isElementVisibleForArt(el)) {
                                 window.applyArtToElement(el);
                             }
                         });
                     }
+                    
+                    fetchedThisRun++;
                     
                     if (!rateLimited) { await new Promise(r => setTimeout(r, 150)); }
                 }
@@ -2568,6 +2655,9 @@
         }
 
         window.openAdminModal = function() {
+            const versionEl = document.getElementById('admin-app-version');
+            if (versionEl) versionEl.textContent = MF_APP_VERSION;
+
             const container = document.getElementById('admin-ownership-list');
             if (container) {
                 const sortedDecks = [...window.appData.commanders].sort((a,b) => a.name.localeCompare(b.name));
@@ -3320,7 +3410,7 @@
 
                 scryfallTimeout = setTimeout(async () => {
                     try {
-                        const res = await fetch('https://api.scryfall.com/cards/autocomplete?q=' + encodeURIComponent(query));
+                        const res = await fetch('https://api.scryfall.com/cards/autocomplete?q=' + encodeURIComponent(query), { headers: SCRYFALL_FETCH_HEADERS });
                         const data = await res.json();
                         
                         if (data.data && data.data.length > 0) {
