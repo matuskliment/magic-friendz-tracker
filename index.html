@@ -433,18 +433,20 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div class="bg-red-500/5 p-4 rounded-xl border border-red-500/20 flex items-center gap-4">
+                <div class="bg-red-500/5 p-4 rounded-xl border border-red-500/20 flex items-center gap-4 min-w-0">
                     <div class="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-xl border border-red-500/30 flex-shrink-0">💀</div>
-                    <div>
+                    <div class="min-w-0 flex-1">
                         <p class="text-[10px] text-red-400 uppercase font-bold tracking-wider">Nemesis (Most Losses)</p>
-                        <p id="cmd-view-nemesis" class="font-bold text-white text-sm mt-0.5 truncate">None</p>
+                        <p id="cmd-view-nemesis" class="font-bold text-white text-sm mt-0.5 truncate">—</p>
+                        <p id="cmd-view-nemesis-hint" class="hidden text-[10px] text-slate-500 mt-1 leading-snug">At least 3 games vs. another deck needed.</p>
                     </div>
                 </div>
-                <div class="bg-green-500/5 p-4 rounded-xl border border-green-500/20 flex items-center gap-4">
+                <div class="bg-green-500/5 p-4 rounded-xl border border-green-500/20 flex items-center gap-4 min-w-0">
                     <div class="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 text-xl border border-green-500/30 flex-shrink-0">🎯</div>
-                    <div>
+                    <div class="min-w-0 flex-1">
                         <p class="text-[10px] text-green-400 uppercase font-bold tracking-wider">Prey (Most Wins)</p>
-                        <p id="cmd-view-prey" class="font-bold text-white text-sm mt-0.5 truncate">None</p>
+                        <p id="cmd-view-prey" class="font-bold text-white text-sm mt-0.5 truncate">—</p>
+                        <p id="cmd-view-prey-hint" class="hidden text-[10px] text-slate-500 mt-1 leading-snug">At least 3 games vs. another deck needed.</p>
                     </div>
                 </div>
             </div>
@@ -868,6 +870,13 @@
         function collectArtElements() {
             return [...document.querySelectorAll('.set-bg:not(.art-loaded), .set-src:not(.art-loaded), .set-src-back:not(.art-loaded)')];
         }
+
+        function applyCachedArtToElements(cardName, elements) {
+            if (!cardName || !window.artCache[cardName]) return;
+            (elements || []).forEach(el => {
+                if (el) window.applyArtToElement(el);
+            });
+        }
         
         window.applyArtToElement = function(el) {
             const rawName = el.getAttribute('data-card');
@@ -901,8 +910,17 @@
                     } else {
                         el.src = imgUrl;
                         if (el.id === 'cmd-view-card-img' || el.id === 'cmd-view-card-back-img') {
-                            el.onload = () => el.style.opacity = '1';
-                            if(el.complete) el.style.opacity = '1'; 
+                            const showCmdArt = () => {
+                                el.style.opacity = '1';
+                                if (el.id === 'cmd-view-card-img') {
+                                    const fSpin = document.getElementById('cmd-fallback-spinner');
+                                    const fText = document.getElementById('cmd-fallback-text');
+                                    if (fSpin) fSpin.classList.add('hidden');
+                                    if (fText) fText.classList.add('hidden');
+                                }
+                            };
+                            el.onload = showCmdArt;
+                            if (el.complete) showCmdArt();
                         }
                         el.classList.add('art-loaded');
                         
@@ -1346,7 +1364,25 @@
 
         window.confirmAppModal = function() { if(modalConfirmCallback) modalConfirmCallback(); }
 
-        const SETTINGS = { STARTING_ELO: 1200, BASE_K: 32 };
+        const SETTINGS = { STARTING_ELO: 1200, BASE_K: 32, MATCHUP_MIN_GAMES: 3 };
+        const MATCHUP_INSUFFICIENT_LABEL = 'Not enough data';
+
+        function isInsufficientMatchup(value) {
+            return !value || value === MATCHUP_INSUFFICIENT_LABEL;
+        }
+
+        function renderCommanderMatchup(valueEl, hintEl, value) {
+            if (!valueEl) return;
+            if (isInsufficientMatchup(value)) {
+                valueEl.innerText = 'Not enough data';
+                valueEl.className = 'font-medium text-slate-500 text-sm mt-0.5';
+                if (hintEl) hintEl.classList.remove('hidden');
+            } else {
+                valueEl.innerText = value;
+                valueEl.className = 'font-bold text-white text-sm mt-0.5 truncate';
+                if (hintEl) hintEl.classList.add('hidden');
+            }
+        }
 
         function scaledK(podSize) {
             if (podSize === 2) return SETTINGS.BASE_K * 0.70;
@@ -1496,12 +1532,12 @@
             window.appData.commanders = Object.keys(deckElo).map(name => {
                 const s = deckStats[name];
                 
-                let nemesis = "Not enough data", prey = "Not enough data";
+                let nemesis = MATCHUP_INSUFFICIENT_LABEL, prey = MATCHUP_INSUFFICIENT_LABEL;
                 let minScore = 0, maxScore = 0;
                 let nemesisList = [], preyList = [];
 
                 Object.keys(s.matchups).forEach(opp => {
-                    if (s.matchupsTotal[opp] >= 3) {
+                    if (s.matchupsTotal[opp] >= SETTINGS.MATCHUP_MIN_GAMES) {
                         let score = s.matchups[opp];
                         if (score < minScore) { minScore = score; nemesisList = [opp]; }
                         else if (score === minScore && minScore < 0) { nemesisList.push(opp); }
@@ -1622,6 +1658,7 @@
         }
 
         function generateCommanderRow(cmd, index) {
+            const ownerName = cmd.owner || (cmd.pilots && cmd.pilots[0]) || '—';
             return `
                 <div onclick="window.openCommanderProfile(${index})" class="glass flex items-center p-3 md:p-4 rounded-xl hover:bg-slate-800/80 transition cursor-pointer relative overflow-hidden group border ${cmd.rank <= 3 ? 'border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : 'border-slate-700/50'}">
                     <div data-card="${cmd.name}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-20 transition duration-500 mix-blend-luminosity"></div>
@@ -1629,8 +1666,11 @@
                     <div data-card="${cmd.name}" data-version="art_crop" class="set-bg w-12 h-12 md:w-14 md:h-14 rounded-full art-fallback ml-2 md:ml-3 bg-cover bg-center border-2 border-slate-700 shadow-md z-10 flex-shrink-0"></div>
                     <div class="ml-3 md:ml-4 flex-grow z-10 min-w-0">
                         <h4 class="font-bold text-base md:text-lg text-white group-hover:text-purple-400 transition truncate">${cmd.name}</h4>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="text-xs text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/50">${cmd.owner}</span>
+                        <p class="text-[10px] sm:text-xs text-slate-400 mt-1 truncate">
+                            <span class="uppercase tracking-wider font-bold text-slate-500">Owner</span>
+                            <span class="text-slate-200 font-semibold ml-1">${ownerName}</span>
+                        </p>
+                        <div class="flex items-center gap-2 mt-1.5">
                             <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded ${parseFloat(cmd.winRate) >= 50 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700/80 text-slate-300 border border-slate-600/50'}">${cmd.winRate} Win</span>
                         </div>
                     </div>
@@ -2283,6 +2323,7 @@
         window.openCommanderProfile = function(index) {
             const cmd = window.appData.commanders[index];
             const view = document.getElementById('view-commander-detail');
+            if (view) view.classList.remove('hidden');
             
             const titleEl = document.getElementById('cmd-view-title');
             const nameEl = document.getElementById('cmd-view-name');
@@ -2296,7 +2337,9 @@
             const pkRankEl = document.getElementById('cmd-view-peak-rank');
             const pkEloEl = document.getElementById('cmd-view-peak-elo');
             const nemesisEl = document.getElementById('cmd-view-nemesis');
+            const nemesisHintEl = document.getElementById('cmd-view-nemesis-hint');
             const preyEl = document.getElementById('cmd-view-prey');
+            const preyHintEl = document.getElementById('cmd-view-prey-hint');
 
             if(titleEl) titleEl.innerText = cmd.name;
             if(nameEl) nameEl.innerText = cmd.name;
@@ -2339,7 +2382,7 @@
                 backImg.classList.add('set-src-back');
             }
 
-            window.processArtQueue();
+            applyCachedArtToElements(cmd.name, [imgEl, backImg]);
             updateCommanderAltNamesBadge(cmd.name);
             
             const pilotsList = cmd.pilots || [cmd.owner];
@@ -2354,8 +2397,8 @@
             if(curRankEl) curRankEl.innerText = `#${cmd.rank}`;
             if(pkRankEl) pkRankEl.innerText = `#${cmd.peakRank || cmd.rank}`;
             if(pkEloEl) pkEloEl.innerText = cmd.highestElo || cmd.elo;
-            if(nemesisEl) nemesisEl.innerText = cmd.nemesis;
-            if(preyEl) preyEl.innerText = cmd.bestMatchup;
+            renderCommanderMatchup(nemesisEl, nemesisHintEl, cmd.nemesis);
+            renderCommanderMatchup(preyEl, preyHintEl, cmd.bestMatchup);
             
             if (typeof Chart !== 'undefined') {
                 const canvas = document.getElementById('eloChart');
@@ -2402,8 +2445,10 @@
             window.processArtQueue();
             
             if (view) {
-                view.classList.remove('hidden');
-                setTimeout(() => { view.classList.remove('translate-x-full'); }, 10);
+                setTimeout(() => {
+                    view.classList.remove('translate-x-full');
+                    window.processArtQueue();
+                }, 10);
             }
         }
 
@@ -2418,6 +2463,7 @@
         window.openPlayerProfile = function(index) {
             const player = window.appData.players[index];
             const view = document.getElementById('view-player-detail');
+            if (view) view.classList.remove('hidden');
             
             const iconEl = document.getElementById('plr-view-icon');
             const nameEl = document.getElementById('plr-view-name');
@@ -2473,8 +2519,10 @@
             window.processArtQueue();
             
             if (view) {
-                view.classList.remove('hidden');
-                setTimeout(() => { view.classList.remove('translate-x-full'); }, 10);
+                setTimeout(() => {
+                    view.classList.remove('translate-x-full');
+                    window.processArtQueue();
+                }, 10);
             }
         }
 
