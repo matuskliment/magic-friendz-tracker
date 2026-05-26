@@ -1398,6 +1398,25 @@
             return recent.join(" ");
         }
 
+        function compareDeckElo(deckElo, deckA, deckB) {
+            const roundedDiff = Math.round(deckElo[deckB]) - Math.round(deckElo[deckA]);
+            if (roundedDiff !== 0) return roundedDiff;
+            return deckElo[deckB] - deckElo[deckA];
+        }
+
+        function sortDecksByElo(deckElo) {
+            return Object.keys(deckElo).sort((a, b) => compareDeckElo(deckElo, a, b));
+        }
+
+        function snapshotDeckPeakRanks(deckElo, deckStats) {
+            sortDecksByElo(deckElo).forEach((deck, index) => {
+                const rank = index + 1;
+                if (!deckStats[deck].peakRank || rank < deckStats[deck].peakRank) {
+                    deckStats[deck].peakRank = rank;
+                }
+            });
+        }
+
         function recalculateEverything(rawMatches) {
             const sortedMatches = [...rawMatches].sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
             let deckElo = {};
@@ -1419,7 +1438,7 @@
 
                 participants.forEach(p => {
                     if (!deckElo[p]) deckElo[p] = SETTINGS.STARTING_ELO;
-                    if (!deckStats[p]) deckStats[p] = { plays: 0, wins: 0, history: [], owner: "", pilots: new Set(), eloHistory: [SETTINGS.STARTING_ELO], matchups: {}, matchupsTotal: {} };
+                    if (!deckStats[p]) deckStats[p] = { plays: 0, wins: 0, history: [], owner: "", pilots: new Set(), eloHistory: [SETTINGS.STARTING_ELO], matchups: {}, matchupsTotal: {}, peakRank: null };
                 });
                 
                 const allPlayers = [...m.winners.map(w=>w.player), ...m.losers.map(l => l.player)];
@@ -1511,6 +1530,8 @@
                         };
                     }
                 });
+
+                snapshotDeckPeakRanks(deckElo, deckStats);
             });
 
             Object.keys(deckStats).forEach(deckName => {
@@ -1523,14 +1544,9 @@
                 if (!playerStats[playerObj.name]) { playerStats[playerObj.name] = { wins: 0, plays: 0, decks: {} }; }
             });
 
-            const tempSort = Object.keys(deckElo).sort((a,b) => deckElo[b] - deckElo[a]);
-            tempSort.forEach((deck, index) => {
-                const rank = index + 1;
-                if (!deckStats[deck].peakRank || rank < deckStats[deck].peakRank) deckStats[deck].peakRank = rank;
-            });
-
-            window.appData.commanders = Object.keys(deckElo).map(name => {
+            window.appData.commanders = sortDecksByElo(deckElo).map((name, index) => {
                 const s = deckStats[name];
+                const rank = index + 1;
                 
                 let nemesis = MATCHUP_INSUFFICIENT_LABEL, prey = MATCHUP_INSUFFICIENT_LABEL;
                 let minScore = 0, maxScore = 0;
@@ -1552,9 +1568,10 @@
 
                 return {
                     name: name,
+                    rank: rank,
                     elo: Math.round(deckElo[name]),
                     highestElo: Math.max(...s.eloHistory),
-                    peakRank: s.peakRank,
+                    peakRank: s.peakRank || rank,
                     winRate: ((s.wins / s.plays) * 100).toFixed(1) + "%",
                     owner: s.owner,
                     pilots: Array.from(s.pilots),
@@ -1565,7 +1582,7 @@
                     bestMatchup: prey,
                     eloHistory: s.eloHistory
                 };
-            }).sort((a,b) => b.elo - a.elo).map((c, i) => ({...c, rank: i+1}));
+            });
 
             const icons = { "Carter": "👑", "Tristan": "⚔️", "Matus": "🛡️", "Bea": "🐉", "Mark": "💀", "Oliver": "🔥", "Devon": "🗡️", "Luke": "🐇", "Jesse": "🌳", "Nigel": "👼" };
             window.appData.players = Object.keys(playerStats).map(name => {
@@ -2395,7 +2412,7 @@
             if(winrateEl) winrateEl.innerText = cmd.winRate;
             if(recordEl) recordEl.innerText = `${cmd.wins}W - ${cmd.plays - cmd.wins}L`;
             if(curRankEl) curRankEl.innerText = `#${cmd.rank}`;
-            if(pkRankEl) pkRankEl.innerText = `#${cmd.peakRank || cmd.rank}`;
+            if(pkRankEl) pkRankEl.innerText = `#${Math.min(cmd.peakRank || cmd.rank, cmd.rank)}`;
             if(pkEloEl) pkEloEl.innerText = cmd.highestElo || cmd.elo;
             renderCommanderMatchup(nemesisEl, nemesisHintEl, cmd.nemesis);
             renderCommanderMatchup(preyEl, preyHintEl, cmd.bestMatchup);
