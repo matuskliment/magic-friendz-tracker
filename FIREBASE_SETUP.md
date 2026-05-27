@@ -6,11 +6,14 @@ Do these steps **after** deploying the latest `index.html` / `admin.html`.
 
 1. Firebase Console → **Authentication** → **Sign-in method**
 2. Enable **Email/Password**
-3. On the same provider, enable **Email link (passwordless)**
-4. **Settings** → **Authorized domains** → add:
-   - `localhost`
-   - Your GitHub Pages host (e.g. `matuskliment.github.io`)
-   - Any custom domain you use
+3. On the same provider, enable **Email link (passwordless sign-in)**
+4. **Settings** → **Authorized domains** → add every host you use:
+   - `localhost` (local testing only)
+   - `magic-friends-tracker.netlify.app` (recommended production)
+   - `matuskliment.github.io` (GitHub Pages, optional)
+   - Any custom domain
+
+Magic links only work on domains in this list.
 
 ## 2. Firestore rules
 
@@ -22,62 +25,33 @@ Your existing data is **not** deleted when you publish rules.
 
 If invites fail with **Missing or insufficient permissions**, publish the latest `firestore.rules` from this repo. Owners must be allowed to write `roster` and `memberEmails` even when `members/{uid}` was set up only on the group document.
 
-## 3. GitHub Pages URL
+## 3. Live app URL (share one host)
 
-1. Repo **Settings** → **Pages** → deploy from branch **`main`**, folder **`/` (root)**
-2. Note the live URL, e.g. `https://matuskliment.github.io/magic-friendz-tracker/`
-3. Open the app at `.../index.html` and backoffice at `.../admin.html`
+Use **one** URL for the playgroup day to day (bookmarks, invites, magic links):
 
-Magic-link sign-in only works on domains listed in Firebase (step 1).
+**Recommended:** `https://magic-friends-tracker.netlify.app/index.html?group=YOUR_GROUP_SLUG`
 
-## 4. Sign-in email copy (fix “project-822273509499”)
+Replace `YOUR_GROUP_SLUG` with the Firestore document id under `groups/` (see README).
 
-Firebase sends magic-link emails from the console template, **not** from `index.html`. Until you customize it, users see the generic “Sign in to project-…” message.
+GitHub Pages (`https://matuskliment.github.io/magic-friendz-tracker/`) can stay enabled as a backup deploy. Do not mix hosts when sending and opening magic links on the same device.
 
-### 4a. Project display name
+## 4. Magic-link email copy (inbox)
 
-1. Firebase Console → **Project settings** (gear) → **General**
-2. Set **Project name** and **Public-facing name** to: `Magic Friendz Tracker`
-3. Save
+Passwordless sign-in uses `sendSignInLinkToEmail`. Firebase sends that email from a **fixed default template**. It often says “Sign in to project-…” and includes a timestamp so Gmail does not hide the link in a thread.
 
-This replaces `%APP_NAME%` in templates where Firebase uses it.
+**There is usually no “Email link sign-in” row** under Authentication → Templates (only verification, password reset, etc.). Editing “Email address verification” does **not** change magic-link sign-in emails.
 
-### 4b. Email link sign-in template
+What you can do:
 
-1. Firebase Console → **Authentication** → **Templates**
-2. Open **Email link sign-in** (passwordless / email link flow)
-3. Set **Sender name** to: `Magic Friendz Tracker`
-4. Set **Subject** to something like:
+| Approach | Effort |
+|----------|--------|
+| Set **Project settings → General → Public-facing name** to `Magic Friendz Tracker` | Low — may slightly improve wording |
+| Rely on the **in-app** “Check your email” screen (after Send magic link) | Done in `index.html` |
+| Custom email via **Cloud Function** + Admin SDK `generateSignInWithEmailLink` + SendGrid/Resend | High — full control of inbox copy |
 
-   `Sign in to Magic Friendz Tracker`
+For a small playgroup, the in-app message + spam hint is enough; inbox text stays generic unless you build custom mail.
 
-5. Replace the **message body** with copy that matches the in-app flow. Example (Firebase inserts the link where you put `%LINK%`):
-
-   ```text
-   Hello,
-
-   Use the link below to sign in to Magic Friendz Tracker with %EMAIL%.
-
-   %LINK%
-
-   Open the link on the same device and browser you used to request it. The link works once and expires after a short time.
-
-   If you don’t see this message within a minute, check your spam folder.
-
-   If you didn’t request this, you can ignore this email.
-
-   — Magic Friendz Tracker
-   ```
-
-6. Click **Save**
-
-**Note:** Exact placeholders depend on your Firebase console version. Common ones: `%LINK%`, `%EMAIL%`, `%APP_NAME%`. Use the **preview** in the template editor to confirm.
-
-### 4c. Optional (later): custom domain / SMTP
-
-For better deliverability and a `noreply@yourdomain.com` sender, use [Firebase Action URL customization](https://firebase.google.com/docs/auth/custom-email-handler) or a provider (SendGrid, Resend, etc.). Not required for a small group; customizing the template above is enough to fix the wording.
-
-## 5. Group owners (already done manually)
+## 5. Group owners (legacy / manual)
 
 For each legacy group you should have:
 
@@ -85,6 +59,8 @@ For each legacy group you should have:
 - `groups/{groupId}/members/{uid}` → `role: "owner"`, `email`, `joinedAt`
 
 You can also set owners from **admin.html** → Selected Group → **Group owner**.
+
+**Group slug:** the `?group=` value must match the Firestore document id exactly (e.g. `magic-friendz`, not a typo).
 
 ## 6. Global backoffice admin
 
@@ -95,7 +71,20 @@ You can also set owners from **admin.html** → Selected Group → **Group owner
 
 | Role | Can do |
 |------|--------|
-| Guest (group name only) | View stats, export JSON/CSV |
+| Guest (group link only) | View stats, export JSON/CSV |
 | Editor (signed in + invited) | Log matches, roster, invites |
 | Owner | Editor + wipe match history |
 | Backoffice admin | All groups, delete group/player, set owner |
+
+## Smoke test (after deploy)
+
+Use your real Netlify URL and Firestore group slug.
+
+- [ ] Open `.../index.html?group=SLUG` — dashboard loads (not “Group Not Found”)
+- [ ] Guest: header/badge shows **View only**; cannot log a match
+- [ ] Settings → Sign in → Send magic link → in-app **Check your email** appears
+- [ ] Open link on **same device/browser** → signed in; badge **Owner** or **Can edit**
+- [ ] Log a match; new player appears on roster as **Not invited**
+- [ ] Invite player → inline “invite sent” (no need to read inbox wording)
+- [ ] Sign out → confirmation → back to view-only
+- [ ] Create group (optional): magic link → lands in new group as owner

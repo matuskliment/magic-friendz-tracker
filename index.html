@@ -819,19 +819,40 @@
                 </div>
             </div>
             <div id="group-modal-create-panel" class="hidden">
-                <button type="button" onclick="window.showJoinGroupPanel()" class="text-xs text-slate-500 hover:text-slate-300 mb-3 flex items-center gap-1">← Back</button>
-                <h2 class="text-2xl font-black text-white mb-2">Create a playgroup</h2>
-                <p class="text-sm text-slate-400 mb-4 leading-relaxed">You’ll be the owner. Sign in with email (magic link, no password) to create the group.</p>
-                <label for="create-group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">New group name</label>
-                <div class="field-wrap mb-4">
-                    <input type="text" id="create-group-name-input" placeholder="e.g. Friday Night Magic" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)">
+                <button type="button" id="create-group-back-btn" onclick="window.showJoinGroupPanel()" class="text-xs text-slate-500 hover:text-slate-300 mb-3 flex items-center gap-1">← Back</button>
+                <div id="create-group-form">
+                    <h2 class="text-2xl font-black text-white mb-2">Create a playgroup</h2>
+                    <p class="text-sm text-slate-400 mb-4 leading-relaxed">You’ll be the owner. Sign in with email (magic link, no password) to create the group.</p>
+                    <label for="create-group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">New group name</label>
+                    <div class="field-wrap mb-4">
+                        <input type="text" id="create-group-name-input" placeholder="e.g. Friday Night Magic" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)">
+                    </div>
+                    <label for="create-owner-email-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Your email (owner)</label>
+                    <div class="field-wrap mb-3">
+                        <input type="email" id="create-owner-email-input" placeholder="you@email.com" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)">
+                    </div>
+                    <p id="create-group-status" class="text-xs text-red-400/90 hidden mb-3"></p>
+                    <button id="group-create-btn" onclick="window.createGroup(event)" class="w-full bg-green-600 hover:bg-green-500 text-white px-6 py-3.5 rounded-xl text-base font-bold transition min-h-[52px] touch-manipulation disabled:opacity-50 disabled:pointer-events-none">Send link &amp; create</button>
                 </div>
-                <label for="create-owner-email-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Your email (owner)</label>
-                <div class="field-wrap mb-3">
-                    <input type="email" id="create-owner-email-input" placeholder="you@email.com" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)">
+                <div id="create-group-sent" class="hidden space-y-4">
+                    <div class="flex gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center shrink-0" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                        </div>
+                        <div class="min-w-0 flex-1 space-y-2">
+                            <h3 class="text-lg font-bold text-white">Check your email</h3>
+                            <p class="text-sm text-slate-400">We sent a sign-in link to</p>
+                            <p id="create-group-sent-email" class="text-sm font-semibold text-emerald-100 bg-slate-900/90 border border-emerald-500/25 rounded-lg px-3 py-2.5 break-all leading-snug"></p>
+                            <p class="text-xs text-slate-400">Open it on <span class="text-slate-200 font-medium">this device</span> in the same browser. We’ll create group <span id="create-group-sent-slug" class="font-mono text-emerald-200/90"></span> when you finish signing in.</p>
+                            <p class="text-xs text-slate-500">Check <span class="text-slate-300 font-medium">spam</span> if it doesn’t arrive within a minute.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2 pt-2 border-t border-slate-700/50">
+                        <button type="button" onclick="window.resendCreateGroupLink()" class="w-full text-sm font-bold text-emerald-200 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-4 py-3 rounded-xl transition min-h-[44px] touch-manipulation">Send again</button>
+                        <button type="button" onclick="window.resetCreateGroupPanel()" class="w-full text-sm font-bold text-slate-300 bg-slate-800/80 hover:bg-slate-700 border border-slate-600 px-4 py-3 rounded-xl transition min-h-[44px] touch-manipulation">Use a different email</button>
+                        <button type="button" onclick="window.closeGroupModal()" class="w-full text-sm font-semibold text-slate-500 hover:text-slate-300 py-2 touch-manipulation">Close</button>
+                    </div>
                 </div>
-                <p id="create-group-status" class="text-[11px] text-slate-500 mb-3"></p>
-                <button id="group-create-btn" onclick="window.createGroup(event)" class="w-full bg-green-600 hover:bg-green-500 text-white px-6 py-3.5 rounded-xl text-base font-bold transition min-h-[52px] touch-manipulation">Send link &amp; create</button>
             </div>
         </div>
     </div>
@@ -900,6 +921,8 @@
         let rosterSyncTimer = null;
         let rosterSyncInFlight = false;
         window.rosterInviteOpen = new Set();
+        window.rosterInviteFlash = {};
+        window.rosterInviteFlash = {};
         window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
 
         function normalizeEmail(email) {
@@ -1416,9 +1439,65 @@
             );
         };
 
+        window.resetCreateGroupPanel = function() {
+            const form = document.getElementById('create-group-form');
+            const sent = document.getElementById('create-group-sent');
+            const status = document.getElementById('create-group-status');
+            const btn = document.getElementById('group-create-btn');
+            const back = document.getElementById('create-group-back-btn');
+            if (form) form.classList.remove('hidden');
+            if (sent) sent.classList.add('hidden');
+            if (back) back.classList.remove('hidden');
+            if (status) {
+                status.textContent = '';
+                status.classList.add('hidden');
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = 'Send link & create';
+            }
+        };
+
+        function showCreateGroupLinkSent(email, slug) {
+            const form = document.getElementById('create-group-form');
+            const sent = document.getElementById('create-group-sent');
+            const sentEmail = document.getElementById('create-group-sent-email');
+            const sentSlug = document.getElementById('create-group-sent-slug');
+            const status = document.getElementById('create-group-status');
+            const btn = document.getElementById('group-create-btn');
+            if (form) form.classList.add('hidden');
+            if (sent) sent.classList.remove('hidden');
+            if (sentEmail) sentEmail.textContent = email;
+            if (sentSlug) sentSlug.textContent = slug;
+            if (status) {
+                status.textContent = '';
+                status.classList.add('hidden');
+            }
+            if (btn) btn.disabled = true;
+        }
+
+        window.resendCreateGroupLink = async function() {
+            const email = normalizeEmail(document.getElementById('create-group-sent-email')?.textContent);
+            const slug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
+            if (!email || !slug) {
+                window.showAppAlert('Could not resend. Start create again.', 'Error', '❌');
+                return;
+            }
+            try {
+                window.localStorage.setItem(AUTH_EMAIL_KEY, email);
+                await sendSignInLinkToEmail(auth, email, {
+                    url: getAuthContinueUrl(slug),
+                    handleCodeInApp: true
+                });
+            } catch (e) {
+                window.showAppAlert('Could not send link: ' + e.message, 'Error', '❌');
+            }
+        };
+
         window.showCreateGroupPanel = function() {
             document.getElementById('group-modal-join-panel')?.classList.add('hidden');
             document.getElementById('group-modal-create-panel')?.classList.remove('hidden');
+            window.resetCreateGroupPanel();
             const joinName = document.getElementById('group-name-input')?.value?.trim();
             const createInput = document.getElementById('create-group-name-input');
             if (joinName && createInput && !createInput.value) createInput.value = joinName;
@@ -1427,6 +1506,7 @@
         window.showJoinGroupPanel = function() {
             document.getElementById('group-modal-create-panel')?.classList.add('hidden');
             document.getElementById('group-modal-join-panel')?.classList.remove('hidden');
+            window.resetCreateGroupPanel();
         };
 
         window.toggleOwnerDanger = function(btn) {
@@ -1629,17 +1709,26 @@
             const inviteSentLabel = formatInviteSentAt(inviteSentAt);
             const plays = p.plays != null ? p.plays : 0;
             const inviteOpen = window.rosterInviteOpen?.has(rosterId);
+            const inviteFlash = window.rosterInviteFlash?.[rosterId];
             const inviteStatus = renderPlayerAccessBadge(p, ownerSelf, hasMember);
 
-            const inviteSentLine = (!hasMember && inviteSentLabel)
+            const inviteSentLine = (!hasMember && inviteSentLabel && !inviteFlash)
                 ? `<p class="text-[10px] text-slate-500 mt-1.5">Invite sent ${escapeHtml(inviteSentLabel)}</p>`
                 : '';
 
-            const inviteBtn = (canWrite && !hasMember)
+            const inviteFlashBlock = (inviteFlash && canWrite && !hasMember) ? `
+                <div class="mt-2 pt-2 border-t border-emerald-500/25 rounded-lg bg-emerald-950/20 px-3 py-2.5 space-y-1">
+                    <p class="text-xs font-bold text-emerald-200">Invite sent</p>
+                    <p class="text-[11px] text-slate-300">Magic link sent to <span class="font-semibold text-white break-all">${escapeHtml(inviteFlash.email)}</span></p>
+                    <p class="text-[10px] text-slate-500">They should open it on the same device. Check spam if needed.</p>
+                </div>
+            ` : '';
+
+            const inviteBtn = (canWrite && !hasMember && !inviteFlash)
                 ? `<button type="button" onclick="window.toggleRosterInvite('${nameJs}', '${rosterIdJs}')" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-lg transition shrink-0">${inviteOpen ? 'Send invite' : 'Invite'}</button>`
                 : '';
 
-            const inviteBlock = (inviteOpen && canWrite && !hasMember) ? `
+            const inviteBlock = (inviteOpen && canWrite && !hasMember && !inviteFlash) ? `
                 <div class="field-wrap mt-2 pt-2 border-t border-slate-700/50">
                     <input type="email" data-roster-id="${escapeHtml(rosterId)}" data-player-name="${escapeHtml(p.name)}" value="${escapeHtml(emailVal)}" placeholder="Email address" class="roster-email-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-[11px] text-white outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();window.sendPlayerInvite('${nameJs}');}">
                 </div>
@@ -1668,6 +1757,7 @@
                         </div>
                     </div>
                     ${inviteBlock}
+                    ${inviteFlashBlock}
                     ${inviteSentLine}
                 </li>
             `;
@@ -1677,6 +1767,7 @@
             if (!window.canWrite()) return;
             if (!rosterId) return;
             if (!window.rosterInviteOpen.has(rosterId)) {
+                delete window.rosterInviteFlash[rosterId];
                 window.rosterInviteOpen.add(rosterId);
                 refreshPlayerList();
                 setTimeout(() => getRosterEmailInput(rosterId)?.focus(), 50);
@@ -1723,7 +1814,8 @@
                 await persistRosterInvite(rosterEntry, email, sentAt);
                 await sendInviteToEmail(email, rosterEntry.name);
                 window.rosterInviteOpen.delete(rosterEntry.id);
-                window.showAppAlert(`Magic link sent to ${email}.\n\nInvite sent ${formatInviteSentAt(sentAt)}.`, 'Invite sent', '✉️');
+                window.rosterInviteFlash[rosterEntry.id] = { email, sentAt };
+                refreshPlayerList();
             } catch (e) {
                 window.showAppAlert('Invite failed: ' + e.message, 'Error', '❌');
             }
@@ -2358,14 +2450,15 @@
                     url: getAuthContinueUrl(formatted),
                     handleCodeInApp: true
                 });
-                if (statusEl) statusEl.textContent = 'Check your email, open the link, then we\'ll create the group.';
-                window.showAppAlert('Magic link sent. Open it on this device to finish creating your group.', 'Check your email', '✉️');
-                window.closeGroupModal();
+                showCreateGroupLinkSent(ownerEmail, formatted);
             } catch (error) {
                 console.error("Error creating group:", error);
-                window.showAppAlert("Could not start group creation.\n\n" + error.message, "Error", "❌");
+                if (statusEl) {
+                    statusEl.textContent = 'Could not send link: ' + error.message;
+                    statusEl.classList.remove('hidden');
+                }
+                if (btn) { btn.disabled = false; btn.innerText = originalText; }
             }
-            if (btn) { btn.disabled = false; btn.innerText = originalText; }
         }
 
         function softRouteToGroup(formattedString, btn, originalText = "Enter Existing Group") {
@@ -2400,8 +2493,7 @@
             if (input) input.value = '';
             if (joinBtn) { joinBtn.disabled = false; joinBtn.innerText = "View Group Stats"; }
             if (createBtn) { createBtn.disabled = false; createBtn.innerText = "Send link & create"; }
-            const createStatus = document.getElementById('create-group-status');
-            if (createStatus) createStatus.textContent = '';
+            window.resetCreateGroupPanel();
             
             if (modal) {
                 modal.classList.remove('hidden');
@@ -4256,7 +4348,9 @@
                     const sentAt = Date.now();
                     await persistRosterInvite({ id: rosterRef.id, name }, email, sentAt);
                     await sendInviteToEmail(email, name);
-                    window.showAppAlert(`Added ${name} and sent invite to ${email}.`, 'Added & invited', '✉️');
+                    window.rosterInviteFlash[rosterRef.id] = { email, sentAt };
+                    window.switchTab('group');
+                    refreshPlayerList();
                 } else {
                     window.showAppAlert(`Added ${name} to the player list.`, 'Player added', '✅');
                 }
