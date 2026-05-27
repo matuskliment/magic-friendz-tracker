@@ -186,7 +186,7 @@
                 <span class="text-slate-300">Group:</span> <span id="group-name-display" class="text-purple-400">Loading...</span>
             </h2>
             <div class="flex items-center gap-2 md:gap-3">
-                <span id="group-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80">View only</span>
+                <span id="group-header-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80">View only</span>
                 <button onclick="window.showLanding()" class="text-xs text-slate-400 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg flex items-center gap-1 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     Exit
@@ -867,6 +867,8 @@
         const AUTH_EMAIL_KEY = 'mf_email_for_sign_in';
         const PENDING_CREATE_GROUP_KEY = 'mf_pending_create_group';
         const PENDING_CREATE_NAME_KEY = 'mf_pending_create_display_name';
+        const LAST_GROUP_KEY = 'mf_last_group_slug';
+        let appBootComplete = false;
 
         window.isGroupValid = false;
         window.currentUser = null;
@@ -907,7 +909,8 @@
                 const params = new URLSearchParams(window.location.search);
                 ['oobCode', 'apiKey', 'mode', 'lang'].forEach(k => params.delete(k));
                 const group = params.get('group') || window.groupIdRaw || '';
-                const next = group ? `${window.location.pathname}?group=${encodeURIComponent(group)}` : window.location.pathname;
+                if (group) window.groupIdRaw = formatGroupSlug(group);
+                const next = group ? `${window.location.pathname}?group=${encodeURIComponent(window.groupIdRaw || group)}` : window.location.pathname;
                 window.history.replaceState({}, '', next);
             } catch (_) {}
         }
@@ -985,7 +988,7 @@
         async function tryCompleteEmailSignIn() {
             if (!isSignInWithEmailLink(auth, window.location.href)) return false;
             let email = window.localStorage.getItem(AUTH_EMAIL_KEY);
-            const onLanding = !hasGroupParam;
+            const onLanding = !window.groupIdRaw;
             if (!email) {
                 openSignInPanelForContext(onLanding);
                 setSignInPanelError(
@@ -1146,7 +1149,10 @@
             const fab = document.getElementById('log-match-fab');
             const addPlayerBtn = document.getElementById('roster-add-player-btn');
             const ownerDanger = document.getElementById('group-owner-danger');
-            const badge = document.getElementById('group-access-badge');
+            const badgeEls = [
+                document.getElementById('group-access-badge'),
+                document.getElementById('group-header-access-badge')
+            ].filter(Boolean);
             const status = document.getElementById('group-access-status');
             const signInPanel = document.getElementById('group-sign-in-panel');
             const signInBtn = document.getElementById('access-sign-in-btn');
@@ -1191,11 +1197,11 @@
             };
             const label = labels[window.groupAccess] || labels.viewer;
 
-            if (badge) {
+            badgeEls.forEach(badge => {
                 badge.classList.remove('hidden');
                 badge.innerText = label.badge;
                 badge.className = `text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${label.badgeClass}`;
-            }
+            });
             if (status) status.innerText = label.status;
 
             if (inviteHelp) {
@@ -1244,13 +1250,33 @@
 
         window.updateAccessUI = updateAccessUI;
 
+        function rememberLastGroup(slug) {
+            const formatted = formatGroupSlug(slug || '');
+            if (formatted) window.localStorage.setItem(LAST_GROUP_KEY, formatted);
+        }
+
         function resolveSignInGroupId() {
             if (window.groupIdRaw) return window.groupIdRaw;
             try {
                 const fromUrl = new URLSearchParams(window.location.search).get('group');
                 if (fromUrl) return formatGroupSlug(fromUrl.trim());
             } catch (_) {}
+            try {
+                const last = window.localStorage.getItem(LAST_GROUP_KEY);
+                if (last) return formatGroupSlug(last);
+            } catch (_) {}
             return '';
+        }
+
+        function restoreGroupContextAfterAuth() {
+            if (window.groupIdRaw) return;
+            try {
+                const last = window.localStorage.getItem(LAST_GROUP_KEY);
+                if (!last) return;
+                window.groupIdRaw = formatGroupSlug(last);
+                const next = `${window.location.pathname}?group=${encodeURIComponent(window.groupIdRaw)}`;
+                window.history.replaceState({}, '', next);
+            } catch (_) {}
         }
 
         function updateLandingAuthUI() {
@@ -2100,8 +2126,9 @@
                     window.groupOwnerEmail = normalizeEmail(groupData.ownerEmail || '');
                     updateGroupContext();
                     window.isGroupValid = true;
+                    rememberLastGroup(window.groupIdRaw);
                     startMatchListener();
-                    if (authReady) await claimMembershipForCurrentUser();
+                    if (auth.currentUser) await claimMembershipForCurrentUser();
                     updateAccessUI();
                     return true;
                 } else {
@@ -2118,7 +2145,7 @@
 
         async function bootApplication() {
             updateGroupContext();
-            if (!hasGroupParam) {
+            if (!window.groupIdRaw) {
                 window.processArtQueue();
                 const landingPage = document.getElementById('landing-page');
                 if (landingPage) {
@@ -2130,7 +2157,7 @@
             const landingPage = document.getElementById('landing-page');
             if (landingPage) landingPage.classList.add('hidden', 'opacity-0');
             const isValid = await initAppRouting();
-            if (hasGroupParam) {
+            if (window.groupIdRaw) {
                 if (isValid) {
                     const dash = document.getElementById('dashboard-view');
                     if (dash) {
@@ -2155,7 +2182,7 @@
                 console.error('Email link sign-in failed:', e);
                 stripAuthParamsFromUrl();
                 const friendly = getFriendlyAuthLinkError(e);
-                const onLanding = !hasGroupParam;
+                const onLanding = !window.groupIdRaw;
                 openSignInPanelForContext(onLanding);
                 setSignInPanelError(onLanding, friendly);
                 if (e?.code !== 'auth/invalid-action-code' && e?.code !== 'auth/invalid-email') {
@@ -2164,9 +2191,16 @@
             }
             if (auth.currentUser && window.localStorage.getItem(PENDING_CREATE_GROUP_KEY)) {
                 await runPendingGroupCreate();
+                appBootComplete = true;
                 return;
             }
+            if (auth.currentUser) restoreGroupContextAfterAuth();
             await bootApplication();
+            if (auth.currentUser && window.isGroupValid) {
+                await claimMembershipForCurrentUser();
+                updateAccessUI();
+            }
+            appBootComplete = true;
         }
 
         onAuthStateChanged(auth, async (user) => {
@@ -2181,7 +2215,7 @@
             updateAccessUI();
             if (user && window.isGroupValid && window.canWrite()) {
                 window.switchTab('group');
-            } else if (user && !window.isGroupValid && hasGroupParam) {
+            } else if (appBootComplete && user && !window.isGroupValid && window.groupIdRaw) {
                 window.openGroupModal();
             }
             if (user && window.localStorage.getItem(PENDING_CREATE_GROUP_KEY) && !window.groupIdRaw) {
@@ -2297,6 +2331,7 @@
 
         function softRouteToGroup(formattedString, btn, originalText = "Enter Existing Group") {
             window.groupIdRaw = formattedString;
+            rememberLastGroup(formattedString);
             window.groupDisplayName = null;
             updateGroupContext();
             
