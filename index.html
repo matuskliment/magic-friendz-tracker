@@ -91,12 +91,28 @@
                         <button type="button" onclick="window.openGroupModal()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Enter a group →</button>
                     </div>
                     <div id="landing-sign-in-panel" class="hidden mt-6 p-4 rounded-xl border border-purple-500/25 bg-purple-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
-                        <p class="text-sm text-slate-400">Use the email from your invite, or the one you used to create a group. We’ll send a magic link — no password.</p>
-                        <div class="field-wrap">
-                            <input type="email" id="landing-sign-in-email" placeholder="Email address" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
+                        <p id="landing-sign-in-intro" class="text-sm text-slate-400">Use the email from your invite, or the one you used to create a group. We’ll send a magic link — no password.</p>
+                        <div id="landing-sign-in-form" class="space-y-3">
+                            <div class="field-wrap">
+                                <input type="email" id="landing-sign-in-email" placeholder="Email address" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
+                            </div>
+                            <button type="button" onclick="window.sendSignInLink({ fromLanding: true })" id="landing-sign-in-send-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition min-h-[44px] touch-manipulation disabled:opacity-50 disabled:pointer-events-none">Send magic link</button>
+                            <p id="landing-sign-in-status" class="text-xs text-red-400/90 hidden"></p>
                         </div>
-                        <button type="button" onclick="window.sendSignInLink({ fromLanding: true })" id="landing-sign-in-send-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition min-h-[44px] touch-manipulation">Send magic link</button>
-                        <p id="landing-sign-in-status" class="text-[11px] text-slate-500"></p>
+                        <div id="landing-sign-in-sent" class="hidden rounded-lg border border-emerald-500/30 bg-emerald-950/25 p-4 space-y-3">
+                            <div class="flex items-start gap-3">
+                                <span class="text-2xl leading-none" aria-hidden="true">✉️</span>
+                                <div class="min-w-0 flex-1 space-y-1">
+                                    <p class="text-sm font-bold text-emerald-200">Check your email</p>
+                                    <p class="text-sm text-slate-300">We sent a sign-in link to <span id="landing-sign-in-sent-email" class="font-semibold text-white break-all"></span></p>
+                                    <p class="text-xs text-slate-400 pt-1">Open the link on <strong class="text-slate-300">this device</strong> in the same browser. If it doesn’t arrive within a minute, check your <strong class="text-slate-300">spam</strong> folder.</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                                <button type="button" onclick="window.sendSignInLink({ fromLanding: true, resend: true })" class="flex-1 text-xs font-bold text-emerald-200 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-3 py-2.5 rounded-lg transition min-h-[40px] touch-manipulation">Send again</button>
+                                <button type="button" onclick="window.resetSignInPanel({ fromLanding: true })" class="flex-1 text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2.5 rounded-lg transition min-h-[40px] touch-manipulation">Use different email</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -326,13 +342,29 @@
                             <button type="button" id="access-sign-in-btn" onclick="window.toggleAccessSignIn()" class="hidden text-[11px] font-bold text-purple-300 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1 rounded-lg transition min-h-[32px] touch-manipulation">Sign in</button>
                         </div>
                     </div>
-                    <div id="group-sign-in-panel" class="hidden mt-4 pt-4 border-t border-slate-700/50 space-y-2">
-                        <p class="text-xs text-slate-500">Use the email that was invited to this group, or the one you used when creating it.</p>
-                        <div class="field-wrap">
-                            <input type="email" id="sign-in-email" placeholder="Email address" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
+                    <div id="group-sign-in-panel" class="hidden mt-4 pt-4 border-t border-slate-700/50 space-y-3">
+                        <p id="group-sign-in-intro" class="text-xs text-slate-500">Use the email that was invited to this group, or the one you used when creating it.</p>
+                        <div id="group-sign-in-form" class="space-y-2">
+                            <div class="field-wrap">
+                                <input type="email" id="sign-in-email" placeholder="Email address" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
+                            </div>
+                            <button type="button" onclick="window.sendSignInLink()" id="sign-in-send-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition min-h-[44px] touch-manipulation disabled:opacity-50 disabled:pointer-events-none">Send magic link</button>
+                            <p id="sign-in-status" class="text-xs text-red-400/90 hidden"></p>
                         </div>
-                        <button type="button" onclick="window.sendSignInLink()" id="sign-in-send-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition min-h-[44px] touch-manipulation">Send magic link</button>
-                        <p id="sign-in-status" class="text-[11px] text-slate-500"></p>
+                        <div id="group-sign-in-sent" class="hidden rounded-lg border border-emerald-500/30 bg-emerald-950/25 p-4 space-y-3">
+                            <div class="flex items-start gap-3">
+                                <span class="text-xl leading-none" aria-hidden="true">✉️</span>
+                                <div class="min-w-0 flex-1 space-y-1">
+                                    <p class="text-sm font-bold text-emerald-200">Check your email</p>
+                                    <p class="text-xs text-slate-300">We sent a sign-in link to <span id="group-sign-in-sent-email" class="font-semibold text-white break-all"></span></p>
+                                    <p class="text-[11px] text-slate-400 pt-1">Open the link on <strong class="text-slate-300">this device</strong> in the same browser. If it doesn’t arrive within a minute, check your <strong class="text-slate-300">spam</strong> folder.</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                                <button type="button" onclick="window.sendSignInLink({ resend: true })" class="flex-1 text-[11px] font-bold text-emerald-200 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-3 py-2 rounded-lg transition min-h-[36px] touch-manipulation">Send again</button>
+                                <button type="button" onclick="window.resetSignInPanel({})" class="flex-1 text-[11px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2 rounded-lg transition min-h-[36px] touch-manipulation">Use different email</button>
+                            </div>
+                        </div>
                     </div>
                     <div id="group-signed-in" class="hidden mt-4 pt-4 border-t border-slate-700/50 flex flex-wrap items-center justify-between gap-2">
                         <p class="text-xs text-slate-400">Signed in as <span id="signed-in-email" class="font-semibold text-white"></span></p>
@@ -880,26 +912,86 @@
             } catch (_) {}
         }
 
+        function getFriendlyAuthLinkError(error) {
+            const code = error?.code || '';
+            if (code === 'auth/invalid-action-code') {
+                return 'This sign-in link was already used or has expired. Request a new magic link below.';
+            }
+            if (code === 'auth/invalid-email') {
+                return 'That email doesn’t match this sign-in link. Use the same address you requested the link with.';
+            }
+            return error?.message || 'Sign-in link could not be completed.';
+        }
+
+        function setSignInPanelError(fromLanding, message) {
+            window.resetSignInPanel({ fromLanding, keepEmail: true });
+            const status = document.getElementById(fromLanding ? 'landing-sign-in-status' : 'sign-in-status');
+            if (!status) return;
+            status.textContent = message;
+            status.classList.remove('hidden');
+        }
+
+        function openSignInPanelForContext(fromLanding) {
+            if (fromLanding) {
+                const panel = document.getElementById('landing-sign-in-panel');
+                if (panel?.classList.contains('hidden')) window.toggleLandingSignIn();
+            } else {
+                const panel = document.getElementById('group-sign-in-panel');
+                if (panel?.classList.contains('hidden')) window.toggleAccessSignIn();
+            }
+        }
+
+        window.resetSignInPanel = function(options = {}) {
+            const fromLanding = !!options.fromLanding;
+            const form = document.getElementById(fromLanding ? 'landing-sign-in-form' : 'group-sign-in-form');
+            const sent = document.getElementById(fromLanding ? 'landing-sign-in-sent' : 'group-sign-in-sent');
+            const intro = document.getElementById(fromLanding ? 'landing-sign-in-intro' : 'group-sign-in-intro');
+            const input = document.getElementById(fromLanding ? 'landing-sign-in-email' : 'sign-in-email');
+            const btn = document.getElementById(fromLanding ? 'landing-sign-in-send-btn' : 'sign-in-send-btn');
+            const status = document.getElementById(fromLanding ? 'landing-sign-in-status' : 'sign-in-status');
+            if (form) form.classList.remove('hidden');
+            if (sent) sent.classList.add('hidden');
+            if (intro) intro.classList.remove('hidden');
+            if (status) {
+                status.textContent = '';
+                status.classList.add('hidden');
+            }
+            if (btn) btn.disabled = false;
+            if (!options.keepEmail && input) {
+                input.value = '';
+                clearFieldError(input);
+            }
+            if (options.focus !== false) setTimeout(() => input?.focus(), 50);
+        };
+
+        function showSignInLinkSent(fromLanding, email) {
+            const form = document.getElementById(fromLanding ? 'landing-sign-in-form' : 'group-sign-in-form');
+            const sent = document.getElementById(fromLanding ? 'landing-sign-in-sent' : 'group-sign-in-sent');
+            const intro = document.getElementById(fromLanding ? 'landing-sign-in-intro' : 'group-sign-in-intro');
+            const sentEmail = document.getElementById(fromLanding ? 'landing-sign-in-sent-email' : 'group-sign-in-sent-email');
+            const btn = document.getElementById(fromLanding ? 'landing-sign-in-send-btn' : 'sign-in-send-btn');
+            const status = document.getElementById(fromLanding ? 'landing-sign-in-status' : 'sign-in-status');
+            if (form) form.classList.add('hidden');
+            if (sent) sent.classList.remove('hidden');
+            if (intro) intro.classList.add('hidden');
+            if (sentEmail) sentEmail.textContent = email;
+            if (status) {
+                status.textContent = '';
+                status.classList.add('hidden');
+            }
+            if (btn) btn.disabled = true;
+        }
+
         async function tryCompleteEmailSignIn() {
             if (!isSignInWithEmailLink(auth, window.location.href)) return false;
             let email = window.localStorage.getItem(AUTH_EMAIL_KEY);
+            const onLanding = !hasGroupParam;
             if (!email) {
-                const onLanding = document.getElementById('landing-page') && !document.getElementById('landing-page').classList.contains('hidden');
-                if (onLanding) {
-                    const status = document.getElementById('landing-sign-in-status');
-                    if (status) status.textContent = 'Enter the same email you used, then tap Send magic link again.';
-                    if (document.getElementById('landing-sign-in-panel')?.classList.contains('hidden')) {
-                        window.toggleLandingSignIn();
-                    }
-                    document.getElementById('landing-sign-in-email')?.focus();
-                } else {
-                    const status = document.getElementById('sign-in-status');
-                    if (status) status.textContent = 'Enter the same email you used, then tap Send magic link again to finish opening the link.';
-                    const panel = document.getElementById('group-sign-in-panel');
-                    const btn = document.getElementById('access-sign-in-btn');
-                    if (panel && panel.classList.contains('hidden')) window.toggleAccessSignIn();
-                    document.getElementById('sign-in-email')?.focus();
-                }
+                openSignInPanelForContext(onLanding);
+                setSignInPanelError(
+                    onLanding,
+                    'Enter the same email you used for the magic link, then tap Send magic link.'
+                );
                 return false;
             }
             await signInWithEmailLink(auth, email, window.location.href);
@@ -1045,16 +1137,7 @@
             const opening = panel.classList.contains('hidden');
             panel.classList.toggle('hidden', !opening);
             if (btn) btn.textContent = opening ? 'Hide' : 'Sign in';
-            if (opening) {
-                const input = document.getElementById('sign-in-email');
-                if (input) {
-                    input.value = '';
-                    clearFieldError(input);
-                }
-                const status = document.getElementById('sign-in-status');
-                if (status) status.textContent = '';
-                setTimeout(() => input?.focus(), 50);
-            }
+            if (opening) window.resetSignInPanel({ focus: true });
         };
 
         function updateAccessUI() {
@@ -1198,16 +1281,7 @@
             if (!panel || (signedIn && !signedIn.classList.contains('hidden'))) return;
             const opening = panel.classList.contains('hidden');
             panel.classList.toggle('hidden', !opening);
-            if (opening) {
-                const input = document.getElementById('landing-sign-in-email');
-                if (input) {
-                    input.value = '';
-                    clearFieldError(input);
-                }
-                const status = document.getElementById('landing-sign-in-status');
-                if (status) status.textContent = '';
-                setTimeout(() => input?.focus(), 50);
-            }
+            if (opening) window.resetSignInPanel({ fromLanding: true });
             updateLandingAuthUI();
         };
 
@@ -1216,37 +1290,56 @@
             const input = document.getElementById(fromLanding ? 'landing-sign-in-email' : 'sign-in-email');
             const status = document.getElementById(fromLanding ? 'landing-sign-in-status' : 'sign-in-status');
             const btn = document.getElementById(fromLanding ? 'landing-sign-in-send-btn' : 'sign-in-send-btn');
-            const email = normalizeEmail(input?.value);
+            let email = normalizeEmail(input?.value);
+            if (options.resend) {
+                const stored = window.localStorage.getItem(AUTH_EMAIL_KEY);
+                const sentEl = document.getElementById(fromLanding ? 'landing-sign-in-sent-email' : 'group-sign-in-sent-email');
+                email = email || stored || normalizeEmail(sentEl?.textContent);
+                if (email && input) input.value = email;
+            }
             if (!email) {
                 setFieldError(input, 'Enter your email.');
-                if (status) status.textContent = '';
+                if (status) {
+                    status.textContent = '';
+                    status.classList.add('hidden');
+                }
+                window.resetSignInPanel({ fromLanding, keepEmail: true, focus: true });
                 input?.focus();
                 return;
             }
             clearFieldError(input);
             const groupId = resolveSignInGroupId();
             if (!groupId && !fromLanding) {
-                if (status) status.textContent = 'Open a group first.';
+                if (status) {
+                    status.textContent = 'Open a group first.';
+                    status.classList.remove('hidden');
+                }
                 return;
             }
             if (btn) btn.disabled = true;
-            if (status) status.textContent = 'Sending link…';
+            if (status) {
+                status.textContent = 'Sending link…';
+                status.classList.remove('hidden');
+                status.classList.remove('text-red-400/90');
+                status.classList.add('text-slate-400');
+            }
             try {
                 window.localStorage.setItem(AUTH_EMAIL_KEY, email);
                 await sendSignInLinkToEmail(auth, email, {
                     url: getAuthContinueUrl(groupId || null),
                     handleCodeInApp: true
                 });
-                if (status) {
-                    status.textContent = groupId
-                        ? 'Check your email and open the link on this device.'
-                        : 'Check your email. Then tap Enter App and open your group (or use the link from your invite).';
-                }
+                showSignInLinkSent(fromLanding, email);
             } catch (e) {
                 console.error(e);
-                if (status) status.textContent = 'Could not send link: ' + e.message;
+                window.resetSignInPanel({ fromLanding, keepEmail: true, focus: false });
+                if (status) {
+                    status.textContent = 'Could not send link: ' + e.message;
+                    status.classList.remove('hidden', 'text-slate-400');
+                    status.classList.add('text-red-400/90');
+                }
+                if (btn) btn.disabled = false;
             }
-            if (btn) btn.disabled = false;
         };
 
         window.authSignOut = async function() {
@@ -2060,7 +2153,14 @@
                 await tryCompleteEmailSignIn();
             } catch (e) {
                 console.error('Email link sign-in failed:', e);
-                window.showAppAlert('Sign-in link failed: ' + e.message, 'Sign in', '❌');
+                stripAuthParamsFromUrl();
+                const friendly = getFriendlyAuthLinkError(e);
+                const onLanding = !hasGroupParam;
+                openSignInPanelForContext(onLanding);
+                setSignInPanelError(onLanding, friendly);
+                if (e?.code !== 'auth/invalid-action-code' && e?.code !== 'auth/invalid-email') {
+                    window.showAppAlert('Sign-in link failed: ' + friendly, 'Sign in', '❌');
+                }
             }
             if (auth.currentUser && window.localStorage.getItem(PENDING_CREATE_GROUP_KEY)) {
                 await runPendingGroupCreate();
