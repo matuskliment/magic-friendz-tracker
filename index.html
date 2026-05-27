@@ -333,18 +333,21 @@
                     <div id="roster-invite-help" class="hidden mb-4 rounded-lg border border-purple-500/25 bg-purple-950/20 px-3 py-3">
                         <p class="text-xs font-bold text-purple-300 mb-2">How to invite someone</p>
                         <ol class="text-[11px] text-slate-400 space-y-1 list-decimal list-inside leading-relaxed">
-                            <li>Tap <span class="text-slate-300 font-semibold">➕ Add Player</span> and enter their name (e.g. Oliver).</li>
-                            <li>Type their email on that row → <span class="text-slate-300 font-semibold">Save</span>.</li>
-                            <li>Tap <span class="text-slate-300 font-semibold">Invite</span> — they get a magic link by email.</li>
-                            <li>When they open the link and sign in, status becomes <span class="text-emerald-300 font-semibold">Active</span> and they can log matches.</li>
+                            <li><span class="text-slate-300 font-semibold">Add Player</span> — name only, or name + email with <span class="text-slate-300 font-semibold">Add &amp; invite</span>.</li>
+                            <li>For someone already on the list: type email on their row and press <span class="text-slate-300 font-semibold">Enter</span> or tap <span class="text-slate-300 font-semibold">Invite</span>.</li>
+                            <li>When they open the magic link, status becomes <span class="text-emerald-300 font-semibold">Active</span>.</li>
                         </ol>
                     </div>
                     <div id="roster-invite-locked" class="hidden mb-4 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-3">
                         <p class="text-xs text-slate-400">To invite players, sign in above with your owner or invited email. Viewing as guest only lets you see stats.</p>
                     </div>
-                    <div id="add-player-form" class="hidden mb-4 flex gap-2 opacity-0 transition-opacity duration-300">
-                        <input type="text" id="new-player-input" placeholder="Enter player name..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm w-full text-white outline-none focus:border-purple-500 transition" onkeypress="if(event.key === 'Enter') window.addPlayerToRoster(event)">
-                        <button onclick="window.addPlayerToRoster(event)" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-sm font-bold text-white transition">Save</button>
+                    <div id="add-player-form" class="hidden mb-4 flex flex-col gap-2 opacity-0 transition-opacity duration-300">
+                        <input type="text" id="new-player-input" placeholder="Player name" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm w-full text-white outline-none focus:border-purple-500 transition" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.addPlayerToRoster(event, false); }">
+                        <input type="email" id="new-player-email-input" placeholder="Email (optional)" autocomplete="off" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm w-full text-white outline-none focus:border-purple-500 transition" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.addPlayerToRoster(event, true); }">
+                        <div class="flex gap-2">
+                            <button type="button" onclick="window.addPlayerToRoster(event, false)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 px-4 py-2.5 rounded-lg text-sm font-bold transition">Add</button>
+                            <button type="button" onclick="window.addPlayerToRoster(event, true)" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/30 px-4 py-2.5 rounded-lg text-sm font-bold transition">Add &amp; invite</button>
+                        </div>
                     </div>
                     <ul id="roster-list" class="space-y-3"></ul>
                 </div>
@@ -1086,37 +1089,80 @@
             });
         }
 
+        function buildPlayerListEntries() {
+            return (window.appData.explicitRoster || []).map(r => {
+                const statsPlayer = (window.appData.players || []).find(p =>
+                    normalizeName(p.name).toLowerCase() === normalizeName(r.name).toLowerCase()
+                );
+                const cleanName = normalizeName(r.name);
+                return {
+                    name: r.name,
+                    plays: statsPlayer?.plays ?? 0,
+                    avatarInitials: statsPlayer?.avatarInitials || getPlayerInitials(r.name),
+                    avatarColor: statsPlayer?.avatarColor || getResolvedAvatarColor(r.name),
+                    avatarDataUrl: r.avatarDataUrl || statsPlayer?.avatarDataUrl || ''
+                };
+            }).sort((a, b) => normalizeName(a.name).localeCompare(normalizeName(b.name)));
+        }
+
+        function renderPlayerListHtml() {
+            const entries = buildPlayerListEntries();
+            if (!entries.length) {
+                return `<li class="text-slate-500 text-sm italic text-center p-4">No players yet. Tap <span class="text-purple-300 font-semibold">Add Player</span> above.</li>`;
+            }
+            return entries.map(p => window.renderRosterListItem(p)).join('');
+        }
+
+        function getRosterEmailInput(rosterId) {
+            if (!rosterId) return null;
+            return document.querySelector(`.roster-email-input[data-roster-id="${CSS.escape(rosterId)}"]`);
+        }
+
+        async function persistRosterEmail(rosterEntry, email) {
+            const normalized = normalizeEmail(email);
+            if (!normalized) throw new Error('Enter a valid email.');
+            await setDoc(doc(db, 'groups', window.groupIdRaw, 'roster', rosterEntry.id), { email: normalized }, { merge: true });
+            await setDoc(doc(db, 'groups', window.groupIdRaw, 'memberEmails', normalized), {
+                rosterId: rosterEntry.id,
+                playerName: rosterEntry.name
+            }, { merge: true });
+            return normalized;
+        }
+
+        async function sendInviteToEmail(email, playerName) {
+            window.localStorage.setItem(AUTH_EMAIL_KEY, email);
+            await sendSignInLinkToEmail(auth, email, {
+                url: getAuthContinueUrl(window.groupIdRaw),
+                handleCodeInApp: true
+            });
+        }
+
         window.renderRosterListItem = function(p) {
             const canWrite = window.canWrite();
             const nameJs = escapeJsString(p.name);
             const rosterEntry = findRosterEntryByName(p.name);
-            const emailVal = rosterEntry?.email || '';
-            const hasMember = !!rosterEntry?.uid;
-            const hasRosterRow = !!rosterEntry?.id;
-            const inviteSentAt = rosterEntry?.inviteSentAt || null;
+            if (!rosterEntry?.id) return '';
+            const emailVal = rosterEntry.email || '';
+            const hasMember = !!rosterEntry.uid;
+            const inviteSentAt = rosterEntry.inviteSentAt || null;
             const inviteSentLabel = formatInviteSentAt(inviteSentAt);
             const plays = p.plays != null ? p.plays : 0;
             const inviteStatus = hasMember
                 ? `<span class="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">Active</span>`
                 : (inviteSentAt
                     ? `<span class="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">Invited</span>`
-                    : (emailVal
-                        ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-700/50 border border-slate-600 px-2 py-0.5 rounded-full">Email saved</span>`
-                        : `<span class="text-[10px] font-bold text-slate-500 bg-slate-700/50 border border-slate-600 px-2 py-0.5 rounded-full">No invite</span>`));
+                    : `<span class="text-[10px] font-bold text-slate-500 bg-slate-700/50 border border-slate-600 px-2 py-0.5 rounded-full">Not invited</span>`);
 
             const inviteSentLine = (!hasMember && inviteSentLabel)
                 ? `<p class="text-[10px] text-slate-500 mt-1.5">Invite sent ${escapeHtml(inviteSentLabel)}</p>`
                 : '';
 
-            const inviteBlock = canWrite ? (
-                hasRosterRow ? `
+            const inviteBlock = (canWrite && !hasMember) ? `
                 <div class="flex flex-col sm:flex-row gap-1.5 mt-2 w-full">
-                    <input type="email" data-roster-id="${escapeHtml(rosterEntry.id)}" data-player-name="${escapeHtml(p.name)}" value="${escapeHtml(emailVal)}" placeholder="friend@email.com" class="roster-email-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-purple-500 min-w-0">
-                    <button type="button" onclick="window.saveRosterEmail('${nameJs}')" class="text-[10px] font-bold text-purple-300 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 px-2.5 py-1.5 rounded transition shrink-0">Save</button>
-                    <button type="button" onclick="window.sendPlayerInvite('${nameJs}')" class="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1.5 rounded transition shrink-0">Invite</button>
+                    <input type="email" data-roster-id="${escapeHtml(rosterEntry.id)}" data-player-name="${escapeHtml(p.name)}" value="${escapeHtml(emailVal)}" placeholder="Email — press Enter to invite" class="roster-email-input flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-[11px] text-white outline-none focus:border-purple-500 min-w-0" onkeydown="if(event.key==='Enter'){event.preventDefault();window.sendPlayerInvite('${nameJs}');}">
+                    <button type="button" onclick="window.sendPlayerInvite('${nameJs}')" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3 py-2 rounded-lg transition shrink-0">Invite</button>
                 </div>
-            ` : `<p class="text-[10px] text-amber-400/90 mt-2">Add this name with ➕ Add Player first, then you can set an email and invite.</p>`
-            ) : '';
+            ` : '';
 
             const editControls = canWrite ? `
                 <label class="text-slate-500 hover:text-emerald-400 transition cursor-pointer" title="Upload avatar">
@@ -1143,63 +1189,30 @@
             `;
         };
 
-        window.saveRosterEmail = async function(playerName) {
-            if (!window.canWrite()) {
-                window.showAppAlert('Sign in with an invited email to manage the roster.', 'View only', '🔒');
-                return;
-            }
-            const rosterEntry = findRosterEntryByName(playerName);
-            if (!rosterEntry) {
-                window.showAppAlert('Player not found in roster.', 'Error', '❌');
-                return;
-            }
-            const input = document.querySelector(`.roster-email-input[data-roster-id="${rosterEntry.id}"]`);
-            const email = normalizeEmail(input?.value);
-            if (!email) {
-                window.showAppAlert('Enter a valid email.', 'Email required', '⚠️');
-                return;
-            }
-            try {
-                await setDoc(doc(db, 'groups', window.groupIdRaw, 'roster', rosterEntry.id), { email }, { merge: true });
-                await setDoc(doc(db, 'groups', window.groupIdRaw, 'memberEmails', email), {
-                    rosterId: rosterEntry.id,
-                    playerName: rosterEntry.name
-                }, { merge: true });
-                window.showAppAlert('Email saved. Tap Invite to send a magic link.', 'Saved', '✅');
-            } catch (e) {
-                window.showAppAlert('Could not save email: ' + e.message, 'Error', '❌');
-            }
-        };
-
         window.sendPlayerInvite = async function(playerName) {
             if (!window.canWrite()) {
                 window.showAppAlert('Sign in to invite players.', 'View only', '🔒');
                 return;
             }
             const rosterEntry = findRosterEntryByName(playerName);
-            if (!rosterEntry) return;
-            const input = document.querySelector(`.roster-email-input[data-roster-id="${rosterEntry.id}"]`);
+            if (!rosterEntry?.id) return;
+            const input = getRosterEmailInput(rosterEntry.id);
             const email = normalizeEmail(input?.value || rosterEntry.email);
             if (!email) {
-                window.showAppAlert('Save an email for this player first.', 'Email required', '⚠️');
+                window.showAppAlert('Enter an email for this player first.', 'Email required', '⚠️');
+                input?.focus();
                 return;
             }
             try {
+                await persistRosterEmail(rosterEntry, email);
                 const sentAt = Date.now();
                 await setDoc(doc(db, 'groups', window.groupIdRaw, 'roster', rosterEntry.id), {
-                    email,
                     inviteSentAt: sentAt
                 }, { merge: true });
                 await setDoc(doc(db, 'groups', window.groupIdRaw, 'memberEmails', email), {
-                    rosterId: rosterEntry.id,
-                    playerName: rosterEntry.name,
                     inviteSentAt: sentAt
                 }, { merge: true });
-                window.localStorage.setItem(AUTH_EMAIL_KEY, email);
-                await sendSignInLinkToEmail(auth, email, {
-                    url: getAuthContinueUrl(window.groupIdRaw),
-                    handleCodeInApp: true
-                });
+                await sendInviteToEmail(email, rosterEntry.name);
                 window.showAppAlert(`Magic link sent to ${email}.\n\nInvite sent ${formatInviteSentAt(sentAt)}.`, 'Invite sent', '✉️');
             } catch (e) {
                 window.showAppAlert('Invite failed: ' + e.message, 'Error', '❌');
@@ -2619,11 +2632,11 @@
                     
                     if (window.appData.players.length > 0) {
                         safeSetHTML('home-top-players', window.appData.players.slice(0, 3).map((p, i) => generatePlayerRow(p, i)).join(''));
-                        safeSetHTML('roster-list', window.appData.players.map(p => window.renderRosterListItem(p)).join(''));
+                        safeSetHTML('roster-list', renderPlayerListHtml());
                         safeSetHTML('player-view', window.appData.players.map((p, i) => generatePlayerRow(p, i)).join(''));
                     } else {
                         safeSetHTML('home-top-players', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">No player data available.</p></div>`);
-                        safeSetHTML('roster-list', `<li class="text-slate-500 text-sm italic text-center p-3">No players tracked yet.</li>`);
+                        safeSetHTML('roster-list', renderPlayerListHtml());
                         safeSetHTML('player-view', `<div class="text-center text-slate-500 mt-8">No players tracked yet.</div>`);
                     }
                     return; 
@@ -2895,7 +2908,7 @@
                 `).join('');
                 safeSetHTML('match-feed-container', matchFeedHTML);
                 
-                safeSetHTML('roster-list', window.appData.players.map(p => window.renderRosterListItem(p)).join(''));
+                safeSetHTML('roster-list', renderPlayerListHtml());
                 
                 window.processArtQueue();
                 
@@ -3530,7 +3543,13 @@
                     if (input) input.focus();
                 } else {
                     form.classList.add('opacity-0');
-                    setTimeout(() => form.classList.add('hidden'), 300);
+                    setTimeout(() => {
+                        form.classList.add('hidden');
+                        const nameInput = document.getElementById('new-player-input');
+                        const emailInput = document.getElementById('new-player-email-input');
+                        if (nameInput) nameInput.value = '';
+                        if (emailInput) emailInput.value = '';
+                    }, 300);
                 }
             }
         }
@@ -3637,45 +3656,72 @@
             }
         }
 
-        window.addPlayerToRoster = async function(event) {
+        window.addPlayerToRoster = async function(event, sendInvite = false) {
             if (!window.canWrite()) {
-                window.showAppAlert('Sign in to add players to the roster.', 'View only', '🔒');
+                window.showAppAlert('Sign in to add players to the player list.', 'View only', '🔒');
                 return;
             }
             const inputEl = document.getElementById('new-player-input');
+            const emailEl = document.getElementById('new-player-email-input');
             if (!inputEl) return;
-            const name = inputEl.value.trim();
-            if(!name) return;
+            const name = normalizeName(inputEl.value);
+            const email = normalizeEmail(emailEl?.value);
+            if (!name) {
+                window.showAppAlert('Enter a player name.', 'Name required', '⚠️');
+                inputEl.focus();
+                return;
+            }
+            if (sendInvite && !email) {
+                window.showAppAlert('Add an email to send an invite.', 'Email required', '✉️');
+                emailEl?.focus();
+                return;
+            }
 
-            const btn = event.target.tagName === 'BUTTON' ? event.target : event.target.nextElementSibling;
-            if(!btn) return;
-            
-            const originalText = btn.innerText;
-            btn.innerText = "...";
-            btn.disabled = true;
+            const btn = event?.currentTarget || event?.target;
+            const originalText = btn?.innerText || '';
+            if (btn) { btn.disabled = true; btn.innerText = '…'; }
 
             try {
-                if (window.appData.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-                    window.showAppAlert("This player is already in the roster!", "Duplicate Player", "⚠️");
-                    btn.innerText = originalText;
-                    btn.disabled = false;
+                const duplicate = (window.appData.explicitRoster || []).some(r =>
+                    normalizeName(r.name).toLowerCase() === name.toLowerCase()
+                );
+                if (duplicate) {
+                    window.showAppAlert('This player is already on the list.', 'Duplicate', '⚠️');
                     return;
                 }
 
-                await addDoc(collection(db, "groups", window.groupIdRaw, "roster"), {
-                    name: name,
-                    addedAt: Date.now()
+                const sentAt = sendInvite ? Date.now() : null;
+                const rosterRef = await addDoc(collection(db, 'groups', window.groupIdRaw, 'roster'), {
+                    name,
+                    addedAt: Date.now(),
+                    ...(email ? { email } : {}),
+                    ...(sentAt ? { inviteSentAt: sentAt } : {})
                 });
 
-                inputEl.value = '';
-                window.toggleAddPlayer();
+                if (email) {
+                    await setDoc(doc(db, 'groups', window.groupIdRaw, 'memberEmails', email), {
+                        rosterId: rosterRef.id,
+                        playerName: name,
+                        ...(sentAt ? { inviteSentAt: sentAt } : {})
+                    }, { merge: true });
+                }
 
+                if (sendInvite && email) {
+                    await sendInviteToEmail(email, name);
+                    window.showAppAlert(`Added ${name} and sent invite to ${email}.`, 'Added & invited', '✉️');
+                } else {
+                    window.showAppAlert(`Added ${name} to the player list.`, 'Player added', '✅');
+                }
+
+                inputEl.value = '';
+                if (emailEl) emailEl.value = '';
+                window.toggleAddPlayer();
             } catch (error) {
-                console.error("Error adding player:", error);
-                window.showAppAlert("Failed to add player to roster.", "Error", "❌");
+                console.error('Error adding player:', error);
+                window.showAppAlert('Failed to add player.\n\n' + error.message, 'Error', '❌');
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = originalText; }
             }
-            btn.innerText = originalText;
-            btn.disabled = false;
         }
 
         window.removePlayer = async function(playerName) {
