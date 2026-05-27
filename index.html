@@ -544,8 +544,11 @@
             
             <div class="glass p-5 rounded-xl border border-emerald-500/30 bg-emerald-950/10">
                 <h3 class="font-bold text-white mb-2 flex items-center gap-2"><span class="text-emerald-400">📦</span> Data Export</h3>
-                <p class="text-xs text-slate-400 mb-4">Download a full JSON backup of this group (settings, roster, and matches).</p>
-                <button onclick="window.downloadGroupJson()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Download Group JSON</button>
+                <p class="text-xs text-slate-400 mb-4">Download this group's data as JSON or match-history CSV.</p>
+                <div class="space-y-2">
+                    <button onclick="window.downloadGroupJson()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Download Group JSON</button>
+                    <button onclick="window.downloadGroupCsv()" class="w-full bg-emerald-900/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Download Match CSV</button>
+                </div>
             </div>
 
             <div class="glass p-5 rounded-xl border border-purple-500/30 bg-purple-950/10">
@@ -2820,6 +2823,80 @@
             } catch (error) {
                 console.error("JSON export failed:", error);
                 window.showAppAlert("Could not export JSON.\n\nDetails: " + error.message, "Export Error", "❌");
+            }
+        }
+
+        function csvEscape(value) {
+            const stringValue = String(value ?? '');
+            if (/[",\n\r]/.test(stringValue)) {
+                return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+        }
+
+        function buildMatchCsvRow(match) {
+            const winners = Array.isArray(match.winners) ? match.winners : [];
+            const losers = Array.isArray(match.losers) ? match.losers : [];
+            const participants = [...winners, ...losers].slice(0, 5);
+            const winnerNames = winners.map(w => w.player || w.name).filter(Boolean).join(' & ');
+            const cards = Array.isArray(match.winningCards) ? match.winningCards.slice(0, 4) : [];
+
+            const row = [
+                match.date || '',
+                participants[0]?.player || '', participants[0]?.name || '',
+                participants[1]?.player || '', participants[1]?.name || '',
+                participants[2]?.player || '', participants[2]?.name || '',
+                participants[3]?.player || '', participants[3]?.name || '',
+                participants[4]?.player || '', participants[4]?.name || '',
+                winnerNames,
+                match.notes || '',
+                cards[0] || '', cards[1] || '', cards[2] || '', cards[3] || ''
+            ];
+            return row.map(csvEscape).join(',');
+        }
+
+        window.downloadGroupCsv = async function() {
+            try {
+                if (!window.groupIdRaw) {
+                    window.showAppAlert("Open a group first, then export.", "No Group Selected", "⚠️");
+                    return;
+                }
+
+                const groupId = window.groupIdRaw;
+                const matchesRef = collection(db, "groups", groupId, "matches");
+                const matchesSnap = await getDocs(matchesRef);
+                const matches = matchesSnap.docs.map(d => d.data()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+                const header = [
+                    'Date',
+                    'P1 (Win)', 'D1 (Win)',
+                    'P2', 'D2',
+                    'P3', 'D3',
+                    'P4', 'D4',
+                    'P5', 'D5',
+                    'Winner',
+                    'Notes',
+                    'Card1', 'Card2', 'Card3', 'Card4'
+                ].join(',');
+
+                const rows = [header, ...matches.map(buildMatchCsvRow)];
+                const csvString = rows.join('\n');
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8' });
+                const downloadUrl = URL.createObjectURL(blob);
+                const dateStamp = new Date().toISOString().slice(0, 10);
+
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = `${groupId}-matches-${dateStamp}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(downloadUrl);
+
+                window.showAppAlert("Match CSV export downloaded successfully.", "Export Complete", "✅");
+            } catch (error) {
+                console.error("CSV export failed:", error);
+                window.showAppAlert("Could not export CSV.\n\nDetails: " + error.message, "Export Error", "❌");
             }
         }
 
