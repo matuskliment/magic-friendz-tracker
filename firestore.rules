@@ -7,7 +7,9 @@ service cloud.firestore {
     }
 
     function authEmailLower() {
-      return request.auth.token.email.lower();
+      return isSignedIn() && request.auth.token.email != null
+        ? request.auth.token.email.lower()
+        : '';
     }
 
     function isGlobalAdmin() {
@@ -35,12 +37,33 @@ service cloud.firestore {
       return isMember(groupId) && memberRole(groupId) in ['editor', 'owner'];
     }
 
-    function isOwner(groupId) {
+    function isOwnerMember(groupId) {
       return isMember(groupId) && memberRole(groupId) == 'owner';
+    }
+
+    // Owner on the group document (legacy / admin-set) even if members/{uid} is missing
+    function isGroupOwnerDoc(groupId) {
+      return isSignedIn()
+        && (
+          groupDoc(groupId).data.ownerUid == request.auth.uid
+          || (
+            authEmailLower() != ''
+            && groupDoc(groupId).data.ownerEmail == authEmailLower()
+          )
+        );
+    }
+
+    function canManageGroup(groupId) {
+      return isGlobalAdmin() || isEditor(groupId) || isGroupOwnerDoc(groupId);
+    }
+
+    function canDeleteMatches(groupId) {
+      return isGlobalAdmin() || isOwnerMember(groupId) || isGroupOwnerDoc(groupId);
     }
 
     function hasInvite(groupId) {
       return isSignedIn()
+        && authEmailLower() != ''
         && exists(/databases/$(database)/documents/groups/$(groupId)/memberEmails/$(authEmailLower()));
     }
 
@@ -51,6 +74,7 @@ service cloud.firestore {
 
     function canClaimOwnerByEmail(groupId) {
       return isSignedIn()
+        && authEmailLower() != ''
         && groupDoc(groupId).data.ownerEmail == authEmailLower();
     }
 
@@ -64,8 +88,8 @@ service cloud.firestore {
       allow list: if isGlobalAdmin();
       allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isEditor(groupId) || isGlobalAdmin();
-      allow delete: if isOwner(groupId) || isGlobalAdmin();
+      allow update: if canManageGroup(groupId);
+      allow delete: if canDeleteMatches(groupId);
 
       match /members/{uid} {
         allow read: if true;
@@ -78,33 +102,32 @@ service cloud.firestore {
             && request.auth.uid == uid
             && request.resource.data.role == 'owner'
             && (canClaimOwner(groupId) || canClaimOwnerByEmail(groupId)))
-          || (isOwner(groupId)
+          || (isOwnerMember(groupId)
             && request.auth.uid == uid
             && request.resource.data.role == 'owner');
-        allow update: if isGlobalAdmin() || isOwner(groupId);
-        allow delete: if isGlobalAdmin() || isOwner(groupId);
+        allow update: if isGlobalAdmin() || isOwnerMember(groupId) || isGroupOwnerDoc(groupId);
+        allow delete: if isGlobalAdmin() || isOwnerMember(groupId) || isGroupOwnerDoc(groupId);
       }
 
       match /memberEmails/{emailId} {
         allow read: if isSignedIn();
-        allow create, update, delete: if isEditor(groupId) || isGlobalAdmin();
+        allow create, update, delete: if canManageGroup(groupId);
       }
 
       match /matches/{matchId} {
         allow read: if true;
-        allow create, update: if isEditor(groupId) || isGlobalAdmin();
-        allow delete: if isOwner(groupId) || isGlobalAdmin();
+        allow create, update: if canManageGroup(groupId);
+        allow delete: if canDeleteMatches(groupId);
       }
 
       match /roster/{rosterId} {
         allow read: if true;
-        allow create, update: if isEditor(groupId) || isGlobalAdmin();
-        allow delete: if isEditor(groupId) || isGlobalAdmin();
+        allow create, update, delete: if canManageGroup(groupId);
       }
 
       match /settings/{docId} {
         allow read: if true;
-        allow write: if isEditor(groupId) || isGlobalAdmin();
+        allow write: if canManageGroup(groupId);
       }
     }
   }

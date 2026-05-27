@@ -20,6 +20,8 @@ Do these steps **after** deploying the latest `index.html` / `admin.html`.
 
 Your existing data is **not** deleted when you publish rules.
 
+If invites fail with **Missing or insufficient permissions**, publish the latest `firestore.rules` from this repo. Owners must be allowed to write `roster` and `memberEmails` even when `members/{uid}` was set up only on the group document.
+
 ## 3. GitHub Pages URL
 
 1. Repo **Settings** → **Pages** → deploy from branch **`main`**, folder **`/` (root)**

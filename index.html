@@ -1426,6 +1426,14 @@
             }
             if (input) clearFieldError(input);
             try {
+                if (auth.currentUser && window.groupIdRaw) {
+                    const myEmail = normalizeEmail(auth.currentUser.email);
+                    if (window.groupAccess === 'owner') {
+                        await ensureMemberRecord(window.groupIdRaw, 'owner', myEmail, rosterEntry.name);
+                    } else if (window.groupAccess === 'editor') {
+                        await ensureMemberRecord(window.groupIdRaw, 'editor', myEmail, rosterEntry.name);
+                    }
+                }
                 const sentAt = Date.now();
                 await persistRosterInvite(rosterEntry, email, sentAt);
                 await sendInviteToEmail(email, rosterEntry.name);
