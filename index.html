@@ -1482,15 +1482,43 @@
             return cleaned.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || '???';
         }
 
+        const AVATAR_BRAND_PALETTE = [
+            '#7c3aed', '#8b5cf6', '#6366f1', '#4f46e5', '#2563eb',
+            '#0891b2', '#0d9488', '#0f766e', '#9333ea', '#a855f7',
+            '#c026d3', '#db2777', '#e11d48', '#be123c', '#7e22ce',
+            '#5b21b6', '#1d4ed8', '#0284c7', '#0ea5e9', '#14b8a6'
+        ];
+
         function getAvatarColorFromName(name) {
-            const palette = ['#7c3aed', '#2563eb', '#db2777', '#0d9488', '#ea580c', '#65a30d', '#9333ea', '#0891b2', '#be123c', '#0369a1'];
             let hash = 0;
             const raw = String(name || '');
             for (let i = 0; i < raw.length; i++) {
                 hash = ((hash << 5) - hash) + raw.charCodeAt(i);
                 hash |= 0;
             }
-            return palette[Math.abs(hash) % palette.length];
+            return AVATAR_BRAND_PALETTE[Math.abs(hash) % AVATAR_BRAND_PALETTE.length];
+        }
+
+        function buildPlayerAvatarColorMap(names) {
+            const cleanNames = [...new Set((names || []).map(n => String(n || '').trim()).filter(Boolean))];
+            const usedIndexes = new Set();
+            const colorMap = {};
+            cleanNames.forEach(name => {
+                let hash = 0;
+                for (let i = 0; i < name.length; i++) {
+                    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+                    hash |= 0;
+                }
+                let index = Math.abs(hash) % AVATAR_BRAND_PALETTE.length;
+                let safety = 0;
+                while (usedIndexes.has(index) && safety < AVATAR_BRAND_PALETTE.length) {
+                    index = (index + 1) % AVATAR_BRAND_PALETTE.length;
+                    safety++;
+                }
+                usedIndexes.add(index);
+                colorMap[name] = AVATAR_BRAND_PALETTE[index];
+            });
+            return colorMap;
         }
 
         function renderPlayerAvatar(player, sizeClass = 'w-12 h-12', textClass = 'text-base', extraClass = '') {
@@ -1707,6 +1735,7 @@
                 };
             });
 
+            const playerAvatarColorMap = buildPlayerAvatarColorMap(Object.keys(playerStats));
             window.appData.players = Object.keys(playerStats).map(name => {
                 const s = playerStats[name];
                 let topDeck = "", maxPlays = 0;
@@ -1720,7 +1749,7 @@
                     winRate: winRateVal.toFixed(1) + "%",
                     topDeck: topDeck,
                     avatarInitials: getPlayerInitials(name),
-                    avatarColor: getAvatarColorFromName(name),
+                    avatarColor: playerAvatarColorMap[name] || getAvatarColorFromName(name),
                     avatarDataUrl: rosterEntry?.avatarDataUrl || ''
                 };
             }).sort((a,b) => parseFloat(b.winRate) - parseFloat(a.winRate) || b.wins - a.wins).map((p, i) => ({...p, rank: i+1}));
@@ -3000,6 +3029,11 @@
             return outputDataUrl;
         }
 
+        function findRosterEntryByName(playerName) {
+            const target = normalizeName(playerName || '').toLowerCase();
+            return (window.appData.explicitRoster || []).find(r => normalizeName(r.name || '').toLowerCase() === target) || null;
+        }
+
         window.uploadPlayerAvatar = async function(playerName, event) {
             const input = event?.target;
             const file = input?.files?.[0];
@@ -3010,18 +3044,20 @@
                 return;
             }
 
-            const rosterEntry = window.appData.explicitRoster.find(r => r.name === playerName);
-            if (!rosterEntry) {
-                window.showAppAlert('Could not find this player in roster.', 'Upload Failed', '❌');
-                if (input) input.value = '';
-                return;
-            }
-
             try {
                 const avatarDataUrl = await compressAvatarFile(file);
-                await setDoc(doc(db, "groups", window.groupIdRaw, "roster", rosterEntry.id), {
-                    avatarDataUrl
-                }, { merge: true });
+                const existingRosterEntry = findRosterEntryByName(playerName);
+                if (existingRosterEntry) {
+                    await setDoc(doc(db, "groups", window.groupIdRaw, "roster", existingRosterEntry.id), {
+                        avatarDataUrl
+                    }, { merge: true });
+                } else {
+                    await addDoc(collection(db, "groups", window.groupIdRaw, "roster"), {
+                        name: normalizeName(playerName),
+                        avatarDataUrl,
+                        addedAt: Date.now()
+                    });
+                }
             } catch (error) {
                 console.error('Avatar upload failed:', error);
                 window.showAppAlert('Could not upload avatar.\n\n' + error.message, 'Upload Failed', '❌');
@@ -3031,7 +3067,7 @@
         }
 
         window.removePlayerAvatar = async function(playerName) {
-            const rosterEntry = window.appData.explicitRoster.find(r => r.name === playerName);
+            const rosterEntry = findRosterEntryByName(playerName);
             if (!rosterEntry) {
                 window.showAppAlert('Could not find this player in roster.', 'Remove Failed', '❌');
                 return;
