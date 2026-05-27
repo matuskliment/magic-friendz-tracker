@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function authEmailLower() {
+      return request.auth.token.email.lower();
+    }
+
+    function isGlobalAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function groupDoc(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId));
+    }
+
+    function memberPath(groupId) {
+      return /databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid);
+    }
+
+    function isMember(groupId) {
+      return isSignedIn() && exists(memberPath(groupId));
+    }
+
+    function memberRole(groupId) {
+      return get(memberPath(groupId)).data.role;
+    }
+
+    function isEditor(groupId) {
+      return isMember(groupId) && memberRole(groupId) in ['editor', 'owner'];
+    }
+
+    function isOwner(groupId) {
+      return isMember(groupId) && memberRole(groupId) == 'owner';
+    }
+
+    function hasInvite(groupId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/groups/$(groupId)/memberEmails/$(authEmailLower()));
+    }
+
+    function canClaimOwner(groupId) {
+      return isSignedIn()
+        && groupDoc(groupId).data.ownerUid == request.auth.uid;
+    }
+
+    function canClaimOwnerByEmail(groupId) {
+      return isSignedIn()
+        && groupDoc(groupId).data.ownerEmail == authEmailLower();
+    }
+
+    match /admins/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /groups/{groupId} {
+      allow get: if true;
+      allow list: if isGlobalAdmin();
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isEditor(groupId) || isGlobalAdmin();
+      allow delete: if isOwner(groupId) || isGlobalAdmin();
+
+      match /members/{uid} {
+        allow read: if true;
+        allow create: if isGlobalAdmin()
+          || (isSignedIn()
+            && request.auth.uid == uid
+            && request.resource.data.role == 'editor'
+            && hasInvite(groupId))
+          || (isSignedIn()
+            && request.auth.uid == uid
+            && request.resource.data.role == 'owner'
+            && (canClaimOwner(groupId) || canClaimOwnerByEmail(groupId)))
+          || (isOwner(groupId)
+            && request.auth.uid == uid
+            && request.resource.data.role == 'owner');
+        allow update: if isGlobalAdmin() || isOwner(groupId);
+        allow delete: if isGlobalAdmin() || isOwner(groupId);
+      }
+
+      match /memberEmails/{emailId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if isEditor(groupId) || isGlobalAdmin();
+      }
+
+      match /matches/{matchId} {
+        allow read: if true;
+        allow create, update: if isEditor(groupId) || isGlobalAdmin();
+        allow delete: if isOwner(groupId) || isGlobalAdmin();
+      }
+
+      match /roster/{rosterId} {
+        allow read: if true;
+        allow create, update: if isEditor(groupId) || isGlobalAdmin();
+        allow delete: if isEditor(groupId) || isGlobalAdmin();
+      }
+
+      match /settings/{docId} {
+        allow read: if true;
+        allow write: if isEditor(groupId) || isGlobalAdmin();
+      }
+    }
+  }
+}

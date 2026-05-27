@@ -71,6 +71,22 @@
                         <p id="selected-group-label" class="text-sm text-slate-300">Select a group on the left.</p>
                     </div>
 
+                    <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-4 md:p-5">
+                        <h3 class="text-sm font-bold text-white mb-3">Group owner</h3>
+                        <p class="text-xs text-slate-400 mb-3">Set who owns this group (Firestore <code class="text-amber-300">ownerUid</code> + <code class="text-amber-300">members</code>).</p>
+                        <div class="space-y-2">
+                            <input id="owner-email-input" type="email" placeholder="Owner email" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500">
+                            <input id="owner-uid-input" type="text" placeholder="Owner Firebase UID" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-amber-500">
+                            <button id="set-owner-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40" disabled>Set group owner</button>
+                            <p id="owner-set-status" class="text-[11px] text-slate-500"></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5">
+                        <h3 class="text-sm font-bold text-white mb-3">Roster</h3>
+                        <div id="admin-roster-list" class="space-y-2 text-sm text-slate-400 max-h-48 overflow-y-auto">Select a group to manage players.</div>
+                    </div>
+
                     <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-4 md:p-5">
                         <h3 class="text-sm font-bold text-white mb-3">Deck Ownership</h3>
                         <div id="ownership-list" class="space-y-2 text-sm text-slate-400">Select a group to load deck ownership.</div>
@@ -138,8 +154,18 @@
             exportCsvBtn: document.getElementById('export-csv-btn'),
             wipeBtn: document.getElementById('wipe-btn'),
             csvUpload: document.getElementById('csv-upload'),
-            importBtn: document.getElementById('import-btn')
+            importBtn: document.getElementById('import-btn'),
+            ownerEmailInput: document.getElementById('owner-email-input'),
+            ownerUidInput: document.getElementById('owner-uid-input'),
+            setOwnerBtn: document.getElementById('set-owner-btn'),
+            ownerSetStatus: document.getElementById('owner-set-status'),
+            adminRosterList: document.getElementById('admin-roster-list'),
+            deleteGroupBtn: document.getElementById('delete-group-btn')
         };
+
+        function normalizeEmail(email) {
+            return String(email || '').trim().toLowerCase();
+        }
 
         let currentUser = null;
         let groupsData = [];
@@ -157,7 +183,22 @@
         }
 
         function setActionButtonsEnabled(enabled) {
-            [els.exportJsonBtn, els.exportCsvBtn, els.wipeBtn, els.importBtn].forEach(btn => btn.disabled = !enabled);
+            [els.exportJsonBtn, els.exportCsvBtn, els.wipeBtn, els.importBtn, els.setOwnerBtn, els.deleteGroupBtn].forEach(btn => btn.disabled = !enabled);
+        }
+
+        async function deleteCollectionDocs(colRef) {
+            const snap = await getDocs(colRef);
+            await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+        }
+
+        async function deleteEntireGroup(groupId) {
+            const groupRef = doc(db, 'groups', groupId);
+            await deleteCollectionDocs(collection(db, 'groups', groupId, 'matches'));
+            await deleteCollectionDocs(collection(db, 'groups', groupId, 'roster'));
+            await deleteCollectionDocs(collection(db, 'groups', groupId, 'members'));
+            await deleteCollectionDocs(collection(db, 'groups', groupId, 'memberEmails'));
+            await deleteDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners')).catch(() => {});
+            await deleteDoc(groupRef);
         }
 
         function showLoginStatus(message, isError = false) {
@@ -308,12 +349,58 @@
             });
         }
 
+        async function loadGroupMeta(groupId) {
+            const groupSnap = await getDoc(doc(db, 'groups', groupId));
+            if (groupSnap.exists()) {
+                const data = groupSnap.data();
+                if (els.ownerEmailInput) els.ownerEmailInput.value = data.ownerEmail || '';
+                if (els.ownerUidInput) els.ownerUidInput.value = data.ownerUid || '';
+            }
+        }
+
+        async function loadAdminRoster(groupId) {
+            const rosterSnap = await getDocs(collection(db, 'groups', groupId, 'roster'));
+            if (!rosterSnap.size) {
+                els.adminRosterList.innerHTML = '<p class="text-sm text-slate-500">No roster entries.</p>';
+                return;
+            }
+            els.adminRosterList.innerHTML = rosterSnap.docs.map(d => {
+                const data = d.data();
+                const name = data.name || '—';
+                const email = data.email ? ` · ${data.email}` : '';
+                return `
+                    <div class="flex items-center justify-between gap-2 bg-slate-950 border border-slate-700 rounded-lg p-2">
+                        <span class="text-white truncate">${name}<span class="text-slate-500 text-xs">${email}</span></span>
+                        <button type="button" data-roster-id="${d.id}" class="admin-delete-roster text-[10px] font-bold text-red-300 bg-red-900/30 hover:bg-red-900/50 border border-red-500/30 px-2 py-1 rounded">Delete</button>
+                    </div>
+                `;
+            }).join('');
+
+            els.adminRosterList.querySelectorAll('.admin-delete-roster').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const rosterId = btn.dataset.rosterId;
+                    const ok = window.confirm('Delete this player from the roster?');
+                    if (!ok) return;
+                    await deleteDoc(doc(db, 'groups', groupId, 'roster', rosterId));
+                    await loadAdminRoster(groupId);
+                    await loadGroupsOverview();
+                });
+            });
+        }
+
         async function selectGroup(group) {
             selectedGroup = group;
-            els.selectedGroupLabel.textContent = `${group.name || group.id} (${group.id})`;
+            const groupSnap = await getDoc(doc(db, 'groups', group.id));
+            const ownerHint = groupSnap.exists() && groupSnap.data().ownerUid ? ` · owner set` : ' · no owner';
+            els.selectedGroupLabel.textContent = `${group.name || group.id} (${group.id})${ownerHint}`;
             setActionButtonsEnabled(true);
+            if (els.ownerSetStatus) els.ownerSetStatus.textContent = '';
             renderGroupsTable();
-            await loadOwnershipForSelectedGroup(group.id);
+            await Promise.all([
+                loadOwnershipForSelectedGroup(group.id),
+                loadGroupMeta(group.id),
+                loadAdminRoster(group.id)
+            ]);
         }
 
         async function exportGroupJson(groupId) {
@@ -493,6 +580,53 @@
             const refreshed = groupsData.find(g => g.id === selectedGroup.id);
             if (refreshed) await selectGroup(refreshed);
             window.alert(`CSV import complete. Imported ${imported} matches.`);
+        });
+
+        els.setOwnerBtn.addEventListener('click', async () => {
+            if (!selectedGroup) return;
+            const uid = els.ownerUidInput.value.trim();
+            const email = normalizeEmail(els.ownerEmailInput.value);
+            if (!uid) {
+                els.ownerSetStatus.textContent = 'Owner UID is required.';
+                return;
+            }
+            els.setOwnerBtn.disabled = true;
+            try {
+                await setDoc(doc(db, 'groups', selectedGroup.id), {
+                    ownerUid: uid,
+                    ownerEmail: email || null
+                }, { merge: true });
+                await setDoc(doc(db, 'groups', selectedGroup.id, 'members', uid), {
+                    role: 'owner',
+                    email: email || '',
+                    joinedAt: Date.now()
+                }, { merge: true });
+                els.ownerSetStatus.textContent = 'Owner saved.';
+                await selectGroup(selectedGroup);
+            } catch (e) {
+                els.ownerSetStatus.textContent = 'Failed: ' + e.message;
+            }
+            els.setOwnerBtn.disabled = false;
+        });
+
+        els.deleteGroupBtn.addEventListener('click', async () => {
+            if (!selectedGroup) return;
+            const ok = window.confirm(`Permanently delete group "${selectedGroup.id}" and ALL its data?`);
+            if (!ok) return;
+            els.deleteGroupBtn.disabled = true;
+            try {
+                await deleteEntireGroup(selectedGroup.id);
+                selectedGroup = null;
+                setActionButtonsEnabled(false);
+                els.selectedGroupLabel.textContent = 'Select a group on the left.';
+                els.ownershipList.innerHTML = 'Select a group to load deck ownership.';
+                els.adminRosterList.innerHTML = 'Select a group to manage players.';
+                await loadGroupsOverview();
+                window.alert('Group deleted.');
+            } catch (e) {
+                window.alert('Delete failed: ' + e.message);
+            }
+            els.deleteGroupBtn.disabled = false;
         });
 
         onAuthStateChanged(auth, async (user) => {

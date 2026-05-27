@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="mf-app-version" content="1.1.0">
+    <meta name="mf-app-version" content="1.2.0">
     <title>Magic Friendz | Tracker</title>
     <!-- Inline SVG Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a855f7'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3C/svg%3E">
@@ -77,7 +77,7 @@
                         <span class="text-gradient">Track every victory.</span>
                     </h1>
                     <p class="text-base md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto lg:mx-0 drop-shadow-md">
-                        The ultimate multiplayer stat tracker for your tabletop group. Log games, track commander Elo, and find out who your true nemesis is.
+                        The ultimate multiplayer stat tracker for your tabletop group. Anyone with the group name can view stats — sign in to log games.
                     </p>
                     <div class="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
                         <button onclick="window.openGroupModal()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 active:scale-[0.98] shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 group min-h-[52px] w-full sm:w-auto touch-manipulation">
@@ -156,6 +156,7 @@
                 <span class="text-slate-300">Group:</span> <span id="group-name-display" class="text-purple-400">Loading...</span>
             </h2>
             <div class="flex items-center gap-2 md:gap-3">
+                <span id="group-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80">View only</span>
                 <button onclick="window.showLanding()" class="text-xs text-slate-400 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg flex items-center gap-1 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     Exit
@@ -294,11 +295,37 @@
 
             <!-- TAB 4: GROUP -->
             <div id="tab-group" class="tab-content hidden space-y-6">
-                <div class="flex justify-between items-end mt-4 mb-6">
+                <div class="flex justify-between items-end mt-4 mb-2">
                     <div>
                         <h1 class="text-2xl md:text-3xl font-bold">Group Settings</h1>
                         <p class="text-xs text-slate-400">Manage players and access</p>
                     </div>
+                </div>
+                <div id="group-access-card" class="glass p-5 rounded-xl border border-purple-500/30 bg-purple-950/10">
+                    <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                        <div>
+                            <h3 class="font-bold text-white text-sm">Your access</h3>
+                            <p id="group-access-status" class="text-xs text-slate-400 mt-1">View only — anyone with the group name can see stats.</p>
+                        </div>
+                        <span id="group-access-pill" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-slate-600 text-slate-400 bg-slate-900">Guest</span>
+                    </div>
+                    <div id="group-guest-signin" class="space-y-2">
+                        <p class="text-xs text-slate-500">Sign in with your invited email to log matches and invite others.</p>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="email" id="sign-in-email" placeholder="you@email.com" autocomplete="email" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500">
+                            <button type="button" onclick="window.sendSignInLink()" id="sign-in-send-btn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition shrink-0">Send magic link</button>
+                        </div>
+                        <p id="sign-in-status" class="text-[11px] text-slate-500"></p>
+                    </div>
+                    <div id="group-signed-in" class="hidden flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-xs text-emerald-300/90">Signed in as <span id="signed-in-email" class="font-semibold text-white"></span></p>
+                        <button type="button" onclick="window.authSignOut()" class="text-xs font-bold text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition">Sign out</button>
+                    </div>
+                </div>
+                <div id="group-owner-danger" class="hidden glass p-5 rounded-xl border border-red-500/30 bg-red-950/10">
+                    <h3 class="font-bold text-white mb-1 flex items-center gap-2"><span class="text-red-400">☢️</span> Owner: delete data</h3>
+                    <p class="text-xs text-slate-400 mb-3">Permanently remove all match history for this group. Cannot be undone.</p>
+                    <button type="button" onclick="window.wipeGroupData()" class="w-full bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition">Wipe all match history</button>
                 </div>
                 <div class="glass p-5 rounded-xl border border-emerald-500/30 bg-emerald-950/10">
                     <h3 class="font-bold text-white mb-2 flex items-center gap-2"><span class="text-emerald-400">📦</span> Data Export</h3>
@@ -318,7 +345,7 @@
                 <div class="glass p-5 rounded-xl border border-slate-700">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-white">Player Roster</h3>
-                        <button onclick="window.toggleAddPlayer()" class="text-xs bg-purple-500/20 text-purple-400 hover:bg-purple-500/40 px-3 py-1.5 rounded-lg font-bold border border-purple-500/30 transition shadow-sm">➕ Add Player</button>
+                        <button id="roster-add-player-btn" onclick="window.toggleAddPlayer()" class="text-xs bg-purple-500/20 text-purple-400 hover:bg-purple-500/40 px-3 py-1.5 rounded-lg font-bold border border-purple-500/30 transition shadow-sm">➕ Add Player</button>
                     </div>
                     <div id="add-player-form" class="hidden mb-4 flex gap-2 opacity-0 transition-opacity duration-300">
                         <input type="text" id="new-player-input" placeholder="Enter player name..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm w-full text-white outline-none focus:border-purple-500 transition" onkeypress="if(event.key === 'Enter') window.addPlayerToRoster(event)">
@@ -329,7 +356,7 @@
             </div>
         </div>
 
-        <button onclick="window.openLogMatchModal()" class="fixed bottom-24 right-4 md:right-8 w-14 h-14 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-lg shadow-purple-500/40 flex items-center justify-center text-3xl font-light hover:scale-110 hover:shadow-purple-500/60 transition-all z-50 group">
+        <button id="log-match-fab" onclick="window.openLogMatchModal()" class="hidden fixed bottom-24 right-4 md:right-8 w-14 h-14 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-lg shadow-purple-500/40 flex items-center justify-center text-3xl font-light hover:scale-110 hover:shadow-purple-500/60 transition-all z-50 group">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:rotate-90 transition-transform duration-300"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
 
@@ -686,16 +713,27 @@
     <!-- GROUP ENTRY MODAL (LOBBY) -->
     <div id="view-group-modal" class="fixed inset-0 z-[150] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target === this) window.closeGroupModal()">
         <div class="glass p-6 md:p-8 rounded-t-2xl sm:rounded-2xl w-full max-w-md transform scale-95 transition-transform duration-300 shadow-2xl border border-purple-500/30 border-b-0 sm:border-b" onclick="event.stopPropagation()">
-            <h2 class="text-2xl font-black text-white mb-2">Join Your Playgroup</h2>
-            <p class="text-sm text-slate-400 mb-6 leading-relaxed">Enter the group name your host shared. Only people who know the name can view the stats.</p>
-            
-            <label for="group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Group name</label>
-            <input type="text" id="group-name-input" placeholder="Your group name…" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all mb-5 shadow-inner touch-manipulation" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.joinGroup(event); }">
-            
-            <div class="flex flex-col gap-3">
-                <button id="group-join-btn" onclick="window.joinGroup(event)" class="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white px-6 py-3.5 rounded-xl text-base font-bold transition shadow-lg shadow-purple-500/30 min-h-[52px] touch-manipulation">Enter Existing Group</button>
-                <button id="group-create-btn" onclick="window.createGroup(event)" class="w-full px-6 py-3.5 text-base font-bold text-green-400 hover:text-green-300 active:text-green-200 transition bg-green-500/10 hover:bg-green-500/20 active:bg-green-500/25 border border-green-500/30 rounded-xl min-h-[52px] touch-manipulation">Create New Group</button>
-                <button type="button" onclick="window.closeGroupModal()" class="w-full py-2 text-sm font-semibold text-slate-500 hover:text-slate-300 transition touch-manipulation">Cancel</button>
+            <div id="group-modal-join-panel">
+                <h2 class="text-2xl font-black text-white mb-2">Join a playgroup</h2>
+                <p class="text-sm text-slate-400 mb-6 leading-relaxed">Enter the group name your host shared. No sign-in needed to view stats.</p>
+                <label for="group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Group name</label>
+                <input type="text" id="group-name-input" placeholder="Your group name…" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all mb-5 shadow-inner touch-manipulation" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.joinGroup(event); }">
+                <div class="flex flex-col gap-3">
+                    <button id="group-join-btn" onclick="window.joinGroup(event)" class="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white px-6 py-3.5 rounded-xl text-base font-bold transition shadow-lg shadow-purple-500/30 min-h-[52px] touch-manipulation">View stats</button>
+                    <button type="button" onclick="window.showCreateGroupPanel()" class="w-full px-6 py-3.5 text-base font-bold text-green-400 hover:text-green-300 transition bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-xl min-h-[52px] touch-manipulation">Create new group</button>
+                    <button type="button" onclick="window.closeGroupModal()" class="w-full py-2 text-sm font-semibold text-slate-500 hover:text-slate-300 transition touch-manipulation">Cancel</button>
+                </div>
+            </div>
+            <div id="group-modal-create-panel" class="hidden">
+                <button type="button" onclick="window.showJoinGroupPanel()" class="text-xs text-slate-500 hover:text-slate-300 mb-3 flex items-center gap-1">← Back</button>
+                <h2 class="text-2xl font-black text-white mb-2">Create a playgroup</h2>
+                <p class="text-sm text-slate-400 mb-4 leading-relaxed">You’ll be the owner. Sign in with email (magic link, no password) to create the group.</p>
+                <label for="create-group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">New group name</label>
+                <input type="text" id="create-group-name-input" placeholder="e.g. Friday Night Magic" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 mb-4">
+                <label for="create-owner-email-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Your email (owner)</label>
+                <input type="email" id="create-owner-email-input" placeholder="you@email.com" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 mb-3">
+                <p id="create-group-status" class="text-[11px] text-slate-500 mb-3"></p>
+                <button id="group-create-btn" onclick="window.createGroup(event)" class="w-full bg-green-600 hover:bg-green-500 text-white px-6 py-3.5 rounded-xl text-base font-bold transition min-h-[52px] touch-manipulation">Send link &amp; create</button>
             </div>
         </div>
     </div>
@@ -727,6 +765,7 @@
     <!-- Firebase SDK & Application Logic Engine -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -740,14 +779,370 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
+        const AUTH_EMAIL_KEY = 'mf_email_for_sign_in';
+        const PENDING_CREATE_GROUP_KEY = 'mf_pending_create_group';
+        const PENDING_CREATE_NAME_KEY = 'mf_pending_create_display_name';
+
         window.isGroupValid = false;
+        window.currentUser = null;
+        window.groupAccess = 'viewer';
         let matchUnsubscribe = null;
         let rosterUnsubscribe = null;
         let settingsUnsubscribe = null;
+        let memberUnsubscribe = null;
         let firebaseErrorMsg = "";
+        let authReady = false;
         window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
+
+        function normalizeEmail(email) {
+            return String(email || '').trim().toLowerCase();
+        }
+
+        window.canWrite = function() {
+            return window.groupAccess === 'editor' || window.groupAccess === 'owner';
+        };
+
+        window.canOwnerDelete = function() {
+            return window.groupAccess === 'owner';
+        };
+
+        function getAuthContinueUrl(groupId) {
+            const base = `${window.location.origin}${window.location.pathname}`;
+            if (!groupId) return base;
+            return `${base}?group=${encodeURIComponent(groupId)}`;
+        }
+
+        function stripAuthParamsFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                ['oobCode', 'apiKey', 'mode', 'lang'].forEach(k => params.delete(k));
+                const group = params.get('group') || window.groupIdRaw || '';
+                const next = group ? `${window.location.pathname}?group=${encodeURIComponent(group)}` : window.location.pathname;
+                window.history.replaceState({}, '', next);
+            } catch (_) {}
+        }
+
+        async function tryCompleteEmailSignIn() {
+            if (!isSignInWithEmailLink(auth, window.location.href)) return false;
+            let email = window.localStorage.getItem(AUTH_EMAIL_KEY);
+            if (!email) {
+                email = window.prompt('Enter the same email you used for the magic link:');
+            }
+            if (!email) return false;
+            await signInWithEmailLink(auth, email, window.location.href);
+            window.localStorage.removeItem(AUTH_EMAIL_KEY);
+            stripAuthParamsFromUrl();
+            return true;
+        }
+
+        async function ensureMemberRecord(groupId, role, email, playerName) {
+            if (!auth.currentUser || !groupId) return;
+            const uid = auth.currentUser.uid;
+            await setDoc(doc(db, 'groups', groupId, 'members', uid), {
+                role,
+                email: normalizeEmail(email || auth.currentUser.email),
+                playerName: playerName || '',
+                joinedAt: Date.now()
+            }, { merge: true });
+        }
+
+        async function claimMembershipForCurrentUser() {
+            if (!auth.currentUser || !window.groupIdRaw || !window.isGroupValid) {
+                window.groupAccess = 'viewer';
+                return;
+            }
+            const groupId = window.groupIdRaw;
+            const uid = auth.currentUser.uid;
+            const email = normalizeEmail(auth.currentUser.email);
+
+            const memberRef = doc(db, 'groups', groupId, 'members', uid);
+            const memberSnap = await getDoc(memberRef);
+            if (memberSnap.exists()) {
+                const role = memberSnap.data().role;
+                window.groupAccess = role === 'owner' ? 'owner' : 'editor';
+                return;
+            }
+
+            const groupSnap = await getDoc(doc(db, 'groups', groupId));
+            const groupData = groupSnap.exists() ? groupSnap.data() : {};
+
+            if (groupData.ownerUid === uid || (groupData.ownerEmail && groupData.ownerEmail === email)) {
+                await ensureMemberRecord(groupId, 'owner', email);
+                window.groupAccess = 'owner';
+                return;
+            }
+
+            const inviteSnap = await getDoc(doc(db, 'groups', groupId, 'memberEmails', email));
+            if (inviteSnap.exists()) {
+                const invite = inviteSnap.data();
+                await ensureMemberRecord(groupId, 'editor', email, invite.playerName || '');
+                if (invite.rosterId) {
+                    await setDoc(doc(db, 'groups', groupId, 'roster', invite.rosterId), {
+                        uid,
+                        email
+                    }, { merge: true });
+                }
+                window.groupAccess = 'editor';
+                return;
+            }
+
+            const rosterSnap = await getDocs(collection(db, 'groups', groupId, 'roster'));
+            const rosterMatch = rosterSnap.docs.find(d => normalizeEmail(d.data().email) === email);
+            if (rosterMatch) {
+                await ensureMemberRecord(groupId, 'editor', email, rosterMatch.data().name || '');
+                await setDoc(doc(db, 'groups', groupId, 'roster', rosterMatch.id), { uid, email }, { merge: true });
+                await setDoc(doc(db, 'groups', groupId, 'memberEmails', email), {
+                    rosterId: rosterMatch.id,
+                    playerName: rosterMatch.data().name || ''
+                }, { merge: true });
+                window.groupAccess = 'editor';
+                return;
+            }
+
+            window.groupAccess = 'viewer';
+        }
+
+        function updateAccessUI() {
+            const canWrite = window.canWrite();
+            const isOwner = window.canOwnerDelete();
+            const fab = document.getElementById('log-match-fab');
+            const addPlayerBtn = document.getElementById('roster-add-player-btn');
+            const ownerDanger = document.getElementById('group-owner-danger');
+            const badge = document.getElementById('group-access-badge');
+            const pill = document.getElementById('group-access-pill');
+            const status = document.getElementById('group-access-status');
+            const guestSignin = document.getElementById('group-guest-signin');
+            const signedIn = document.getElementById('group-signed-in');
+            const signedInEmail = document.getElementById('signed-in-email');
+
+            if (fab) {
+                if (canWrite) fab.classList.remove('hidden');
+                else fab.classList.add('hidden');
+            }
+            if (addPlayerBtn) {
+                if (canWrite) addPlayerBtn.classList.remove('hidden');
+                else addPlayerBtn.classList.add('hidden');
+            }
+            if (ownerDanger) {
+                if (isOwner) ownerDanger.classList.remove('hidden');
+                else ownerDanger.classList.add('hidden');
+            }
+
+            const labels = {
+                viewer: { pill: 'Guest', badge: 'View only', status: 'View only — sign in with your invited email to log matches.' },
+                editor: { pill: 'Editor', badge: 'Can edit', status: 'You can log matches and invite players.' },
+                owner: { pill: 'Owner', badge: 'Owner', status: 'Full edit access. You can wipe match history.' }
+            };
+            const label = labels[window.groupAccess] || labels.viewer;
+
+            if (badge) {
+                badge.classList.remove('hidden');
+                badge.innerText = label.badge;
+                badge.className = `text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${
+                    window.groupAccess === 'viewer' ? 'border-slate-600 text-slate-400 bg-slate-800/80' :
+                    window.groupAccess === 'owner' ? 'border-amber-500/50 text-amber-300 bg-amber-950/40' :
+                    'border-emerald-500/50 text-emerald-300 bg-emerald-950/40'
+                }`;
+            }
+            if (pill) pill.innerText = label.pill;
+            if (status) status.innerText = label.status;
+
+            if (guestSignin && signedIn) {
+                if (window.currentUser) {
+                    guestSignin.classList.add('hidden');
+                    signedIn.classList.remove('hidden');
+                    if (signedInEmail) signedInEmail.innerText = window.currentUser.email || '';
+                } else {
+                    guestSignin.classList.remove('hidden');
+                    signedIn.classList.add('hidden');
+                }
+            }
+        }
+
+        window.updateAccessUI = updateAccessUI;
+
+        window.sendSignInLink = async function() {
+            const input = document.getElementById('sign-in-email');
+            const status = document.getElementById('sign-in-status');
+            const btn = document.getElementById('sign-in-send-btn');
+            const email = normalizeEmail(input?.value);
+            if (!email) {
+                if (status) status.textContent = 'Enter your email first.';
+                return;
+            }
+            if (!window.groupIdRaw) {
+                if (status) status.textContent = 'Open a group first.';
+                return;
+            }
+            if (btn) btn.disabled = true;
+            if (status) status.textContent = 'Sending link…';
+            try {
+                window.localStorage.setItem(AUTH_EMAIL_KEY, email);
+                await sendSignInLinkToEmail(auth, email, {
+                    url: getAuthContinueUrl(window.groupIdRaw),
+                    handleCodeInApp: true
+                });
+                if (status) status.textContent = 'Check your email and open the link on this device.';
+            } catch (e) {
+                console.error(e);
+                if (status) status.textContent = 'Could not send link: ' + e.message;
+            }
+            if (btn) btn.disabled = false;
+        };
+
+        window.authSignOut = async function() {
+            try {
+                await signOut(auth);
+            } catch (e) {
+                console.error(e);
+                window.showAppAlert('Sign out failed: ' + e.message, 'Error', '❌');
+            }
+        };
+
+        window.showCreateGroupPanel = function() {
+            document.getElementById('group-modal-join-panel')?.classList.add('hidden');
+            document.getElementById('group-modal-create-panel')?.classList.remove('hidden');
+            const joinName = document.getElementById('group-name-input')?.value?.trim();
+            const createInput = document.getElementById('create-group-name-input');
+            if (joinName && createInput && !createInput.value) createInput.value = joinName;
+        };
+
+        window.showJoinGroupPanel = function() {
+            document.getElementById('group-modal-create-panel')?.classList.add('hidden');
+            document.getElementById('group-modal-join-panel')?.classList.remove('hidden');
+        };
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        }
+
+        function escapeJsString(str) {
+            return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
+        window.renderRosterListItem = function(p) {
+            const canWrite = window.canWrite();
+            const nameJs = escapeJsString(p.name);
+            const rosterEntry = (window.appData.explicitRoster || []).find(r => r.name === p.name);
+            const emailVal = rosterEntry?.email || '';
+            const hasMember = !!rosterEntry?.uid;
+            const plays = p.plays != null ? p.plays : 0;
+            const inviteBlock = canWrite ? `
+                <div class="flex flex-col sm:flex-row gap-1.5 mt-2 w-full sm:w-auto sm:min-w-[200px]">
+                    <input type="email" data-roster-id="${escapeHtml(rosterEntry?.id || '')}" data-player-name="${escapeHtml(p.name)}" value="${escapeHtml(emailVal)}" placeholder="Email to invite" class="roster-email-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-purple-500 min-w-0">
+                    <button type="button" onclick="window.saveRosterEmail('${nameJs}')" class="text-[10px] font-bold text-purple-300 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 px-2 py-1 rounded transition shrink-0">Save</button>
+                    <button type="button" onclick="window.sendPlayerInvite('${nameJs}')" class="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 rounded transition shrink-0">Invite</button>
+                </div>
+            ` : (emailVal ? `<span class="text-[10px] text-slate-500">${hasMember ? '✓ joined' : 'invited'}</span>` : '');
+
+            const editControls = canWrite ? `
+                <label class="text-slate-500 hover:text-emerald-400 transition cursor-pointer" title="Upload avatar">
+                    <input type="file" accept="image/*" class="hidden" onchange="window.uploadPlayerAvatar('${nameJs}', event)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </label>
+                ${p.avatarDataUrl ? `<button onclick="window.removePlayerAvatar('${nameJs}')" class="text-slate-500 hover:text-amber-400 transition" title="Remove avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path></svg></button>` : ''}
+                <button onclick="window.removePlayer('${nameJs}')" class="text-slate-500 hover:text-red-400 transition" title="Remove Player"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+            ` : '';
+
+            return `
+                <li class="flex flex-col gap-2 bg-slate-800/50 p-3 rounded border border-slate-700/50 group">
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="text-sm font-bold flex items-center gap-2 min-w-0">${renderPlayerAvatar(p, 'w-8 h-8', 'text-[10px]', 'shrink-0')}<span class="truncate">${escapeHtml(p.name)}</span></span>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="text-xs bg-slate-700 text-slate-400 px-2 py-1 rounded">${plays} Plays</span>
+                            ${editControls}
+                        </div>
+                    </div>
+                    ${inviteBlock}
+                </li>
+            `;
+        };
+
+        window.saveRosterEmail = async function(playerName) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in with an invited email to manage the roster.', 'View only', '🔒');
+                return;
+            }
+            const rosterEntry = findRosterEntryByName(playerName);
+            if (!rosterEntry) {
+                window.showAppAlert('Player not found in roster.', 'Error', '❌');
+                return;
+            }
+            const input = document.querySelector(`.roster-email-input[data-roster-id="${rosterEntry.id}"]`);
+            const email = normalizeEmail(input?.value);
+            if (!email) {
+                window.showAppAlert('Enter a valid email.', 'Email required', '⚠️');
+                return;
+            }
+            try {
+                await setDoc(doc(db, 'groups', window.groupIdRaw, 'roster', rosterEntry.id), { email }, { merge: true });
+                await setDoc(doc(db, 'groups', window.groupIdRaw, 'memberEmails', email), {
+                    rosterId: rosterEntry.id,
+                    playerName: rosterEntry.name
+                }, { merge: true });
+                window.showAppAlert('Email saved. Tap Invite to send a magic link.', 'Saved', '✅');
+            } catch (e) {
+                window.showAppAlert('Could not save email: ' + e.message, 'Error', '❌');
+            }
+        };
+
+        window.sendPlayerInvite = async function(playerName) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in to invite players.', 'View only', '🔒');
+                return;
+            }
+            const rosterEntry = findRosterEntryByName(playerName);
+            if (!rosterEntry) return;
+            const input = document.querySelector(`.roster-email-input[data-roster-id="${rosterEntry.id}"]`);
+            const email = normalizeEmail(input?.value || rosterEntry.email);
+            if (!email) {
+                window.showAppAlert('Save an email for this player first.', 'Email required', '⚠️');
+                return;
+            }
+            try {
+                await setDoc(doc(db, 'groups', window.groupIdRaw, 'roster', rosterEntry.id), { email }, { merge: true });
+                await setDoc(doc(db, 'groups', window.groupIdRaw, 'memberEmails', email), {
+                    rosterId: rosterEntry.id,
+                    playerName: rosterEntry.name
+                }, { merge: true });
+                window.localStorage.setItem(AUTH_EMAIL_KEY, email);
+                await sendSignInLinkToEmail(auth, email, {
+                    url: getAuthContinueUrl(window.groupIdRaw),
+                    handleCodeInApp: true
+                });
+                window.showAppAlert(`Magic link sent to ${email}.`, 'Invite sent', '✉️');
+            } catch (e) {
+                window.showAppAlert('Invite failed: ' + e.message, 'Error', '❌');
+            }
+        };
+
+        async function runPendingGroupCreate() {
+            const slug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
+            const displayName = window.localStorage.getItem(PENDING_CREATE_NAME_KEY);
+            if (!slug || !auth.currentUser) return;
+            window.localStorage.removeItem(PENDING_CREATE_GROUP_KEY);
+            window.localStorage.removeItem(PENDING_CREATE_NAME_KEY);
+
+            const checkRef = doc(db, 'groups', slug);
+            const checkSnap = await getDoc(checkRef);
+            if (checkSnap.exists()) {
+                window.showAppAlert('This group already exists. Use View stats to join it.', 'Name taken', '⚠️');
+                return;
+            }
+
+            const email = normalizeEmail(auth.currentUser.email);
+            await setDoc(checkRef, {
+                name: displayName || slug,
+                createdAt: Date.now(),
+                ownerUid: auth.currentUser.uid,
+                ownerEmail: email
+            });
+            await ensureMemberRecord(slug, 'owner', email);
+            softRouteToGroup(slug, null, 'View stats');
+        }
 
         function normalizeName(str) {
             if (!str) return "";
@@ -1128,10 +1523,13 @@
             window.groupIdRaw = '';
             window.groupDisplayName = null;
             window.isGroupValid = false;
+            window.groupAccess = 'viewer';
             if (matchUnsubscribe) { matchUnsubscribe(); matchUnsubscribe = null; }
             if (rosterUnsubscribe) { rosterUnsubscribe(); rosterUnsubscribe = null; }
             if (settingsUnsubscribe) { settingsUnsubscribe(); settingsUnsubscribe = null; }
+            if (memberUnsubscribe) { memberUnsubscribe(); memberUnsubscribe = null; }
             updateGroupContext();
+            updateAccessUI();
         }
 
         function formatGroupSlug(input) {
@@ -1152,13 +1550,8 @@
                     updateGroupContext();
                     window.isGroupValid = true;
                     startMatchListener();
-                    return true;
-                } else if (window.groupIdRaw === 'magic-friendz') {
-                    await setDoc(groupDocRef, { name: "Magic Friendz", createdAt: Date.now() });
-                    window.groupDisplayName = "Magic Friendz";
-                    updateGroupContext();
-                    window.isGroupValid = true;
-                    startMatchListener();
+                    if (authReady) await claimMembershipForCurrentUser();
+                    updateAccessUI();
                     return true;
                 } else {
                     window.isGroupValid = false;
@@ -1204,7 +1597,39 @@
             }
         }
 
-        bootApplication();
+        async function startApp() {
+            try {
+                await tryCompleteEmailSignIn();
+            } catch (e) {
+                console.error('Email link sign-in failed:', e);
+                window.showAppAlert('Sign-in link failed: ' + e.message, 'Sign in', '❌');
+            }
+            if (auth.currentUser && window.localStorage.getItem(PENDING_CREATE_GROUP_KEY)) {
+                await runPendingGroupCreate();
+                return;
+            }
+            await bootApplication();
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            window.currentUser = user;
+            authReady = true;
+            if (user && window.isGroupValid) {
+                await claimMembershipForCurrentUser();
+            } else if (!user) {
+                window.groupAccess = 'viewer';
+            }
+            updateAccessUI();
+            if (user && window.localStorage.getItem(PENDING_CREATE_GROUP_KEY) && !window.groupIdRaw) {
+                const slug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
+                if (slug) softRouteToGroup(slug, null, 'View stats');
+            }
+            if (user && window.localStorage.getItem(PENDING_CREATE_GROUP_KEY) && window.isGroupValid) {
+                await runPendingGroupCreate();
+            }
+        });
+
+        startApp();
 
         window.joinGroup = function(event) {
             const inputEl = document.getElementById('group-name-input');
@@ -1234,12 +1659,20 @@
         }
 
         window.createGroup = async function(event) {
-            const inputEl = document.getElementById('group-name-input');
-            if(!inputEl) return;
+            const inputEl = document.getElementById('create-group-name-input');
+            const emailEl = document.getElementById('create-owner-email-input');
+            const statusEl = document.getElementById('create-group-status');
+            if (!inputEl) return;
             const input = inputEl.value.trim();
-            if(!input) {
+            const ownerEmail = normalizeEmail(emailEl?.value);
+            if (!input) {
                 window.showAppAlert("Pick a name for your new group.", "Group Required", "🔑");
                 inputEl.focus();
+                return;
+            }
+            if (!ownerEmail) {
+                window.showAppAlert("Enter your email to become the group owner.", "Email Required", "✉️");
+                emailEl?.focus();
                 return;
             }
             const formatted = formatGroupSlug(input);
@@ -1247,32 +1680,50 @@
                 window.showAppAlert("Use letters or numbers in your group name.", "Invalid Name", "⚠️");
                 return;
             }
-            
+
             const btn = event ? event.currentTarget : document.getElementById('group-create-btn');
-            const originalText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = "Creating…";
-            
+            const originalText = btn?.innerText || 'Send link & create';
+            if (btn) { btn.disabled = true; btn.innerText = 'Working…'; }
+
             try {
                 const checkRef = doc(db, "groups", formatted);
                 const checkSnap = await getDoc(checkRef);
-                
                 if (checkSnap.exists()) {
-                    window.showAppAlert("This group name is already taken. Tap \"Enter Existing Group\" to join it.", "Name Taken", "⚠️");
-                    btn.disabled = false;
-                    btn.innerText = originalText;
+                    window.showAppAlert('This group name is already taken. Use View stats to join it.', 'Name Taken', '⚠️');
+                    if (btn) { btn.disabled = false; btn.innerText = originalText; }
                     return;
                 }
-                
-                await setDoc(checkRef, { name: input, createdAt: Date.now() });
-                softRouteToGroup(formatted, btn, originalText);
 
+                window.localStorage.setItem(PENDING_CREATE_GROUP_KEY, formatted);
+                window.localStorage.setItem(PENDING_CREATE_NAME_KEY, input);
+                window.localStorage.setItem(AUTH_EMAIL_KEY, ownerEmail);
+
+                if (auth.currentUser && normalizeEmail(auth.currentUser.email) === ownerEmail) {
+                    await setDoc(checkRef, {
+                        name: input,
+                        createdAt: Date.now(),
+                        ownerUid: auth.currentUser.uid,
+                        ownerEmail
+                    });
+                    await ensureMemberRecord(formatted, 'owner', ownerEmail);
+                    window.localStorage.removeItem(PENDING_CREATE_GROUP_KEY);
+                    window.localStorage.removeItem(PENDING_CREATE_NAME_KEY);
+                    softRouteToGroup(formatted, btn, originalText);
+                    return;
+                }
+
+                await sendSignInLinkToEmail(auth, ownerEmail, {
+                    url: getAuthContinueUrl(formatted),
+                    handleCodeInApp: true
+                });
+                if (statusEl) statusEl.textContent = 'Check your email, open the link, then we\'ll create the group.';
+                window.showAppAlert('Magic link sent. Open it on this device to finish creating your group.', 'Check your email', '✉️');
+                window.closeGroupModal();
             } catch (error) {
                 console.error("Error creating group:", error);
-                window.showAppAlert("Could not create group. Your Firebase rules might be restricting access.\n\nDetails: " + error.message, "Database Error", "❌");
-                btn.disabled = false;
-                btn.innerText = originalText;
+                window.showAppAlert("Could not start group creation.\n\n" + error.message, "Error", "❌");
             }
+            if (btn) { btn.disabled = false; btn.innerText = originalText; }
         }
 
         function softRouteToGroup(formattedString, btn, originalText = "Enter Existing Group") {
@@ -1298,13 +1749,16 @@
         }
 
         window.openGroupModal = function() {
+            window.showJoinGroupPanel();
             const modal = document.getElementById('view-group-modal');
             const input = document.getElementById('group-name-input');
             const joinBtn = document.getElementById('group-join-btn');
             const createBtn = document.getElementById('group-create-btn');
             if (input) input.value = '';
-            if (joinBtn) { joinBtn.disabled = false; joinBtn.innerText = "Enter Existing Group"; }
-            if (createBtn) { createBtn.disabled = false; createBtn.innerText = "Create New Group"; }
+            if (joinBtn) { joinBtn.disabled = false; joinBtn.innerText = "View stats"; }
+            if (createBtn) { createBtn.disabled = false; createBtn.innerText = "Send link & create"; }
+            const createStatus = document.getElementById('create-group-status');
+            if (createStatus) createStatus.textContent = '';
             
             if (modal) {
                 modal.classList.remove('hidden');
@@ -1343,7 +1797,7 @@
                 if(landing) landing.classList.add('hidden'); 
                 if(dashboard) dashboard.classList.remove('hidden'); 
                 window.switchTab('home'); 
-                setTimeout(() => { if(dashboard) dashboard.classList.remove('opacity-0'); }, 50); 
+                setTimeout(() => { if(dashboard) dashboard.classList.remove('opacity-0'); updateAccessUI(); }, 50); 
             }, 300);
         }
 
@@ -1805,7 +2259,13 @@
                 window.appData.explicitRoster = [];
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
-                    window.appData.explicitRoster.push({ id: docSnap.id, name: data.name, avatarDataUrl: data.avatarDataUrl || '' });
+                    window.appData.explicitRoster.push({
+                        id: docSnap.id,
+                        name: data.name,
+                        avatarDataUrl: data.avatarDataUrl || '',
+                        email: data.email || '',
+                        uid: data.uid || ''
+                    });
                 });
                 if(window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
             });
@@ -2068,22 +2528,7 @@
                     
                     if (window.appData.players.length > 0) {
                         safeSetHTML('home-top-players', window.appData.players.slice(0, 3).map((p, i) => generatePlayerRow(p, i)).join(''));
-                        safeSetHTML('roster-list', window.appData.players.map(p => `
-                            <li class="flex justify-between items-center bg-slate-800/50 p-3 rounded border border-slate-700/50 group">
-                                <span class="text-sm font-bold flex items-center gap-2">${renderPlayerAvatar(p, 'w-8 h-8', 'text-[10px]', 'shrink-0')}<span class="truncate">${p.name}</span></span>
-                                <div class="flex items-center gap-3">
-                                    <span class="text-xs bg-slate-700 text-slate-400 px-2 py-1 rounded">0 Plays</span>
-                                    <label class="text-slate-500 hover:text-emerald-400 transition cursor-pointer" title="Upload avatar">
-                                        <input type="file" accept="image/*" class="hidden" onchange="window.uploadPlayerAvatar('${p.name.replace(/'/g, "\\'")}', event)">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                    </label>
-                                    ${p.avatarDataUrl ? `<button onclick="window.removePlayerAvatar('${p.name.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-amber-400 transition" title="Remove avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path></svg></button>` : ''}
-                                    <button onclick="window.removePlayer('${p.name.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-red-400 transition" title="Remove Player">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                                    </button>
-                                </div>
-                            </li>
-                        `).join(''));
+                        safeSetHTML('roster-list', window.appData.players.map(p => window.renderRosterListItem(p)).join(''));
                         safeSetHTML('player-view', window.appData.players.map((p, i) => generatePlayerRow(p, i)).join(''));
                     } else {
                         safeSetHTML('home-top-players', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">No player data available.</p></div>`);
@@ -2359,22 +2804,7 @@
                 `).join('');
                 safeSetHTML('match-feed-container', matchFeedHTML);
                 
-                safeSetHTML('roster-list', window.appData.players.map(p => `
-                    <li class="flex justify-between items-center bg-slate-800/50 p-3 rounded border border-slate-700/50 group">
-                        <span class="text-sm font-bold flex items-center gap-2">${renderPlayerAvatar(p, 'w-8 h-8', 'text-[10px]', 'shrink-0')}<span class="truncate">${p.name}</span></span>
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs bg-slate-700 text-slate-400 px-2 py-1 rounded">${p.plays} Plays</span>
-                            <label class="text-slate-500 hover:text-emerald-400 transition cursor-pointer" title="Upload avatar">
-                                <input type="file" accept="image/*" class="hidden" onchange="window.uploadPlayerAvatar('${p.name.replace(/'/g, "\\'")}', event)">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            </label>
-                            ${p.avatarDataUrl ? `<button onclick="window.removePlayerAvatar('${p.name.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-amber-400 transition" title="Remove avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path></svg></button>` : ''}
-                            <button onclick="window.removePlayer('${p.name.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-red-400 transition" title="Remove Player">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                            </button>
-                        </div>
-                    </li>
-                `).join(''));
+                safeSetHTML('roster-list', window.appData.players.map(p => window.renderRosterListItem(p)).join(''));
                 
                 window.processArtQueue();
                 
@@ -2791,6 +3221,10 @@
         }
 
         window.updateDeckOwner = async function(deckName, newOwner) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in to edit deck ownership.', 'View only', '🔒');
+                return;
+            }
             try {
                 await setDoc(doc(db, "groups", window.groupIdRaw, "settings", "deckOwners"), {
                     [deckName]: newOwner
@@ -3057,6 +3491,10 @@
         }
 
         window.uploadPlayerAvatar = async function(playerName, event) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in to upload avatars.', 'View only', '🔒');
+                return;
+            }
             const input = event?.target;
             const file = input?.files?.[0];
             if (!file) return;
@@ -3089,6 +3527,10 @@
         }
 
         window.removePlayerAvatar = async function(playerName) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in to edit avatars.', 'View only', '🔒');
+                return;
+            }
             const rosterEntry = findRosterEntryByName(playerName);
             if (!rosterEntry) {
                 window.showAppAlert('Could not find this player in roster.', 'Remove Failed', '❌');
@@ -3105,6 +3547,10 @@
         }
 
         window.addPlayerToRoster = async function(event) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in to add players to the roster.', 'View only', '🔒');
+                return;
+            }
             const inputEl = document.getElementById('new-player-input');
             if (!inputEl) return;
             const name = inputEl.value.trim();
@@ -3142,6 +3588,10 @@
         }
 
         window.removePlayer = async function(playerName) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in to edit the roster.', 'View only', '🔒');
+                return;
+            }
             const player = window.appData.players.find(p => p.name === playerName);
             
             if (player && player.plays > 0) {
@@ -3166,6 +3616,10 @@
         }
 
         window.wipeGroupData = async function() {
+            if (!window.canOwnerDelete()) {
+                window.showAppAlert('Only the group owner can wipe match history.', 'Owner only', '🔒');
+                return;
+            }
             window.showAppConfirm("Are you absolutely sure you want to permanently delete ALL match history for this group?\n\nThis will reset everyone's Elo and win rates back to default. This CANNOT be undone.", async () => {
                 try {
                     const querySnapshot = await getDocs(collection(db, "groups", window.groupIdRaw, "matches"));
@@ -3204,6 +3658,10 @@
         }
 
         window.importCSVData = async function(event) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in to import match data.', 'View only', '🔒');
+                return;
+            }
             const btn = event.target;
             const originalText = btn.innerText;
             const fileInput = document.getElementById('csv-upload');
@@ -3318,6 +3776,10 @@
         }
 
         window.openLogMatchModal = function() {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in with your invited email to log matches.\n\nOpen the Group tab to request a magic link.', 'View only', '🔒');
+                return;
+            }
             const modal = document.getElementById('view-log-match');
             const dateInput = document.getElementById('form-date');
             if(dateInput) dateInput.valueAsDate = new Date();
@@ -3556,6 +4018,10 @@
         }
 
         window.submitMatchForm = async function(event) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in to log matches.', 'View only', '🔒');
+                return;
+            }
             const btn = event.target;
             const originalText = btn.innerText;
             btn.innerText = "Saving to Database...";
