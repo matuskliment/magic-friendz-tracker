@@ -322,18 +322,25 @@
                         <button type="button" onclick="window.authSignOut()" class="text-xs font-bold text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition">Sign out</button>
                     </div>
                 </div>
-                <div class="glass p-5 rounded-xl border border-emerald-500/30 bg-emerald-950/10">
-                    <h3 class="font-bold text-white mb-2 flex items-center gap-2"><span class="text-emerald-400">📦</span> Data Export</h3>
-                    <p class="text-xs text-slate-400 mb-4">Download this group's data as JSON or match-history CSV.</p>
-                    <div class="space-y-2">
-                        <button onclick="window.downloadGroupJson()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Download Group JSON</button>
-                        <button onclick="window.downloadGroupCsv()" class="w-full bg-emerald-900/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Download Match CSV</button>
-                    </div>
-                </div>
                 <div class="glass p-5 rounded-xl border border-slate-700">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-white">Player Roster</h3>
-                        <button id="roster-add-player-btn" onclick="window.toggleAddPlayer()" class="text-xs bg-purple-500/20 text-purple-400 hover:bg-purple-500/40 px-3 py-1.5 rounded-lg font-bold border border-purple-500/30 transition shadow-sm">➕ Add Player</button>
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <h3 class="font-bold text-white">Player List</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">People in your playgroup — add everyone who should log games.</p>
+                        </div>
+                        <button id="roster-add-player-btn" onclick="window.toggleAddPlayer()" class="text-xs bg-purple-500/20 text-purple-400 hover:bg-purple-500/40 px-3 py-1.5 rounded-lg font-bold border border-purple-500/30 transition shadow-sm shrink-0">➕ Add Player</button>
+                    </div>
+                    <div id="roster-invite-help" class="hidden mb-4 rounded-lg border border-purple-500/25 bg-purple-950/20 px-3 py-3">
+                        <p class="text-xs font-bold text-purple-300 mb-2">How to invite someone</p>
+                        <ol class="text-[11px] text-slate-400 space-y-1 list-decimal list-inside leading-relaxed">
+                            <li>Tap <span class="text-slate-300 font-semibold">➕ Add Player</span> and enter their name (e.g. Oliver).</li>
+                            <li>Type their email on that row → <span class="text-slate-300 font-semibold">Save</span>.</li>
+                            <li>Tap <span class="text-slate-300 font-semibold">Invite</span> — they get a magic link by email.</li>
+                            <li>When they open the link and sign in, status becomes <span class="text-emerald-300 font-semibold">Active</span> and they can log matches.</li>
+                        </ol>
+                    </div>
+                    <div id="roster-invite-locked" class="hidden mb-4 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-3">
+                        <p class="text-xs text-slate-400">To invite players, sign in above with your owner or invited email. Viewing as guest only lets you see stats.</p>
                     </div>
                     <div id="add-player-form" class="hidden mb-4 flex gap-2 opacity-0 transition-opacity duration-300">
                         <input type="text" id="new-player-input" placeholder="Enter player name..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm w-full text-white outline-none focus:border-purple-500 transition" onkeypress="if(event.key === 'Enter') window.addPlayerToRoster(event)">
@@ -798,6 +805,7 @@
         window.isGroupValid = false;
         window.currentUser = null;
         window.groupAccess = 'viewer';
+        window.groupOwnerEmail = null;
         let matchUnsubscribe = null;
         let rosterUnsubscribe = null;
         let settingsUnsubscribe = null;
@@ -926,6 +934,9 @@
             const guestSignin = document.getElementById('group-guest-signin');
             const signedIn = document.getElementById('group-signed-in');
             const signedInEmail = document.getElementById('signed-in-email');
+            const inviteHelp = document.getElementById('roster-invite-help');
+            const inviteLocked = document.getElementById('roster-invite-locked');
+            const signInEmailInput = document.getElementById('sign-in-email');
 
             if (fab) {
                 if (canWrite) fab.classList.remove('hidden');
@@ -959,6 +970,15 @@
             if (pill) pill.innerText = label.pill;
             if (status) status.innerText = label.status;
 
+            if (inviteHelp) {
+                if (canWrite) inviteHelp.classList.remove('hidden');
+                else inviteHelp.classList.add('hidden');
+            }
+            if (inviteLocked) {
+                if (!canWrite) inviteLocked.classList.remove('hidden');
+                else inviteLocked.classList.add('hidden');
+            }
+
             if (guestSignin && signedIn) {
                 if (window.currentUser) {
                     guestSignin.classList.add('hidden');
@@ -967,6 +987,12 @@
                 } else {
                     guestSignin.classList.remove('hidden');
                     signedIn.classList.add('hidden');
+                    if (window.groupOwnerEmail && status) {
+                        status.innerText = 'View only — you own this group. Sign in with your owner email below to invite players and log matches.';
+                    }
+                    if (window.groupOwnerEmail && signInEmailInput && !signInEmailInput.value) {
+                        signInEmailInput.value = window.groupOwnerEmail;
+                    }
                 }
             }
         }
@@ -1047,26 +1073,50 @@
             return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         }
 
+        function formatInviteSentAt(timestamp) {
+            if (!timestamp) return '';
+            const d = new Date(timestamp);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
         window.renderRosterListItem = function(p) {
             const canWrite = window.canWrite();
             const nameJs = escapeJsString(p.name);
-            const rosterEntry = (window.appData.explicitRoster || []).find(r => r.name === p.name);
+            const rosterEntry = findRosterEntryByName(p.name);
             const emailVal = rosterEntry?.email || '';
             const hasMember = !!rosterEntry?.uid;
+            const hasRosterRow = !!rosterEntry?.id;
+            const inviteSentAt = rosterEntry?.inviteSentAt || null;
+            const inviteSentLabel = formatInviteSentAt(inviteSentAt);
             const plays = p.plays != null ? p.plays : 0;
             const inviteStatus = hasMember
                 ? `<span class="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">Active</span>`
-                : (emailVal
+                : (inviteSentAt
                     ? `<span class="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">Invited</span>`
-                    : `<span class="text-[10px] font-bold text-slate-500 bg-slate-700/50 border border-slate-600 px-2 py-0.5 rounded-full">No invite</span>`);
+                    : (emailVal
+                        ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-700/50 border border-slate-600 px-2 py-0.5 rounded-full">Email saved</span>`
+                        : `<span class="text-[10px] font-bold text-slate-500 bg-slate-700/50 border border-slate-600 px-2 py-0.5 rounded-full">No invite</span>`));
 
-            const inviteBlock = canWrite ? `
-                <div class="flex flex-col sm:flex-row gap-1.5 mt-2 w-full sm:w-auto sm:min-w-[220px]">
-                    <input type="email" data-roster-id="${escapeHtml(rosterEntry?.id || '')}" data-player-name="${escapeHtml(p.name)}" value="${escapeHtml(emailVal)}" placeholder="Email to invite" class="roster-email-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-purple-500 min-w-0">
-                    <button type="button" onclick="window.saveRosterEmail('${nameJs}')" class="text-[10px] font-bold text-purple-300 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 px-2 py-1 rounded transition shrink-0">Save</button>
-                    <button type="button" onclick="window.sendPlayerInvite('${nameJs}')" class="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 rounded transition shrink-0">Invite</button>
+            const inviteSentLine = (!hasMember && inviteSentLabel)
+                ? `<p class="text-[10px] text-slate-500 mt-1.5">Invite sent ${escapeHtml(inviteSentLabel)}</p>`
+                : '';
+
+            const inviteBlock = canWrite ? (
+                hasRosterRow ? `
+                <div class="flex flex-col sm:flex-row gap-1.5 mt-2 w-full">
+                    <input type="email" data-roster-id="${escapeHtml(rosterEntry.id)}" data-player-name="${escapeHtml(p.name)}" value="${escapeHtml(emailVal)}" placeholder="friend@email.com" class="roster-email-input flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-purple-500 min-w-0">
+                    <button type="button" onclick="window.saveRosterEmail('${nameJs}')" class="text-[10px] font-bold text-purple-300 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 px-2.5 py-1.5 rounded transition shrink-0">Save</button>
+                    <button type="button" onclick="window.sendPlayerInvite('${nameJs}')" class="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1.5 rounded transition shrink-0">Invite</button>
                 </div>
-            ` : '';
+            ` : `<p class="text-[10px] text-amber-400/90 mt-2">Add this name with ➕ Add Player first, then you can set an email and invite.</p>`
+            ) : '';
 
             const editControls = canWrite ? `
                 <label class="text-slate-500 hover:text-emerald-400 transition cursor-pointer" title="Upload avatar">
@@ -1088,6 +1138,7 @@
                         </div>
                     </div>
                     ${inviteBlock}
+                    ${inviteSentLine}
                 </li>
             `;
         };
@@ -1134,17 +1185,22 @@
                 return;
             }
             try {
-                await setDoc(doc(db, 'groups', window.groupIdRaw, 'roster', rosterEntry.id), { email }, { merge: true });
+                const sentAt = Date.now();
+                await setDoc(doc(db, 'groups', window.groupIdRaw, 'roster', rosterEntry.id), {
+                    email,
+                    inviteSentAt: sentAt
+                }, { merge: true });
                 await setDoc(doc(db, 'groups', window.groupIdRaw, 'memberEmails', email), {
                     rosterId: rosterEntry.id,
-                    playerName: rosterEntry.name
+                    playerName: rosterEntry.name,
+                    inviteSentAt: sentAt
                 }, { merge: true });
                 window.localStorage.setItem(AUTH_EMAIL_KEY, email);
                 await sendSignInLinkToEmail(auth, email, {
                     url: getAuthContinueUrl(window.groupIdRaw),
                     handleCodeInApp: true
                 });
-                window.showAppAlert(`Magic link sent to ${email}.`, 'Invite sent', '✉️');
+                window.showAppAlert(`Magic link sent to ${email}.\n\nInvite sent ${formatInviteSentAt(sentAt)}.`, 'Invite sent', '✉️');
             } catch (e) {
                 window.showAppAlert('Invite failed: ' + e.message, 'Error', '❌');
             }
@@ -1553,6 +1609,7 @@
         function resetGroupSession() {
             window.groupIdRaw = '';
             window.groupDisplayName = null;
+            window.groupOwnerEmail = null;
             window.isGroupValid = false;
             window.groupAccess = 'viewer';
             if (matchUnsubscribe) { matchUnsubscribe(); matchUnsubscribe = null; }
@@ -1577,7 +1634,9 @@
             try {
                 const groupSnap = await getDoc(groupDocRef);
                 if (groupSnap.exists()) {
-                    window.groupDisplayName = groupSnap.data().name || null;
+                    const groupData = groupSnap.data();
+                    window.groupDisplayName = groupData.name || null;
+                    window.groupOwnerEmail = normalizeEmail(groupData.ownerEmail || '');
                     updateGroupContext();
                     window.isGroupValid = true;
                     startMatchListener();
@@ -2295,7 +2354,8 @@
                         name: data.name,
                         avatarDataUrl: data.avatarDataUrl || '',
                         email: data.email || '',
-                        uid: data.uid || ''
+                        uid: data.uid || '',
+                        inviteSentAt: data.inviteSentAt || null
                     });
                 });
                 if(window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
