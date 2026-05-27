@@ -101,7 +101,9 @@
                     </div>
 
                     <div class="bg-slate-900 border border-red-500/30 rounded-2xl p-4 md:p-5">
-                        <h3 class="text-sm font-bold text-white mb-3">Data Migration</h3>
+                        <h3 class="text-sm font-bold text-white mb-3">Danger zone</h3>
+                        <button id="delete-group-btn" class="w-full mb-3 bg-red-950 hover:bg-red-900 text-red-300 border border-red-600/50 px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Delete entire group</button>
+                        <h3 class="text-sm font-bold text-white mb-3 pt-2 border-t border-red-500/20">Data Migration</h3>
                         <div class="space-y-3">
                             <button id="wipe-btn" class="w-full bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Wipe All Matches</button>
                             <div class="bg-slate-950 border border-slate-700 rounded-xl p-3">
@@ -183,7 +185,9 @@
         }
 
         function setActionButtonsEnabled(enabled) {
-            [els.exportJsonBtn, els.exportCsvBtn, els.wipeBtn, els.importBtn, els.setOwnerBtn, els.deleteGroupBtn].forEach(btn => btn.disabled = !enabled);
+            [els.exportJsonBtn, els.exportCsvBtn, els.wipeBtn, els.importBtn, els.setOwnerBtn, els.deleteGroupBtn]
+                .filter(Boolean)
+                .forEach(btn => btn.disabled = !enabled);
         }
 
         async function deleteCollectionDocs(colRef) {
