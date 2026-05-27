@@ -2864,8 +2864,25 @@
         }
 
         function buildMatchCsvRow(match) {
-            const winners = Array.isArray(match.winners) ? match.winners : [];
-            const losers = Array.isArray(match.losers) ? match.losers : [];
+            let winners = Array.isArray(match.winners) ? [...match.winners] : [];
+            const losers = Array.isArray(match.losers) ? [...match.losers] : [];
+
+            // Backward compatibility for legacy rows that only stored `winner`
+            if (winners.length === 0 && match.winner) {
+                if (typeof match.winner === 'object' && match.winner.name) {
+                    winners = [match.winner];
+                } else if (typeof match.winner === 'string') {
+                    const winnerDeckName = normalizeName(match.winner);
+                    const fallbackFromParticipants = [...losers].find(p => normalizeName(p.name || '').toLowerCase() === winnerDeckName.toLowerCase());
+                    winners = [fallbackFromParticipants || { player: '', name: winnerDeckName }];
+                }
+            }
+
+            // Importer expects at least one winner in first slot
+            if (winners.length === 0 && losers.length > 0) {
+                winners = [losers.shift()];
+            }
+
             const participants = [...winners, ...losers].slice(0, 5);
             const winnerDeckNames = winners.map(w => normalizeName(w.name || '')).filter(Boolean).join(';');
             const cards = Array.isArray(match.winningCards) ? match.winningCards.slice(0, 4) : [];
