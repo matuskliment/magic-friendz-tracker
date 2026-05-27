@@ -1368,13 +1368,24 @@
             }
         };
 
-        window.authSignOut = async function() {
-            try {
-                await signOut(auth);
-            } catch (e) {
-                console.error(e);
-                window.showAppAlert('Sign out failed: ' + e.message, 'Error', '❌');
-            }
+        window.authSignOut = function() {
+            window.showAppConfirm(
+                'You will return to view-only on this group until you sign in again with your magic link.',
+                async () => {
+                    try {
+                        await signOut(auth);
+                    } catch (e) {
+                        console.error(e);
+                        window.showAppAlert('Sign out failed: ' + e.message, 'Error', '❌');
+                    }
+                },
+                'Sign out?',
+                '👋',
+                {
+                    confirmLabel: 'Sign out',
+                    confirmClass: 'bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-purple-500/30'
+                }
+            );
         };
 
         window.showCreateGroupPanel = function() {
@@ -2457,7 +2468,7 @@
             window.openAppModal();
         }
 
-        window.showAppConfirm = function(message, onConfirm, title = "Confirm Action", icon = "❓") {
+        window.showAppConfirm = function(message, onConfirm, title = "Confirm Action", icon = "❓", options = {}) {
             const titleEl = document.getElementById('app-modal-title');
             const msgEl = document.getElementById('app-modal-message');
             const iconEl = document.getElementById('app-modal-icon');
@@ -2468,8 +2479,8 @@
             if (iconEl) iconEl.innerText = icon;
             if (cancelBtn) cancelBtn.classList.remove('hidden');
             if (confirmBtn) {
-                confirmBtn.innerText = "Yes, Remove";
-                confirmBtn.className = "bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-red-500/30";
+                confirmBtn.innerText = options.confirmLabel || 'Yes, Remove';
+                confirmBtn.className = options.confirmClass || 'bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-red-500/30';
             }
             modalConfirmCallback = () => {
                 window.closeAppModal();
