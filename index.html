@@ -1473,6 +1473,34 @@
             }
         }
 
+        function getPlayerInitials(name) {
+            const cleaned = String(name || '').trim().replace(/\s+/g, ' ');
+            if (!cleaned) return '???';
+            return cleaned.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || '???';
+        }
+
+        function getAvatarColorFromName(name) {
+            const palette = ['#7c3aed', '#2563eb', '#db2777', '#0d9488', '#ea580c', '#65a30d', '#9333ea', '#0891b2', '#be123c', '#0369a1'];
+            let hash = 0;
+            const raw = String(name || '');
+            for (let i = 0; i < raw.length; i++) {
+                hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+                hash |= 0;
+            }
+            return palette[Math.abs(hash) % palette.length];
+        }
+
+        function renderPlayerAvatar(player, sizeClass = 'w-12 h-12', textClass = 'text-base', extraClass = '') {
+            const avatarUrl = player?.avatarDataUrl || '';
+            const label = player?.avatarInitials || getPlayerInitials(player?.name);
+            const color = player?.avatarColor || getAvatarColorFromName(player?.name);
+            const safeName = String(player?.name || 'Player').replace(/"/g, '&quot;');
+            if (avatarUrl) {
+                return `<div class="${sizeClass} rounded-full overflow-hidden border border-slate-600/60 bg-slate-800 shadow-md ${extraClass}"><img src="${avatarUrl}" alt="${safeName} avatar" class="w-full h-full object-cover"></div>`;
+            }
+            return `<div class="${sizeClass} rounded-full border border-slate-600/60 shadow-md flex items-center justify-center font-black tracking-wide text-white ${textClass} ${extraClass}" style="background:${color}">${label}</div>`;
+        }
+
         function scaledK(podSize) {
             if (podSize === 2) return SETTINGS.BASE_K * 0.70;
             if (podSize === 3 || podSize === 5) return SETTINGS.BASE_K * 0.85;
@@ -1676,19 +1704,21 @@
                 };
             });
 
-            const icons = { "Carter": "👑", "Tristan": "⚔️", "Matus": "🛡️", "Bea": "🐉", "Mark": "💀", "Oliver": "🔥", "Devon": "🗡️", "Luke": "🐇", "Jesse": "🌳", "Nigel": "👼" };
             window.appData.players = Object.keys(playerStats).map(name => {
                 const s = playerStats[name];
                 let topDeck = "", maxPlays = 0;
                 Object.keys(s.decks).forEach(d => { if(s.decks[d] > maxPlays) { maxPlays = s.decks[d]; topDeck = d; } });
                 const winRateVal = s.plays > 0 ? ((s.wins / s.plays) * 100) : 0;
+                const rosterEntry = (window.appData.explicitRoster || []).find(r => r.name === name);
                 return {
                     name: name,
                     wins: s.wins,
                     plays: s.plays,
                     winRate: winRateVal.toFixed(1) + "%",
                     topDeck: topDeck,
-                    icon: icons[name] || "👤"
+                    avatarInitials: getPlayerInitials(name),
+                    avatarColor: getAvatarColorFromName(name),
+                    avatarDataUrl: rosterEntry?.avatarDataUrl || ''
                 };
             }).sort((a,b) => parseFloat(b.winRate) - parseFloat(a.winRate) || b.wins - a.wins).map((p, i) => ({...p, rank: i+1}));
 
@@ -1736,7 +1766,10 @@
             
             rosterUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "roster"), (snapshot) => {
                 window.appData.explicitRoster = [];
-                snapshot.forEach(doc => window.appData.explicitRoster.push({ id: doc.id, name: doc.data().name }));
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    window.appData.explicitRoster.push({ id: docSnap.id, name: data.name, avatarDataUrl: data.avatarDataUrl || '' });
+                });
                 if(window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
             });
 
@@ -1794,7 +1827,7 @@
             return `
                 <div onclick="window.openPlayerProfile(${index})" class="glass flex items-center p-3 md:p-4 rounded-xl hover:bg-slate-800/80 transition cursor-pointer relative overflow-hidden border border-slate-700/50 group">
                     <div class="w-6 md:w-8 text-center font-black text-xl md:text-2xl ${getRankColor(p.rank)} z-10">${p.rank}</div>
-                    <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-slate-800 ml-2 md:ml-3 flex items-center justify-center text-xl border border-slate-600/50 shadow-md z-10 flex-shrink-0 group-hover:border-purple-500/50 transition">${p.icon}</div>
+                    ${renderPlayerAvatar(p, 'w-12 h-12 md:w-14 md:h-14', 'text-sm md:text-base', 'ml-2 md:ml-3 z-10 flex-shrink-0 group-hover:border-purple-500/50 transition')}
                     <div class="ml-3 md:ml-4 flex-grow z-10 min-w-0">
                         <h4 class="font-bold text-base md:text-lg text-white truncate group-hover:text-purple-400 transition">${p.name}</h4>
                         <div class="flex items-center gap-2 mt-0.5">
@@ -2000,9 +2033,14 @@
                         safeSetHTML('home-top-players', window.appData.players.slice(0, 3).map((p, i) => generatePlayerRow(p, i)).join(''));
                         safeSetHTML('roster-list', window.appData.players.map(p => `
                             <li class="flex justify-between items-center bg-slate-800/50 p-3 rounded border border-slate-700/50 group">
-                                <span class="text-sm font-bold flex items-center gap-2">${p.icon} ${p.name}</span>
+                                <span class="text-sm font-bold flex items-center gap-2">${renderPlayerAvatar(p, 'w-8 h-8', 'text-[10px]', 'shrink-0')}<span class="truncate">${p.name}</span></span>
                                 <div class="flex items-center gap-3">
                                     <span class="text-xs bg-slate-700 text-slate-400 px-2 py-1 rounded">0 Plays</span>
+                                    <label class="text-slate-500 hover:text-emerald-400 transition cursor-pointer" title="Upload avatar">
+                                        <input type="file" accept="image/*" class="hidden" onchange="window.uploadPlayerAvatar('${p.name.replace(/'/g, "\\'")}', event)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    </label>
+                                    ${p.avatarDataUrl ? `<button onclick="window.removePlayerAvatar('${p.name.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-amber-400 transition" title="Remove avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path></svg></button>` : ''}
                                     <button onclick="window.removePlayer('${p.name.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-red-400 transition" title="Remove Player">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                                     </button>
@@ -2028,7 +2066,7 @@
                 if (latestSessionMatches.length > 0 && window.appData.sessionData.length > 0) {
                     const topGainer = window.appData.sessionData[0];
                     const hasMVP = topGainer.eloChange > 0;
-                    const topGainerPlayer = window.appData.players.find(p => p.name === topGainer.player) || { icon: '👤' };
+                    const topGainerPlayer = window.appData.players.find(p => p.name === topGainer.player) || { name: topGainer.player, avatarInitials: getPlayerInitials(topGainer.player), avatarColor: getAvatarColorFromName(topGainer.player) };
 
                     let matchesHTML = latestSessionMatches.map((m, idx) => {
                         const matchNum = latestSessionMatches.length - idx;
@@ -2106,7 +2144,7 @@
                                 <div class="absolute -right-2 -bottom-4 opacity-[0.03] text-8xl pointer-events-none transition-transform duration-500 group-hover:scale-110">👑</div>
                                 
                                 <div class="flex -space-x-3 shrink-0 relative z-10">
-                                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-800 border-2 border-green-500 flex items-center justify-center text-xl md:text-2xl z-10 shadow-md">${topGainerPlayer.icon}</div>
+                                    ${renderPlayerAvatar(topGainerPlayer, 'w-10 h-10 md:w-12 md:h-12', 'text-xs md:text-sm', 'border-2 border-green-500 z-10 shadow-md')}
                                     <div data-card="${topGainer.name}" data-version="art_crop" class="set-bg bg-cover bg-center w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-green-400 shadow-[0_0_15px_rgba(74,222,128,0.2)] flex-shrink-0 art-fallback relative z-0"></div>
                                 </div>
                                 
@@ -2137,7 +2175,7 @@
                 
                 if (threatDeck) {
                     const threatPlayerName = threatDeck.pilots[0] || threatDeck.owner;
-                    const threatPlayer = window.appData.players.find(p => p.name === threatPlayerName) || { icon: "🦹", winRate: "0%", plays: 0, wins: 0 };
+                    const threatPlayer = window.appData.players.find(p => p.name === threatPlayerName) || { name: threatPlayerName, avatarInitials: getPlayerInitials(threatPlayerName), avatarColor: getAvatarColorFromName(threatPlayerName), winRate: "0%", plays: 0, wins: 0 };
                     const playerIndex = window.appData.players.findIndex(p => p.name === threatPlayerName);
 
                     safeSetHTML('analytics-synergy', `
@@ -2145,9 +2183,7 @@
                             <div data-card="${threatDeck.name}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-20 transition duration-500 mix-blend-luminosity"></div>
                             
                             <div class="relative z-10 flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
-                                <div class="w-12 h-12 rounded-full bg-slate-950 border-2 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)] flex items-center justify-center text-2xl flex-shrink-0" title="${threatPlayerName}">
-                                    ${threatPlayer.icon}
-                                </div>
+                                ${renderPlayerAvatar(threatPlayer, 'w-12 h-12', 'text-xs', 'border-2 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)] flex-shrink-0')}
                                 <div class="text-purple-400 font-black text-xl">+</div>
                                 <div data-card="${threatDeck.name}" data-version="art_crop" class="set-bg w-12 h-12 rounded-full art-fallback bg-cover bg-center border-2 border-slate-600 shadow-md flex-shrink-0 group-hover:border-purple-400 transition-colors" title="${threatDeck.name}"></div>
                             </div>
@@ -2190,7 +2226,7 @@
 
                 const upset = window.appData.biggestUpset;
                 if (upset && upset.eloGain > 0) {
-                    const upsetPlayer = window.appData.players.find(p => p.name === upset.player) || { icon: '👤' };
+                    const upsetPlayer = window.appData.players.find(p => p.name === upset.player) || { name: upset.player, avatarInitials: getPlayerInitials(upset.player), avatarColor: getAvatarColorFromName(upset.player) };
                     safeSetHTML('analytics-upset', `
                         <div class="glass p-5 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-slate-900 shadow-[0_0_20px_rgba(245,158,11,0.05)]">
                             <div class="flex justify-between items-start mb-4">
@@ -2201,7 +2237,7 @@
                                 <span class="text-xs text-slate-400 font-mono">${upset.date}</span>
                             </div>
                             <div class="flex items-center gap-3 bg-slate-950/50 p-3 rounded-xl border border-slate-800/80 mb-3">
-                                <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-xl flex-shrink-0">${upsetPlayer.icon}</div>
+                                ${renderPlayerAvatar(upsetPlayer, 'w-10 h-10', 'text-[10px]', 'flex-shrink-0')}
                                 <div>
                                     <p class="text-xs font-bold text-white">${upset.player}</p>
                                     <p class="text-[10px] text-slate-400">won with <span class="font-bold text-amber-400">${upset.deck}</span></p>
@@ -2234,8 +2270,8 @@
                 });
 
                 if (maxDifferential > 0) {
-                    const pBully = window.appData.players.find(p => p.name === rivalBully) || { icon: '👤' };
-                    const pVictim = window.appData.players.find(p => p.name === rivalVictim) || { icon: '👤' };
+                    const pBully = window.appData.players.find(p => p.name === rivalBully) || { name: rivalBully, avatarInitials: getPlayerInitials(rivalBully), avatarColor: getAvatarColorFromName(rivalBully) };
+                    const pVictim = window.appData.players.find(p => p.name === rivalVictim) || { name: rivalVictim, avatarInitials: getPlayerInitials(rivalVictim), avatarColor: getAvatarColorFromName(rivalVictim) };
                     
                     safeSetHTML('analytics-rivalry', `
                         <div class="glass p-5 rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-500/5 to-slate-900 shadow-[0_0_20px_rgba(239,68,68,0.05)] relative overflow-hidden">
@@ -2244,7 +2280,7 @@
                             
                             <div class="flex items-center justify-center gap-2 md:gap-4 relative z-10">
                                 <div class="flex flex-col items-center flex-1 text-center">
-                                    <div class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-slate-950 border-2 border-red-500 shadow-md flex items-center justify-center text-3xl mb-2">${pBully.icon}</div>
+                                    ${renderPlayerAvatar(pBully, 'w-14 h-14 md:w-16 md:h-16', 'text-sm md:text-base', 'mb-2 border-2 border-red-500 shadow-md')}
                                     <h4 class="font-bold text-white text-sm md:text-base">${rivalBully}</h4>
                                 </div>
                                 
@@ -2254,7 +2290,7 @@
                                 </div>
 
                                 <div class="flex flex-col items-center flex-1 text-center opacity-60">
-                                    <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-slate-900 border border-slate-700 shadow-inner flex items-center justify-center text-2xl mb-2 grayscale">${pVictim.icon}</div>
+                                    ${renderPlayerAvatar(pVictim, 'w-12 h-12 md:w-14 md:h-14', 'text-xs md:text-sm', 'mb-2 border border-slate-700 shadow-inner grayscale')}
                                     <h4 class="font-bold text-slate-300 text-xs md:text-sm">${rivalVictim}</h4>
                                 </div>
                             </div>
@@ -2288,9 +2324,14 @@
                 
                 safeSetHTML('roster-list', window.appData.players.map(p => `
                     <li class="flex justify-between items-center bg-slate-800/50 p-3 rounded border border-slate-700/50 group">
-                        <span class="text-sm font-bold flex items-center gap-2">${p.icon} ${p.name}</span>
+                        <span class="text-sm font-bold flex items-center gap-2">${renderPlayerAvatar(p, 'w-8 h-8', 'text-[10px]', 'shrink-0')}<span class="truncate">${p.name}</span></span>
                         <div class="flex items-center gap-3">
                             <span class="text-xs bg-slate-700 text-slate-400 px-2 py-1 rounded">${p.plays} Plays</span>
+                            <label class="text-slate-500 hover:text-emerald-400 transition cursor-pointer" title="Upload avatar">
+                                <input type="file" accept="image/*" class="hidden" onchange="window.uploadPlayerAvatar('${p.name.replace(/'/g, "\\'")}', event)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </label>
+                            ${p.avatarDataUrl ? `<button onclick="window.removePlayerAvatar('${p.name.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-amber-400 transition" title="Remove avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path></svg></button>` : ''}
                             <button onclick="window.removePlayer('${p.name.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-red-400 transition" title="Remove Player">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                             </button>
@@ -2582,7 +2623,7 @@
             const winsEl = document.getElementById('plr-view-wins');
             const winrateEl = document.getElementById('plr-view-winrate');
             
-            if(iconEl) iconEl.innerText = player.icon;
+            if(iconEl) iconEl.innerHTML = renderPlayerAvatar(player, 'w-20 h-20', 'text-lg', 'border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.3)]');
             if(nameEl) nameEl.innerText = player.name;
             if(playsEl) playsEl.innerText = player.plays;
             if(winsEl) winsEl.innerText = player.wins;
@@ -2669,7 +2710,7 @@
                 
                 let html = '';
                 sortedDecks.forEach(cmd => {
-                    let options = sortedPlayers.map(p => `<option value="${p.name}" ${p.name === cmd.owner ? 'selected' : ''}>${p.icon} ${p.name}</option>`).join('');
+                    let options = sortedPlayers.map(p => `<option value="${p.name}" ${p.name === cmd.owner ? 'selected' : ''}>${p.avatarInitials || getPlayerInitials(p.name)} ${p.name}</option>`).join('');
                     html += `
                     <div class="flex justify-between items-center bg-slate-900 border border-slate-700 p-2 md:p-3 rounded-lg mb-2">
                         <div class="flex items-center gap-3 min-w-0 pr-2">
@@ -2838,6 +2879,93 @@
                     form.classList.add('opacity-0');
                     setTimeout(() => form.classList.add('hidden'), 300);
                 }
+            }
+        }
+
+        function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Could not read image file.'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function loadImageFromDataUrl(dataUrl) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('Could not decode image.'));
+                img.src = dataUrl;
+            });
+        }
+
+        async function compressAvatarFile(file) {
+            const inputDataUrl = await fileToDataUrl(file);
+            const img = await loadImageFromDataUrl(inputDataUrl);
+            const size = 96;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas not supported in this browser.');
+
+            const srcSize = Math.min(img.width, img.height);
+            const sx = (img.width - srcSize) / 2;
+            const sy = (img.height - srcSize) / 2;
+            ctx.drawImage(img, sx, sy, srcSize, srcSize, 0, 0, size, size);
+
+            const outputDataUrl = canvas.toDataURL('image/jpeg', 0.72);
+            const byteSize = Math.ceil((outputDataUrl.length * 3) / 4);
+            if (byteSize > 120 * 1024) {
+                throw new Error('Avatar is too large after compression. Try another image.');
+            }
+            return outputDataUrl;
+        }
+
+        window.uploadPlayerAvatar = async function(playerName, event) {
+            const input = event?.target;
+            const file = input?.files?.[0];
+            if (!file) return;
+            if (!file.type || !file.type.startsWith('image/')) {
+                window.showAppAlert('Please select an image file (PNG/JPG/WebP).', 'Invalid File', '⚠️');
+                if (input) input.value = '';
+                return;
+            }
+
+            const rosterEntry = window.appData.explicitRoster.find(r => r.name === playerName);
+            if (!rosterEntry) {
+                window.showAppAlert('Could not find this player in roster.', 'Upload Failed', '❌');
+                if (input) input.value = '';
+                return;
+            }
+
+            try {
+                const avatarDataUrl = await compressAvatarFile(file);
+                await setDoc(doc(db, "groups", window.groupIdRaw, "roster", rosterEntry.id), {
+                    avatarDataUrl
+                }, { merge: true });
+            } catch (error) {
+                console.error('Avatar upload failed:', error);
+                window.showAppAlert('Could not upload avatar.\n\n' + error.message, 'Upload Failed', '❌');
+            } finally {
+                if (input) input.value = '';
+            }
+        }
+
+        window.removePlayerAvatar = async function(playerName) {
+            const rosterEntry = window.appData.explicitRoster.find(r => r.name === playerName);
+            if (!rosterEntry) {
+                window.showAppAlert('Could not find this player in roster.', 'Remove Failed', '❌');
+                return;
+            }
+            try {
+                await setDoc(doc(db, "groups", window.groupIdRaw, "roster", rosterEntry.id), {
+                    avatarDataUrl: ''
+                }, { merge: true });
+            } catch (error) {
+                console.error('Avatar removal failed:', error);
+                window.showAppAlert('Could not remove avatar.\n\n' + error.message, 'Remove Failed', '❌');
             }
         }
 
@@ -3449,7 +3577,7 @@
                 if (isDeck) {
                     li.innerHTML = `<span class="truncate font-medium">${item.name}</span> <span class="text-[10px] text-slate-400 flex-shrink-0 ml-2 border border-slate-600 bg-slate-900 px-1.5 py-0.5 rounded opacity-70 group-hover:opacity-100">${item.owner}</span>`;
                 } else {
-                    li.innerHTML = `<span class="truncate font-medium">${item.icon} ${item.name}</span>`;
+                    li.innerHTML = `<span class="truncate font-medium">${item.avatarInitials || getPlayerInitials(item.name)} ${item.name}</span>`;
                 }
 
                 li.onmousedown = (evt) => {
