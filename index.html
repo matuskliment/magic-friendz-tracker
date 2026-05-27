@@ -1483,11 +1483,14 @@
         }
 
         const AVATAR_BRAND_PALETTE = [
-            '#7c3aed', '#8b5cf6', '#6366f1', '#4f46e5', '#2563eb',
-            '#0891b2', '#0d9488', '#0f766e', '#9333ea', '#a855f7',
-            '#c026d3', '#db2777', '#e11d48', '#be123c', '#7e22ce',
-            '#5b21b6', '#1d4ed8', '#0284c7', '#0ea5e9', '#14b8a6'
+            '#4c1d95', '#5b21b6', '#6d28d9', '#7c3aed', '#8b5cf6', '#a78bfa',
+            '#312e81', '#3730a3', '#4338ca', '#4f46e5', '#6366f1', '#818cf8',
+            '#1e3a8a', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd',
+            '#581c87', '#6b21a8', '#7e22ce', '#9333ea', '#a855f7', '#c084fc',
+            '#701a75', '#86198f', '#a21caf', '#c026d3', '#d946ef', '#e879f9',
+            '#831843', '#9d174d', '#be185d', '#db2777', '#ec4899', '#f472b6'
         ];
+        window.playerAvatarColorMap = {};
 
         function getAvatarColorFromName(name) {
             let hash = 0;
@@ -1499,8 +1502,13 @@
             return AVATAR_BRAND_PALETTE[Math.abs(hash) % AVATAR_BRAND_PALETTE.length];
         }
 
+        function getResolvedAvatarColor(name) {
+            const clean = normalizeName(name || '');
+            return window.playerAvatarColorMap[clean] || getAvatarColorFromName(clean);
+        }
+
         function buildPlayerAvatarColorMap(names) {
-            const cleanNames = [...new Set((names || []).map(n => String(n || '').trim()).filter(Boolean))];
+            const cleanNames = [...new Set((names || []).map(n => normalizeName(n || '')).filter(Boolean))];
             const usedIndexes = new Set();
             const colorMap = {};
             cleanNames.forEach(name => {
@@ -1524,7 +1532,7 @@
         function renderPlayerAvatar(player, sizeClass = 'w-12 h-12', textClass = 'text-base', extraClass = '') {
             const avatarUrl = player?.avatarDataUrl || '';
             const label = player?.avatarInitials || getPlayerInitials(player?.name);
-            const color = player?.avatarColor || getAvatarColorFromName(player?.name);
+            const color = player?.avatarColor || getResolvedAvatarColor(player?.name);
             const safeName = String(player?.name || 'Player').replace(/"/g, '&quot;');
             if (avatarUrl) {
                 return `<div class="${sizeClass} rounded-full overflow-hidden border border-slate-600/60 bg-slate-800 shadow-md ${extraClass}"><img src="${avatarUrl}" alt="${safeName} avatar" class="w-full h-full object-cover"></div>`;
@@ -1735,13 +1743,18 @@
                 };
             });
 
-            const playerAvatarColorMap = buildPlayerAvatarColorMap(Object.keys(playerStats));
+            const playerAvatarColorMap = buildPlayerAvatarColorMap([
+                ...Object.keys(playerStats),
+                ...(window.appData.explicitRoster || []).map(p => p.name)
+            ]);
+            window.playerAvatarColorMap = playerAvatarColorMap;
             window.appData.players = Object.keys(playerStats).map(name => {
                 const s = playerStats[name];
                 let topDeck = "", maxPlays = 0;
                 Object.keys(s.decks).forEach(d => { if(s.decks[d] > maxPlays) { maxPlays = s.decks[d]; topDeck = d; } });
                 const winRateVal = s.plays > 0 ? ((s.wins / s.plays) * 100) : 0;
                 const rosterEntry = (window.appData.explicitRoster || []).find(r => r.name === name);
+                const cleanName = normalizeName(name);
                 return {
                     name: name,
                     wins: s.wins,
@@ -1749,7 +1762,7 @@
                     winRate: winRateVal.toFixed(1) + "%",
                     topDeck: topDeck,
                     avatarInitials: getPlayerInitials(name),
-                    avatarColor: playerAvatarColorMap[name] || getAvatarColorFromName(name),
+                    avatarColor: playerAvatarColorMap[cleanName] || getAvatarColorFromName(cleanName),
                     avatarDataUrl: rosterEntry?.avatarDataUrl || ''
                 };
             }).sort((a,b) => parseFloat(b.winRate) - parseFloat(a.winRate) || b.wins - a.wins).map((p, i) => ({...p, rank: i+1}));
@@ -2098,7 +2111,7 @@
                 if (latestSessionMatches.length > 0 && window.appData.sessionData.length > 0) {
                     const topGainer = window.appData.sessionData[0];
                     const hasMVP = topGainer.eloChange > 0;
-                    const topGainerPlayer = window.appData.players.find(p => p.name === topGainer.player) || { name: topGainer.player, avatarInitials: getPlayerInitials(topGainer.player), avatarColor: getAvatarColorFromName(topGainer.player) };
+                    const topGainerPlayer = window.appData.players.find(p => p.name === topGainer.player) || { name: topGainer.player, avatarInitials: getPlayerInitials(topGainer.player), avatarColor: getResolvedAvatarColor(topGainer.player) };
 
                     let matchesHTML = latestSessionMatches.map((m, idx) => {
                         const matchNum = latestSessionMatches.length - idx;
@@ -2207,7 +2220,7 @@
                 
                 if (threatDeck) {
                     const threatPlayerName = threatDeck.pilots[0] || threatDeck.owner;
-                    const threatPlayer = window.appData.players.find(p => p.name === threatPlayerName) || { name: threatPlayerName, avatarInitials: getPlayerInitials(threatPlayerName), avatarColor: getAvatarColorFromName(threatPlayerName), winRate: "0%", plays: 0, wins: 0 };
+                    const threatPlayer = window.appData.players.find(p => p.name === threatPlayerName) || { name: threatPlayerName, avatarInitials: getPlayerInitials(threatPlayerName), avatarColor: getResolvedAvatarColor(threatPlayerName), winRate: "0%", plays: 0, wins: 0 };
                     const playerIndex = window.appData.players.findIndex(p => p.name === threatPlayerName);
 
                     safeSetHTML('analytics-synergy', `
@@ -2258,7 +2271,7 @@
 
                 const upset = window.appData.biggestUpset;
                 if (upset && upset.eloGain > 0) {
-                    const upsetPlayer = window.appData.players.find(p => p.name === upset.player) || { name: upset.player, avatarInitials: getPlayerInitials(upset.player), avatarColor: getAvatarColorFromName(upset.player) };
+                    const upsetPlayer = window.appData.players.find(p => p.name === upset.player) || { name: upset.player, avatarInitials: getPlayerInitials(upset.player), avatarColor: getResolvedAvatarColor(upset.player) };
                     safeSetHTML('analytics-upset', `
                         <div class="glass p-5 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-slate-900 shadow-[0_0_20px_rgba(245,158,11,0.05)]">
                             <div class="flex justify-between items-start mb-4">
@@ -2302,8 +2315,8 @@
                 });
 
                 if (maxDifferential > 0) {
-                    const pBully = window.appData.players.find(p => p.name === rivalBully) || { name: rivalBully, avatarInitials: getPlayerInitials(rivalBully), avatarColor: getAvatarColorFromName(rivalBully) };
-                    const pVictim = window.appData.players.find(p => p.name === rivalVictim) || { name: rivalVictim, avatarInitials: getPlayerInitials(rivalVictim), avatarColor: getAvatarColorFromName(rivalVictim) };
+                    const pBully = window.appData.players.find(p => p.name === rivalBully) || { name: rivalBully, avatarInitials: getPlayerInitials(rivalBully), avatarColor: getResolvedAvatarColor(rivalBully) };
+                    const pVictim = window.appData.players.find(p => p.name === rivalVictim) || { name: rivalVictim, avatarInitials: getPlayerInitials(rivalVictim), avatarColor: getResolvedAvatarColor(rivalVictim) };
                     
                     safeSetHTML('analytics-rivalry', `
                         <div class="glass p-5 rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-500/5 to-slate-900 shadow-[0_0_20px_rgba(239,68,68,0.05)] relative overflow-hidden">
