@@ -2838,7 +2838,7 @@
             const winners = Array.isArray(match.winners) ? match.winners : [];
             const losers = Array.isArray(match.losers) ? match.losers : [];
             const participants = [...winners, ...losers].slice(0, 5);
-            const winnerNames = winners.map(w => w.player || w.name).filter(Boolean).join(' & ');
+            const winnerDeckNames = winners.map(w => normalizeName(w.name || '')).filter(Boolean).join(';');
             const cards = Array.isArray(match.winningCards) ? match.winningCards.slice(0, 4) : [];
 
             const row = [
@@ -2848,7 +2848,7 @@
                 participants[2]?.player || '', participants[2]?.name || '',
                 participants[3]?.player || '', participants[3]?.name || '',
                 participants[4]?.player || '', participants[4]?.name || '',
-                winnerNames,
+                winnerDeckNames,
                 match.notes || '',
                 cards[0] || '', cards[1] || '', cards[2] || '', cards[3] || ''
             ];
