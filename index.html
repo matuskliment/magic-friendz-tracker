@@ -319,12 +319,9 @@
                         </div>
                         <p id="sign-in-status" class="text-[11px] text-slate-500"></p>
                     </div>
-                    <div id="group-signed-in" class="hidden space-y-2">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <p class="text-xs text-emerald-300/90">Signed in as <span id="signed-in-email" class="font-semibold text-white"></span></p>
-                            <button type="button" onclick="window.authSignOut()" class="text-xs font-bold text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition">Sign out</button>
-                        </div>
-                        <p id="owner-link-hint" class="hidden text-[11px] text-amber-300/90 bg-amber-950/30 border border-amber-500/20 rounded-lg px-3 py-2">Link your account to a player on the list below — tap <span class="font-bold text-amber-200">This is me</span> on your row (e.g. Matus).</p>
+                    <div id="group-signed-in" class="hidden flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-xs text-emerald-300/90">Signed in as <span id="signed-in-email" class="font-semibold text-white"></span></p>
+                        <button type="button" onclick="window.authSignOut()" class="text-xs font-bold text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition">Sign out</button>
                     </div>
                 </div>
                 <div class="glass p-5 rounded-xl border border-slate-700">
@@ -824,6 +821,7 @@
         window.currentUser = null;
         window.groupAccess = 'viewer';
         window.groupOwnerEmail = null;
+        window.linkedPlayerName = '';
         let matchUnsubscribe = null;
         let rosterUnsubscribe = null;
         let settingsUnsubscribe = null;
@@ -887,17 +885,20 @@
             }, { merge: true });
         }
 
-        function getOwnerLinkedRosterEntry() {
-            if (!auth.currentUser) return null;
-            return (window.appData.explicitRoster || []).find(r => r.uid === auth.currentUser.uid) || null;
-        }
-
-        function canShowLinkToMe(p) {
-            if (window.groupAccess !== 'owner' || !auth.currentUser || !p.rosterId) return false;
-            if (p.uid && p.uid !== auth.currentUser.uid) return false;
-            const linked = getOwnerLinkedRosterEntry();
-            if (linked && linked.id !== p.rosterId) return false;
-            return !p.uid;
+        function canEditPlayerAvatar(playerName) {
+            if (!window.canWrite()) return false;
+            if (window.canOwnerDelete()) return true;
+            if (!auth.currentUser) return false;
+            const rosterEntry = findRosterEntryByName(playerName);
+            if (!rosterEntry) return false;
+            if (rosterEntry.uid && rosterEntry.uid === auth.currentUser.uid) return true;
+            const myEmail = normalizeEmail(auth.currentUser.email);
+            if (myEmail && rosterEntry.email && normalizeEmail(rosterEntry.email) === myEmail) return true;
+            const linkedName = window.linkedPlayerName || '';
+            if (linkedName && normalizeName(linkedName).toLowerCase() === normalizeName(playerName).toLowerCase()) {
+                return true;
+            }
+            return false;
         }
 
         async function linkOwnerRosterEntries(groupId, uid, email, linkedPlayerName) {
@@ -925,39 +926,6 @@
             if (writes.length) await Promise.all(writes);
         }
 
-        window.linkOwnerToPlayer = async function(playerName) {
-            if (window.groupAccess !== 'owner' || !auth.currentUser || !window.groupIdRaw) {
-                window.showAppAlert('Sign in as the group owner to link your player profile.', 'Owner only', '🔒');
-                return;
-            }
-            const rosterEntry = findRosterEntryByName(playerName);
-            if (!rosterEntry?.id) {
-                window.showAppAlert('That player is not on the list yet. Add them first.', 'Not found', '⚠️');
-                return;
-            }
-            const uid = auth.currentUser.uid;
-            const email = normalizeEmail(auth.currentUser.email);
-            const groupId = window.groupIdRaw;
-            const name = rosterEntry.name;
-
-            try {
-                await linkOwnerRosterEntries(groupId, uid, email, name);
-                await ensureMemberRecord(groupId, 'owner', email, name);
-                if (email) {
-                    await setDoc(doc(db, 'groups', groupId, 'memberEmails', email), {
-                        rosterId: rosterEntry.id,
-                        playerName: name
-                    }, { merge: true });
-                }
-                window.showAppAlert(`Your account is now linked to ${name}. Match logs under that name are yours.`, 'Linked', '✅');
-                updateAccessUI();
-                refreshPlayerList();
-            } catch (e) {
-                console.error(e);
-                window.showAppAlert('Could not link profile: ' + e.message, 'Error', '❌');
-            }
-        };
-
         function isOwnerSelfOnList(p) {
             if (window.groupAccess !== 'owner' || !auth.currentUser) return false;
             if (p.uid && p.uid === auth.currentUser.uid) return true;
@@ -981,10 +949,12 @@
             if (memberSnap.exists()) {
                 const role = memberSnap.data().role;
                 const linkedPlayerName = memberSnap.data().playerName || '';
+                window.linkedPlayerName = linkedPlayerName;
                 window.groupAccess = role === 'owner' ? 'owner' : 'editor';
                 if (role === 'owner') await linkOwnerRosterEntries(groupId, uid, email, linkedPlayerName);
                 return;
             }
+            window.linkedPlayerName = '';
 
             const groupSnap = await getDoc(doc(db, 'groups', groupId));
             const groupData = groupSnap.exists() ? groupSnap.data() : {};
@@ -992,6 +962,7 @@
             if (groupData.ownerUid === uid || (groupData.ownerEmail && normalizeEmail(groupData.ownerEmail) === email)) {
                 const memberSnap2 = await getDoc(memberRef);
                 const linkedPlayerName = memberSnap2.exists() ? (memberSnap2.data().playerName || '') : '';
+                window.linkedPlayerName = linkedPlayerName;
                 await ensureMemberRecord(groupId, 'owner', email, linkedPlayerName);
                 await linkOwnerRosterEntries(groupId, uid, email, linkedPlayerName);
                 window.groupAccess = 'owner';
@@ -1001,7 +972,9 @@
             const inviteSnap = await getDoc(doc(db, 'groups', groupId, 'memberEmails', email));
             if (inviteSnap.exists()) {
                 const invite = inviteSnap.data();
-                await ensureMemberRecord(groupId, 'editor', email, invite.playerName || '');
+                const invitePlayerName = invite.playerName || '';
+                window.linkedPlayerName = invitePlayerName;
+                await ensureMemberRecord(groupId, 'editor', email, invitePlayerName);
                 if (invite.rosterId) {
                     await setDoc(doc(db, 'groups', groupId, 'roster', invite.rosterId), {
                         uid,
@@ -1015,7 +988,9 @@
             const rosterSnap = await getDocs(collection(db, 'groups', groupId, 'roster'));
             const rosterMatch = rosterSnap.docs.find(d => normalizeEmail(d.data().email) === email);
             if (rosterMatch) {
-                await ensureMemberRecord(groupId, 'editor', email, rosterMatch.data().name || '');
+                const rosterPlayerName = rosterMatch.data().name || '';
+                window.linkedPlayerName = rosterPlayerName;
+                await ensureMemberRecord(groupId, 'editor', email, rosterPlayerName);
                 await setDoc(doc(db, 'groups', groupId, 'roster', rosterMatch.id), { uid, email }, { merge: true });
                 await setDoc(doc(db, 'groups', groupId, 'memberEmails', email), {
                     rosterId: rosterMatch.id,
@@ -1026,6 +1001,7 @@
             }
 
             window.groupAccess = 'viewer';
+            window.linkedPlayerName = '';
         }
 
         function updateAccessUI() {
@@ -1043,8 +1019,6 @@
             const inviteHelp = document.getElementById('roster-invite-help');
             const inviteLocked = document.getElementById('roster-invite-locked');
             const signInEmailInput = document.getElementById('sign-in-email');
-            const ownerLinkHint = document.getElementById('owner-link-hint');
-
             if (fab) {
                 if (canWrite) fab.classList.remove('hidden');
                 else fab.classList.add('hidden');
@@ -1084,11 +1058,6 @@
             if (inviteLocked) {
                 if (!canWrite) inviteLocked.classList.remove('hidden');
                 else inviteLocked.classList.add('hidden');
-            }
-
-            if (ownerLinkHint) {
-                const needsLink = isOwner && window.currentUser && !getOwnerLinkedRosterEntry();
-                ownerLinkHint.classList.toggle('hidden', !needsLink);
             }
 
             if (guestSignin && signedIn) {
@@ -1260,12 +1229,17 @@
                     email: r.email || '',
                     uid: r.uid || '',
                     inviteSentAt: r.inviteSentAt || null,
+                    addedAt: r.addedAt || 0,
                     plays: statsPlayer?.plays ?? 0,
                     avatarInitials: statsPlayer?.avatarInitials || getPlayerInitials(r.name),
                     avatarColor: statsPlayer?.avatarColor || getResolvedAvatarColor(r.name),
                     avatarDataUrl: r.avatarDataUrl || statsPlayer?.avatarDataUrl || ''
                 };
-            }).sort((a, b) => normalizeName(a.name).localeCompare(normalizeName(b.name)));
+            }).sort((a, b) => {
+                const timeDiff = (a.addedAt || 0) - (b.addedAt || 0);
+                if (timeDiff !== 0) return timeDiff;
+                return normalizeName(a.name).localeCompare(normalizeName(b.name));
+            });
         }
 
         function renderPlayerAccessBadge(p, ownerSelf, hasMember) {
@@ -1376,11 +1350,7 @@
                 ? `<p class="text-[10px] text-slate-500 mt-1.5">Invite sent ${escapeHtml(inviteSentLabel)}</p>`
                 : '';
 
-            const linkToMeBtn = canShowLinkToMe(p)
-                ? `<button type="button" onclick="window.linkOwnerToPlayer('${nameJs}')" class="text-[11px] font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 rounded-lg transition shrink-0">This is me</button>`
-                : '';
-
-            const inviteBtn = (canWrite && !hasMember && !linkToMeBtn)
+            const inviteBtn = (canWrite && !hasMember)
                 ? `<button type="button" onclick="window.toggleRosterInvite('${nameJs}', '${rosterIdJs}')" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-lg transition shrink-0">${inviteOpen ? 'Send invite' : 'Invite'}</button>`
                 : '';
 
@@ -1390,13 +1360,15 @@
                 </div>
             ` : '';
 
-            const editControls = canWrite ? `
-                <label class="text-slate-500 hover:text-emerald-400 transition cursor-pointer" title="Upload avatar">
+            const canAvatar = canEditPlayerAvatar(p.name);
+            const canRemoveFromList = window.canOwnerDelete();
+            const editControls = (canAvatar || canRemoveFromList) ? `
+                ${canAvatar ? `<label class="text-slate-500 hover:text-emerald-400 transition cursor-pointer" title="Upload avatar">
                     <input type="file" accept="image/*" class="hidden" onchange="window.uploadPlayerAvatar('${nameJs}', event)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                </label>
-                ${p.avatarDataUrl ? `<button onclick="window.removePlayerAvatar('${nameJs}')" class="text-slate-500 hover:text-amber-400 transition" title="Remove avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path></svg></button>` : ''}
-                <button onclick="window.removePlayer('${nameJs}')" class="text-slate-500 hover:text-red-400 transition" title="Remove Player"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+                </label>` : ''}
+                ${canAvatar && p.avatarDataUrl ? `<button onclick="window.removePlayerAvatar('${nameJs}')" class="text-slate-500 hover:text-amber-400 transition" title="Remove avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path></svg></button>` : ''}
+                ${canRemoveFromList ? `<button onclick="window.removePlayer('${nameJs}')" class="text-slate-500 hover:text-red-400 transition" title="Remove Player"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>` : ''}
             ` : '';
 
             return `
@@ -1405,7 +1377,6 @@
                         <span class="text-sm font-bold flex items-center gap-2 min-w-0">${renderPlayerAvatar(p, 'w-8 h-8', 'text-[10px]', 'shrink-0')}<span class="truncate">${escapeHtml(p.name)}</span></span>
                         <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                             ${inviteStatus}
-                            ${linkToMeBtn}
                             ${inviteBtn}
                             <span class="text-xs bg-slate-700 text-slate-400 px-2 py-1 rounded">${plays} Plays</span>
                             ${editControls}
@@ -1871,6 +1842,7 @@
             window.groupOwnerEmail = null;
             window.isGroupValid = false;
             window.groupAccess = 'viewer';
+            window.linkedPlayerName = '';
             if (matchUnsubscribe) { matchUnsubscribe(); matchUnsubscribe = null; }
             if (rosterUnsubscribe) { rosterUnsubscribe(); rosterUnsubscribe = null; }
             if (settingsUnsubscribe) { settingsUnsubscribe(); settingsUnsubscribe = null; }
@@ -2622,7 +2594,8 @@
                         avatarDataUrl: data.avatarDataUrl || '',
                         email: data.email || '',
                         uid: data.uid || '',
-                        inviteSentAt: data.inviteSentAt || null
+                        inviteSentAt: data.inviteSentAt || null,
+                        addedAt: data.addedAt || 0
                     });
                 });
                 if(window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
@@ -3855,8 +3828,14 @@
         }
 
         window.uploadPlayerAvatar = async function(playerName, event) {
-            if (!window.canWrite()) {
-                window.showAppAlert('Sign in to upload avatars.', 'View only', '🔒');
+            if (!canEditPlayerAvatar(playerName)) {
+                window.showAppAlert(
+                    !window.canWrite()
+                        ? 'Sign in to upload avatars.'
+                        : 'You can only change the photo on your own player row.',
+                    'Not allowed',
+                    '🔒'
+                );
                 return;
             }
             const input = event?.target;
@@ -3891,8 +3870,14 @@
         }
 
         window.removePlayerAvatar = async function(playerName) {
-            if (!window.canWrite()) {
-                window.showAppAlert('Sign in to edit avatars.', 'View only', '🔒');
+            if (!canEditPlayerAvatar(playerName)) {
+                window.showAppAlert(
+                    !window.canWrite()
+                        ? 'Sign in to edit avatars.'
+                        : 'You can only change the photo on your own player row.',
+                    'Not allowed',
+                    '🔒'
+                );
                 return;
             }
             const rosterEntry = findRosterEntryByName(playerName);
