@@ -569,6 +569,12 @@
                     <button onclick="window.importCSVData(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-purple-400 hover:text-purple-300 border border-slate-700 px-4 py-2 rounded-xl text-sm font-bold transition">📥 Upload CSV Data</button>
                 </div>
             </div>
+
+            <div class="glass p-5 rounded-xl border border-emerald-500/30 bg-emerald-950/10">
+                <h3 class="font-bold text-white mb-2 flex items-center gap-2"><span class="text-emerald-400">📦</span> Data Export</h3>
+                <p class="text-xs text-slate-400 mb-4">Download a full JSON backup of this group (settings, roster, and matches).</p>
+                <button onclick="window.downloadGroupJson()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Download Group JSON</button>
+            </div>
         </div>
     </div>
 
@@ -2701,6 +2707,65 @@
             } catch(e) {
                 console.error(e);
                 window.showAppAlert("Failed to update owner.", "Error", "❌");
+            }
+        }
+
+        window.downloadGroupJson = async function() {
+            try {
+                if (!window.groupIdRaw) {
+                    window.showAppAlert("Open a group first, then export.", "No Group Selected", "⚠️");
+                    return;
+                }
+
+                const groupId = window.groupIdRaw;
+                const groupRef = doc(db, "groups", groupId);
+                const ownersRef = doc(db, "groups", groupId, "settings", "deckOwners");
+                const rosterRef = collection(db, "groups", groupId, "roster");
+                const matchesRef = collection(db, "groups", groupId, "matches");
+
+                const [groupSnap, ownersSnap, rosterSnap, matchesSnap] = await Promise.all([
+                    getDoc(groupRef),
+                    getDoc(ownersRef),
+                    getDocs(rosterRef),
+                    getDocs(matchesRef)
+                ]);
+
+                const roster = rosterSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+                const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+                const payload = {
+                    meta: {
+                        groupId,
+                        exportedAt: new Date().toISOString(),
+                        appVersion: MF_APP_VERSION
+                    },
+                    group: groupSnap.exists() ? { id: groupSnap.id, ...groupSnap.data() } : null,
+                    settings: {
+                        deckOwners: ownersSnap.exists() ? ownersSnap.data() : {}
+                    },
+                    roster,
+                    matches
+                };
+
+                const jsonString = JSON.stringify(payload, null, 2);
+                const blob = new Blob([jsonString], { type: "application/json;charset=utf-8" });
+                const downloadUrl = URL.createObjectURL(blob);
+                const dateStamp = new Date().toISOString().slice(0, 10);
+
+                const link = document.createElement("a");
+                link.href = downloadUrl;
+                link.download = `${groupId}-export-${dateStamp}.json`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(downloadUrl);
+
+                window.showAppAlert("Group JSON export downloaded successfully.", "Export Complete", "✅");
+            } catch (error) {
+                console.error("JSON export failed:", error);
+                window.showAppAlert("Could not export JSON.\n\nDetails: " + error.message, "Export Error", "❌");
             }
         }
 
