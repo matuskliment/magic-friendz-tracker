@@ -311,8 +311,10 @@
                     </div>
                     <div id="group-guest-signin" class="space-y-2">
                         <p class="text-xs text-slate-500">Sign in with your invited email to log matches and invite others.</p>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <input type="email" id="sign-in-email" placeholder="you@email.com" autocomplete="email" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500">
+                        <div class="flex flex-col sm:flex-row gap-2 items-start">
+                            <div class="field-wrap flex-1 w-full min-w-0">
+                                <input type="email" id="sign-in-email" placeholder="you@email.com" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)">
+                            </div>
                             <button type="button" onclick="window.sendSignInLink()" id="sign-in-send-btn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition shrink-0">Send magic link</button>
                         </div>
                         <p id="sign-in-status" class="text-[11px] text-slate-500"></p>
@@ -342,8 +344,12 @@
                         <p class="text-xs text-slate-400">To invite players, sign in above with your owner or invited email. Viewing as guest only lets you see stats.</p>
                     </div>
                     <div id="add-player-form" class="hidden mb-4 flex flex-col gap-2 opacity-0 transition-opacity duration-300">
-                        <input type="text" id="new-player-input" placeholder="Player name" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm w-full text-white outline-none focus:border-purple-500 transition" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.addPlayerToRoster(event, false); }">
-                        <input type="email" id="new-player-email-input" placeholder="Email (optional)" autocomplete="off" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm w-full text-white outline-none focus:border-purple-500 transition" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.addPlayerToRoster(event, true); }">
+                        <div class="field-wrap">
+                            <input type="text" id="new-player-input" placeholder="Player name" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm w-full text-white outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.addPlayerToRoster(event, false); }">
+                        </div>
+                        <div class="field-wrap">
+                            <input type="email" id="new-player-email-input" placeholder="Email (optional)" autocomplete="off" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm w-full text-white outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.addPlayerToRoster(event, true); }">
+                        </div>
                         <div class="flex gap-2">
                             <button type="button" onclick="window.addPlayerToRoster(event, false)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 px-4 py-2.5 rounded-lg text-sm font-bold transition">Add</button>
                             <button type="button" onclick="window.addPlayerToRoster(event, true)" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/30 px-4 py-2.5 rounded-lg text-sm font-bold transition">Add &amp; invite</button>
@@ -736,7 +742,9 @@
                 <h2 class="text-2xl font-black text-white mb-2">Join a playgroup</h2>
                 <p class="text-sm text-slate-400 mb-6 leading-relaxed">Enter the group name your host shared. No sign-in needed to view stats.</p>
                 <label for="group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Group name</label>
-                <input type="text" id="group-name-input" placeholder="Your group name…" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all mb-5 shadow-inner touch-manipulation" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.joinGroup(event); }">
+                <div class="field-wrap mb-5">
+                    <input type="text" id="group-name-input" placeholder="Your group name…" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-inner touch-manipulation" oninput="window.clearFieldError(this)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.joinGroup(event); }">
+                </div>
                 <div class="flex flex-col gap-3">
                     <button id="group-join-btn" onclick="window.joinGroup(event)" class="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white px-6 py-3.5 rounded-xl text-base font-bold transition shadow-lg shadow-purple-500/30 min-h-[52px] touch-manipulation">View Group Stats</button>
                     <button type="button" onclick="window.showCreateGroupPanel()" class="w-full px-6 py-3.5 text-base font-bold text-green-400 hover:text-green-300 transition bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-xl min-h-[52px] touch-manipulation">Create New Group</button>
@@ -748,9 +756,13 @@
                 <h2 class="text-2xl font-black text-white mb-2">Create a playgroup</h2>
                 <p class="text-sm text-slate-400 mb-4 leading-relaxed">You’ll be the owner. Sign in with email (magic link, no password) to create the group.</p>
                 <label for="create-group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">New group name</label>
-                <input type="text" id="create-group-name-input" placeholder="e.g. Friday Night Magic" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 mb-4">
+                <div class="field-wrap mb-4">
+                    <input type="text" id="create-group-name-input" placeholder="e.g. Friday Night Magic" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 text-white text-base font-bold rounded-xl px-4 py-3.5 min-h-[52px] outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)">
+                </div>
                 <label for="create-owner-email-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Your email (owner)</label>
-                <input type="email" id="create-owner-email-input" placeholder="you@email.com" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 mb-3">
+                <div class="field-wrap mb-3">
+                    <input type="email" id="create-owner-email-input" placeholder="you@email.com" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)">
+                </div>
                 <p id="create-group-status" class="text-[11px] text-slate-500 mb-3"></p>
                 <button id="group-create-btn" onclick="window.createGroup(event)" class="w-full bg-green-600 hover:bg-green-500 text-white px-6 py-3.5 rounded-xl text-base font-bold transition min-h-[52px] touch-manipulation">Send link &amp; create</button>
             </div>
@@ -998,6 +1010,15 @@
                     }
                 }
             }
+
+            refreshPlayerList();
+        }
+
+        function refreshPlayerList() {
+            if (!window.isGroupValid) return;
+            const el = document.getElementById('roster-list');
+            if (!el) return;
+            safeSetHTML('roster-list', renderPlayerListHtml());
         }
 
         window.updateAccessUI = updateAccessUI;
@@ -1008,9 +1029,12 @@
             const btn = document.getElementById('sign-in-send-btn');
             const email = normalizeEmail(input?.value);
             if (!email) {
-                if (status) status.textContent = 'Enter your email first.';
+                setFieldError(input, 'Enter your email.');
+                if (status) status.textContent = '';
+                input?.focus();
                 return;
             }
+            clearFieldError(input);
             if (!window.groupIdRaw) {
                 if (status) status.textContent = 'Open a group first.';
                 return;
@@ -1076,6 +1100,44 @@
             return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         }
 
+        function getFieldWrap(inputEl) {
+            if (!inputEl) return null;
+            return inputEl.closest('.field-wrap') || inputEl.parentElement;
+        }
+
+        function setFieldError(inputEl, message) {
+            if (!inputEl) return;
+            const wrap = getFieldWrap(inputEl);
+            inputEl.classList.remove('border-slate-700', 'focus:border-purple-500');
+            inputEl.classList.add('border-red-500', 'focus:border-red-500');
+            let err = wrap?.querySelector('.field-error-msg');
+            if (!err && wrap) {
+                err = document.createElement('p');
+                err.className = 'field-error-msg text-[11px] text-red-400 mt-1';
+                wrap.appendChild(err);
+            }
+            if (err) {
+                err.textContent = message;
+                err.classList.remove('hidden');
+            }
+            inputEl.setAttribute('aria-invalid', 'true');
+        }
+
+        function clearFieldError(inputEl) {
+            if (!inputEl) return;
+            const wrap = getFieldWrap(inputEl);
+            inputEl.classList.add('border-slate-700', 'focus:border-purple-500');
+            inputEl.classList.remove('border-red-500', 'focus:border-red-500');
+            const err = wrap?.querySelector('.field-error-msg');
+            if (err) {
+                err.textContent = '';
+                err.classList.add('hidden');
+            }
+            inputEl.removeAttribute('aria-invalid');
+        }
+
+        window.clearFieldError = clearFieldError;
+
         function formatInviteSentAt(timestamp) {
             if (!timestamp) return '';
             const d = new Date(timestamp);
@@ -1094,9 +1156,12 @@
                 const statsPlayer = (window.appData.players || []).find(p =>
                     normalizeName(p.name).toLowerCase() === normalizeName(r.name).toLowerCase()
                 );
-                const cleanName = normalizeName(r.name);
                 return {
+                    rosterId: r.id,
                     name: r.name,
+                    email: r.email || '',
+                    uid: r.uid || '',
+                    inviteSentAt: r.inviteSentAt || null,
                     plays: statsPlayer?.plays ?? 0,
                     avatarInitials: statsPlayer?.avatarInitials || getPlayerInitials(r.name),
                     avatarColor: statsPlayer?.avatarColor || getResolvedAvatarColor(r.name),
@@ -1140,11 +1205,11 @@
         window.renderRosterListItem = function(p) {
             const canWrite = window.canWrite();
             const nameJs = escapeJsString(p.name);
-            const rosterEntry = findRosterEntryByName(p.name);
-            if (!rosterEntry?.id) return '';
-            const emailVal = rosterEntry.email || '';
-            const hasMember = !!rosterEntry.uid;
-            const inviteSentAt = rosterEntry.inviteSentAt || null;
+            const rosterId = p.rosterId || '';
+            if (!rosterId) return '';
+            const emailVal = p.email || '';
+            const hasMember = !!p.uid;
+            const inviteSentAt = p.inviteSentAt || null;
             const inviteSentLabel = formatInviteSentAt(inviteSentAt);
             const plays = p.plays != null ? p.plays : 0;
             const inviteStatus = hasMember
@@ -1158,9 +1223,14 @@
                 : '';
 
             const inviteBlock = (canWrite && !hasMember) ? `
-                <div class="flex flex-col sm:flex-row gap-1.5 mt-2 w-full">
-                    <input type="email" data-roster-id="${escapeHtml(rosterEntry.id)}" data-player-name="${escapeHtml(p.name)}" value="${escapeHtml(emailVal)}" placeholder="Email — press Enter to invite" class="roster-email-input flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-[11px] text-white outline-none focus:border-purple-500 min-w-0" onkeydown="if(event.key==='Enter'){event.preventDefault();window.sendPlayerInvite('${nameJs}');}">
-                    <button type="button" onclick="window.sendPlayerInvite('${nameJs}')" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3 py-2 rounded-lg transition shrink-0">Invite</button>
+                <div class="mt-2 pt-2 border-t border-slate-700/50 w-full">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Invite to log matches</p>
+                    <div class="field-wrap">
+                        <div class="flex flex-col sm:flex-row gap-1.5 w-full">
+                            <input type="email" data-roster-id="${escapeHtml(rosterId)}" data-player-name="${escapeHtml(p.name)}" value="${escapeHtml(emailVal)}" placeholder="Email address" class="roster-email-input flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-[11px] text-white outline-none focus:border-purple-500 min-w-0 transition" oninput="window.clearFieldError(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();window.sendPlayerInvite('${nameJs}');}">
+                            <button type="button" onclick="window.sendPlayerInvite('${nameJs}')" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3 py-2 rounded-lg transition shrink-0">Invite</button>
+                        </div>
+                    </div>
                 </div>
             ` : '';
 
@@ -1199,10 +1269,11 @@
             const input = getRosterEmailInput(rosterEntry.id);
             const email = normalizeEmail(input?.value || rosterEntry.email);
             if (!email) {
-                window.showAppAlert('Enter an email for this player first.', 'Email required', '⚠️');
+                if (input) setFieldError(input, 'Enter an email to send the invite.');
                 input?.focus();
                 return;
             }
+            if (input) clearFieldError(input);
             try {
                 await persistRosterEmail(rosterEntry, email);
                 const sentAt = Date.now();
@@ -1739,13 +1810,15 @@
             if(!inputEl) return;
             const input = inputEl.value.trim();
             if(!input) {
-                window.showAppAlert("Enter your group name to continue.", "Group Required", "🔑");
+                setFieldError(inputEl, 'Enter your group name.');
                 inputEl.focus();
                 return;
             }
+            clearFieldError(inputEl);
             const formatted = formatGroupSlug(input);
             if (!formatted) {
-                window.showAppAlert("Use letters or numbers in your group name.", "Invalid Name", "⚠️");
+                setFieldError(inputEl, 'Use letters or numbers only.');
+                inputEl.focus();
                 return;
             }
             
@@ -1769,18 +1842,21 @@
             const input = inputEl.value.trim();
             const ownerEmail = normalizeEmail(emailEl?.value);
             if (!input) {
-                window.showAppAlert("Pick a name for your new group.", "Group Required", "🔑");
+                setFieldError(inputEl, 'Pick a name for your new group.');
                 inputEl.focus();
                 return;
             }
+            clearFieldError(inputEl);
             if (!ownerEmail) {
-                window.showAppAlert("Enter your email to become the group owner.", "Email Required", "✉️");
+                setFieldError(emailEl, 'Enter your email to become the group owner.');
                 emailEl?.focus();
                 return;
             }
+            clearFieldError(emailEl);
             const formatted = formatGroupSlug(input);
             if (!formatted) {
-                window.showAppAlert("Use letters or numbers in your group name.", "Invalid Name", "⚠️");
+                setFieldError(inputEl, 'Use letters or numbers only.');
+                inputEl.focus();
                 return;
             }
 
@@ -3666,13 +3742,15 @@
             if (!inputEl) return;
             const name = normalizeName(inputEl.value);
             const email = normalizeEmail(emailEl?.value);
+            clearFieldError(inputEl);
+            if (emailEl) clearFieldError(emailEl);
             if (!name) {
-                window.showAppAlert('Enter a player name.', 'Name required', '⚠️');
+                setFieldError(inputEl, 'Enter a player name.');
                 inputEl.focus();
                 return;
             }
             if (sendInvite && !email) {
-                window.showAppAlert('Add an email to send an invite.', 'Email required', '✉️');
+                setFieldError(emailEl, 'Enter an email to send the invite.');
                 emailEl?.focus();
                 return;
             }
@@ -3686,7 +3764,8 @@
                     normalizeName(r.name).toLowerCase() === name.toLowerCase()
                 );
                 if (duplicate) {
-                    window.showAppAlert('This player is already on the list.', 'Duplicate', '⚠️');
+                    setFieldError(inputEl, 'This player is already on the list.');
+                    inputEl.focus();
                     return;
                 }
 
