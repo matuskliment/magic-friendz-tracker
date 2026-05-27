@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Friendz | Backoffice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen">
+    <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+        <header class="flex items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-black text-white">Magic Friendz Backoffice</h1>
+                <p class="text-xs text-slate-400 mt-1">Admin-only management for all groups</p>
+            </div>
+            <button id="sign-out-btn" class="hidden bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-4 py-2 rounded-lg text-sm font-bold transition">Sign out</button>
+        </header>
+
+        <section id="login-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 max-w-md mx-auto">
+            <h2 class="text-lg font-bold text-white mb-4">Admin Login</h2>
+            <div class="space-y-3">
+                <input id="email-input" type="email" placeholder="Email" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-purple-500">
+                <input id="password-input" type="password" placeholder="Password" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-purple-500">
+                <button id="login-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition">Sign in</button>
+            </div>
+            <p id="login-status" class="text-xs text-slate-400 mt-3"></p>
+        </section>
+
+        <section id="unauthorized-card" class="hidden bg-red-950/40 border border-red-500/30 rounded-2xl p-5 md:p-6">
+            <h2 class="text-lg font-bold text-red-300">Not Authorized</h2>
+            <p class="text-sm text-red-200/80 mt-2">This account is signed in but is not present in `admins/{uid}`.</p>
+        </section>
+
+        <section id="dashboard" class="hidden space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Groups</p>
+                    <p id="stat-groups" class="text-2xl font-black text-white mt-1">0</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Matches</p>
+                    <p id="stat-matches" class="text-2xl font-black text-white mt-1">0</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Roster Entries</p>
+                    <p id="stat-roster" class="text-2xl font-black text-white mt-1">0</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5">
+                    <h3 class="text-sm font-bold text-white mb-3">All Groups</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="text-slate-400">
+                                <tr class="border-b border-slate-800">
+                                    <th class="text-left py-2 pr-2">Group</th>
+                                    <th class="text-right py-2 px-2">Players</th>
+                                    <th class="text-right py-2 px-2">Matches</th>
+                                    <th class="text-right py-2 pl-2">Last Match</th>
+                                </tr>
+                            </thead>
+                            <tbody id="groups-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5">
+                        <h3 class="text-sm font-bold text-white mb-3">Selected Group</h3>
+                        <p id="selected-group-label" class="text-sm text-slate-300">Select a group on the left.</p>
+                    </div>
+
+                    <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-4 md:p-5">
+                        <h3 class="text-sm font-bold text-white mb-3">Deck Ownership</h3>
+                        <div id="ownership-list" class="space-y-2 text-sm text-slate-400">Select a group to load deck ownership.</div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-4 md:p-5">
+                        <h3 class="text-sm font-bold text-white mb-3">Group Export</h3>
+                        <div class="space-y-2">
+                            <button id="export-json-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Download JSON</button>
+                            <button id="export-csv-btn" class="w-full bg-emerald-900/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Download CSV</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-red-500/30 rounded-2xl p-4 md:p-5">
+                        <h3 class="text-sm font-bold text-white mb-3">Data Migration</h3>
+                        <div class="space-y-3">
+                            <button id="wipe-btn" class="w-full bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Wipe All Matches</button>
+                            <div class="bg-slate-950 border border-slate-700 rounded-xl p-3">
+                                <p class="text-[10px] text-slate-400 mb-2">CSV format: Date, P1(Win), D1(Win), P2, D2, ..., Winner, Notes, Card1-4</p>
+                                <input id="csv-upload" type="file" accept=".csv" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-purple-500/20 file:text-purple-300">
+                            </div>
+                            <button id="import-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Import CSV</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
+            authDomain: "magic-friends-82cc6.firebaseapp.com",
+            projectId: "magic-friends-82cc6",
+            storageBucket: "magic-friends-82cc6.firebasestorage.app",
+            messagingSenderId: "822273509499",
+            appId: "1:822273509499:web:1eb431bf22764f96067ade",
+            measurementId: "G-LXRC54R98V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const els = {
+            loginCard: document.getElementById('login-card'),
+            unauthorizedCard: document.getElementById('unauthorized-card'),
+            dashboard: document.getElementById('dashboard'),
+            emailInput: document.getElementById('email-input'),
+            passwordInput: document.getElementById('password-input'),
+            loginBtn: document.getElementById('login-btn'),
+            loginStatus: document.getElementById('login-status'),
+            signOutBtn: document.getElementById('sign-out-btn'),
+            groupsTbody: document.getElementById('groups-tbody'),
+            statGroups: document.getElementById('stat-groups'),
+            statMatches: document.getElementById('stat-matches'),
+            statRoster: document.getElementById('stat-roster'),
+            selectedGroupLabel: document.getElementById('selected-group-label'),
+            ownershipList: document.getElementById('ownership-list'),
+            exportJsonBtn: document.getElementById('export-json-btn'),
+            exportCsvBtn: document.getElementById('export-csv-btn'),
+            wipeBtn: document.getElementById('wipe-btn'),
+            csvUpload: document.getElementById('csv-upload'),
+            importBtn: document.getElementById('import-btn')
+        };
+
+        let currentUser = null;
+        let groupsData = [];
+        let selectedGroup = null;
+
+        function normalizeName(str) {
+            if (!str) return "";
+            return String(str).trim().replace(/\s+/g, " ");
+        }
+
+        function csvEscape(value) {
+            const stringValue = String(value ?? '');
+            if (/[",\n\r]/.test(stringValue)) return `"${stringValue.replace(/"/g, '""')}"`;
+            return stringValue;
+        }
+
+        function setActionButtonsEnabled(enabled) {
+            [els.exportJsonBtn, els.exportCsvBtn, els.wipeBtn, els.importBtn].forEach(btn => btn.disabled = !enabled);
+        }
+
+        function showLoginStatus(message, isError = false) {
+            els.loginStatus.textContent = message;
+            els.loginStatus.className = `text-xs mt-3 ${isError ? 'text-red-300' : 'text-slate-400'}`;
+        }
+
+        async function isCurrentUserAdmin(user) {
+            if (!user) return false;
+            const adminSnap = await getDoc(doc(db, 'admins', user.uid));
+            return adminSnap.exists();
+        }
+
+        function renderGroupsTable() {
+            if (!groupsData.length) {
+                els.groupsTbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 text-sm">No groups found.</td></tr>`;
+                return;
+            }
+            els.groupsTbody.innerHTML = groupsData.map(group => `
+                <tr data-group-id="${group.id}" class="border-b border-slate-800/70 hover:bg-slate-800/40 cursor-pointer ${selectedGroup?.id === group.id ? 'bg-purple-500/10' : ''}">
+                    <td class="py-2 pr-2">
+                        <p class="font-semibold text-white truncate">${group.name || group.id}</p>
+                        <p class="text-[10px] text-slate-500">${group.id}</p>
+                    </td>
+                    <td class="py-2 px-2 text-right text-slate-300">${group.rosterCount}</td>
+                    <td class="py-2 px-2 text-right text-slate-300">${group.matchCount}</td>
+                    <td class="py-2 pl-2 text-right text-[11px] text-slate-400">${group.lastMatchDate || '—'}</td>
+                </tr>
+            `).join('');
+
+            els.groupsTbody.querySelectorAll('tr[data-group-id]').forEach(row => {
+                row.addEventListener('click', () => {
+                    const found = groupsData.find(g => g.id === row.dataset.groupId);
+                    if (found) selectGroup(found);
+                });
+            });
+        }
+
+        function buildMatchCsvRow(match) {
+            let winners = Array.isArray(match.winners) ? [...match.winners] : [];
+            const losers = Array.isArray(match.losers) ? [...match.losers] : [];
+
+            if (winners.length === 0 && match.winner) {
+                if (typeof match.winner === 'object' && match.winner.name) {
+                    winners = [match.winner];
+                } else if (typeof match.winner === 'string') {
+                    const winnerDeckName = normalizeName(match.winner);
+                    const fallback = [...losers].find(p => normalizeName(p.name || '').toLowerCase() === winnerDeckName.toLowerCase());
+                    winners = [fallback || { player: '', name: winnerDeckName }];
+                }
+            }
+            if (winners.length === 0 && losers.length > 0) winners = [losers.shift()];
+
+            const participants = [...winners, ...losers].slice(0, 5);
+            const winnerDeckNames = winners.map(w => normalizeName(w.name || '')).filter(Boolean).join(';');
+            const cards = Array.isArray(match.winningCards) ? match.winningCards.slice(0, 4) : [];
+
+            const row = [
+                match.date || '',
+                participants[0]?.player || '', participants[0]?.name || '',
+                participants[1]?.player || '', participants[1]?.name || '',
+                participants[2]?.player || '', participants[2]?.name || '',
+                participants[3]?.player || '', participants[3]?.name || '',
+                participants[4]?.player || '', participants[4]?.name || '',
+                winnerDeckNames,
+                match.notes || '',
+                cards[0] || '', cards[1] || '', cards[2] || '', cards[3] || ''
+            ];
+            return row.map(csvEscape).join(',');
+        }
+
+        async function loadGroupsOverview() {
+            const groupSnap = await getDocs(collection(db, 'groups'));
+            const groups = [];
+            let totalMatches = 0;
+            let totalRoster = 0;
+
+            for (const g of groupSnap.docs) {
+                const groupId = g.id;
+                const [matchesSnap, rosterSnap] = await Promise.all([
+                    getDocs(collection(db, 'groups', groupId, 'matches')),
+                    getDocs(collection(db, 'groups', groupId, 'roster'))
+                ]);
+                const matches = matchesSnap.docs.map(d => d.data());
+                const lastMatch = matches.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
+                totalMatches += matches.length;
+                totalRoster += rosterSnap.size;
+                groups.push({
+                    id: groupId,
+                    name: g.data().name || '',
+                    rosterCount: rosterSnap.size,
+                    matchCount: matches.length,
+                    lastMatchDate: lastMatch?.date || ''
+                });
+            }
+
+            groups.sort((a, b) => a.id.localeCompare(b.id));
+            groupsData = groups;
+            els.statGroups.textContent = String(groups.length);
+            els.statMatches.textContent = String(totalMatches);
+            els.statRoster.textContent = String(totalRoster);
+            renderGroupsTable();
+        }
+
+        async function loadOwnershipForSelectedGroup(groupId) {
+            const [matchesSnap, rosterSnap, ownersSnap] = await Promise.all([
+                getDocs(collection(db, 'groups', groupId, 'matches')),
+                getDocs(collection(db, 'groups', groupId, 'roster')),
+                getDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners'))
+            ]);
+            const matches = matchesSnap.docs.map(d => d.data());
+            const owners = ownersSnap.exists() ? ownersSnap.data() : {};
+            const rosterNames = rosterSnap.docs.map(d => normalizeName(d.data().name)).filter(Boolean).sort((a, b) => a.localeCompare(b));
+
+            const inferredOwners = {};
+            matches.forEach(m => {
+                [...(m.winners || []), ...(m.losers || [])].forEach(p => {
+                    const deck = normalizeName(p.name);
+                    const owner = normalizeName(p.owner || p.player);
+                    if (deck && owner && !inferredOwners[deck]) inferredOwners[deck] = owner;
+                });
+            });
+
+            const deckNames = [...new Set([...Object.keys(inferredOwners), ...Object.keys(owners)])].sort((a, b) => a.localeCompare(b));
+            if (!deckNames.length) {
+                els.ownershipList.innerHTML = `<p class="text-sm text-slate-500">No decks found for this group yet.</p>`;
+                return;
+            }
+
+            els.ownershipList.innerHTML = deckNames.map(deck => {
+                const currentOwner = owners[deck] || inferredOwners[deck] || '';
+                const options = rosterNames.map(name => `<option value="${name}" ${name === currentOwner ? 'selected' : ''}>${name}</option>`).join('');
+                return `
+                    <div class="flex items-center justify-between gap-3 bg-slate-950 border border-slate-700 rounded-lg p-2.5">
+                        <span class="text-sm font-semibold text-white truncate" title="${deck}">${deck}</span>
+                        <select data-deck="${deck.replace(/"/g, '&quot;')}" class="ownership-select bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-purple-500">
+                            ${options}
+                        </select>
+                    </div>
+                `;
+            }).join('');
+
+            els.ownershipList.querySelectorAll('.ownership-select').forEach(sel => {
+                sel.addEventListener('change', async () => {
+                    const deckName = sel.dataset.deck;
+                    await setDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners'), { [deckName]: sel.value }, { merge: true });
+                });
+            });
+        }
+
+        async function selectGroup(group) {
+            selectedGroup = group;
+            els.selectedGroupLabel.textContent = `${group.name || group.id} (${group.id})`;
+            setActionButtonsEnabled(true);
+            renderGroupsTable();
+            await loadOwnershipForSelectedGroup(group.id);
+        }
+
+        async function exportGroupJson(groupId) {
+            const [groupSnap, ownersSnap, rosterSnap, matchesSnap] = await Promise.all([
+                getDoc(doc(db, 'groups', groupId)),
+                getDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners')),
+                getDocs(collection(db, 'groups', groupId, 'roster')),
+                getDocs(collection(db, 'groups', groupId, 'matches'))
+            ]);
+            const payload = {
+                meta: {
+                    groupId,
+                    exportedAt: new Date().toISOString(),
+                    app: 'backoffice-admin'
+                },
+                group: groupSnap.exists() ? { id: groupSnap.id, ...groupSnap.data() } : null,
+                settings: { deckOwners: ownersSnap.exists() ? ownersSnap.data() : {} },
+                roster: rosterSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+                matches: matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+            };
+
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${groupId}-export-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        async function exportGroupCsv(groupId) {
+            const matchesSnap = await getDocs(collection(db, 'groups', groupId, 'matches'));
+            const matches = matchesSnap.docs.map(d => d.data()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            const header = ['Date','P1 (Win)','D1 (Win)','P2','D2','P3','D3','P4','D4','P5','D5','Winner','Notes','Card1','Card2','Card3','Card4'].join(',');
+            const rows = [header, ...matches.map(buildMatchCsvRow)];
+            const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${groupId}-matches-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        function parseTrueCSV(str) {
+            const arr = [];
+            let quote = false;
+            let row = 0, col = 0;
+            for (let c = 0; c < str.length; c++) {
+                const cc = str[c], nc = str[c + 1];
+                arr[row] = arr[row] || [];
+                arr[row][col] = arr[row][col] || '';
+                if (cc === '"' && quote && nc === '"') { arr[row][col] += cc; c++; continue; }
+                if (cc === '"') { quote = !quote; continue; }
+                if (cc === ',' && !quote) { col++; continue; }
+                if ((cc === '\r' && nc === '\n' && !quote)) { row++; col = 0; c++; continue; }
+                if ((cc === '\n' || cc === '\r') && !quote) { row++; col = 0; continue; }
+                arr[row][col] += cc;
+            }
+            return arr;
+        }
+
+        async function importCsvToGroup(groupId, file) {
+            const text = await file.text();
+            const rows = parseTrueCSV(text);
+            let startIndex = 0;
+            if (rows.length > 0 && rows[0].length > 1 && (String(rows[0][0]).toLowerCase().includes('date') || String(rows[0][1]).toLowerCase().includes('p1'))) {
+                startIndex = 1;
+            }
+
+            let imported = 0;
+            for (let i = startIndex; i < rows.length; i++) {
+                const row = rows[i].map(v => normalizeName(v));
+                if (row.length < 3) continue;
+
+                const winningDeckInput = normalizeName(row[11] || "");
+                const parsedWinningNames = winningDeckInput.split(";").map(normalizeName).filter(Boolean);
+                const pairs = [
+                    { p: row[1], d: row[2] }, { p: row[3], d: row[4] }, { p: row[5], d: row[6] },
+                    { p: row[7], d: row[8] }, { p: row[9], d: row[10] }
+                ];
+
+                let winners = [];
+                const losers = [];
+                pairs.forEach(pair => {
+                    if (!pair.p || !pair.d) return;
+                    const isWin = parsedWinningNames.some(w => w.toLowerCase() === pair.d.toLowerCase() || pair.d.toLowerCase().includes(w.toLowerCase()) || w.toLowerCase().includes(pair.d.toLowerCase()));
+                    if (winningDeckInput && isWin) winners.push({ player: pair.p, name: pair.d });
+                    else losers.push({ player: pair.p, name: pair.d });
+                });
+
+                if (winners.length === 0 && losers.length > 0) winners.push(losers.shift());
+                if (winners.length === 0 || (losers.length === 0 && winners.length < 2)) continue;
+
+                const cardsArray = [row[13], row[14], row[15], row[16]].map(normalizeName).filter(Boolean);
+                const dateRaw = row[0] || '';
+                const date = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : new Date().toISOString().slice(0, 10);
+                const timestamp = Date.now() + i;
+
+                await addDoc(collection(db, 'groups', groupId, 'matches'), {
+                    date,
+                    timestamp,
+                    winners,
+                    losers,
+                    winningCards: cardsArray,
+                    notes: row[12] || ''
+                });
+                imported++;
+            }
+            return imported;
+        }
+
+        async function initializeDashboard() {
+            await loadGroupsOverview();
+            setActionButtonsEnabled(false);
+            els.selectedGroupLabel.textContent = 'Select a group on the left.';
+            els.ownershipList.innerHTML = 'Select a group to load deck ownership.';
+        }
+
+        els.loginBtn.addEventListener('click', async () => {
+            const email = els.emailInput.value.trim();
+            const password = els.passwordInput.value;
+            if (!email || !password) {
+                showLoginStatus('Email and password are required.', true);
+                return;
+            }
+            els.loginBtn.disabled = true;
+            showLoginStatus('Signing in...');
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (e) {
+                showLoginStatus(`Login failed: ${e.message}`, true);
+            } finally {
+                els.loginBtn.disabled = false;
+            }
+        });
+
+        els.signOutBtn.addEventListener('click', async () => {
+            await signOut(auth);
+        });
+
+        els.exportJsonBtn.addEventListener('click', async () => {
+            if (!selectedGroup) return;
+            await exportGroupJson(selectedGroup.id);
+        });
+
+        els.exportCsvBtn.addEventListener('click', async () => {
+            if (!selectedGroup) return;
+            await exportGroupCsv(selectedGroup.id);
+        });
+
+        els.wipeBtn.addEventListener('click', async () => {
+            if (!selectedGroup) return;
+            const ok = window.confirm(`Delete ALL matches for group "${selectedGroup.id}"? This cannot be undone.`);
+            if (!ok) return;
+            const matchesSnap = await getDocs(collection(db, 'groups', selectedGroup.id, 'matches'));
+            await Promise.all(matchesSnap.docs.map(d => deleteDoc(doc(db, 'groups', selectedGroup.id, 'matches', d.id))));
+            await loadGroupsOverview();
+            const refreshed = groupsData.find(g => g.id === selectedGroup.id);
+            if (refreshed) await selectGroup(refreshed);
+            window.alert('All matches wiped.');
+        });
+
+        els.importBtn.addEventListener('click', async () => {
+            if (!selectedGroup) return;
+            const file = els.csvUpload.files?.[0];
+            if (!file) {
+                window.alert('Select a CSV file first.');
+                return;
+            }
+            const imported = await importCsvToGroup(selectedGroup.id, file);
+            await loadGroupsOverview();
+            const refreshed = groupsData.find(g => g.id === selectedGroup.id);
+            if (refreshed) await selectGroup(refreshed);
+            window.alert(`CSV import complete. Imported ${imported} matches.`);
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            els.loginCard.classList.add('hidden');
+            els.unauthorizedCard.classList.add('hidden');
+            els.dashboard.classList.add('hidden');
+            els.signOutBtn.classList.add('hidden');
+
+            if (!user) {
+                els.loginCard.classList.remove('hidden');
+                showLoginStatus('');
+                return;
+            }
+
+            const isAdmin = await isCurrentUserAdmin(user);
+            if (!isAdmin) {
+                els.unauthorizedCard.classList.remove('hidden');
+                els.signOutBtn.classList.remove('hidden');
+                return;
+            }
+
+            els.signOutBtn.classList.remove('hidden');
+            els.dashboard.classList.remove('hidden');
+            await initializeDashboard();
+        });
+    </script>
+</body>
+</html>
