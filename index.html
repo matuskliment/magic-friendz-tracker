@@ -64,8 +64,9 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
                 Magic<span class="text-purple-500">Friendz</span>
             </div>
-            <div>
-                <button onclick="window.openGroupModal()" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation">Enter App</button>
+            <div class="flex items-center gap-2">
+                <button type="button" id="landing-login-btn" onclick="window.toggleLandingSignIn()" class="text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Log in</button>
+                <button type="button" onclick="window.openGroupModal()" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation">Enter App</button>
             </div>
         </nav>
 
@@ -80,9 +81,22 @@
                         The ultimate multiplayer stat tracker for your tabletop group. Anyone with the group name can view stats — sign in to log games.
                     </p>
                     <div class="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
-                        <button onclick="window.openGroupModal()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 active:scale-[0.98] shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 group min-h-[52px] w-full sm:w-auto touch-manipulation">
+                        <button type="button" onclick="window.openGroupModal()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 active:scale-[0.98] shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 group min-h-[52px] w-full sm:w-auto touch-manipulation">
                             View Group Stats <span class="text-xl group-hover:translate-x-1 transition">→</span>
                         </button>
+                        <button type="button" id="landing-login-btn-hero" onclick="window.toggleLandingSignIn()" class="bg-slate-800/80 hover:bg-slate-700/80 text-white border border-slate-600 px-8 py-4 rounded-full font-bold text-lg transition min-h-[52px] w-full sm:w-auto touch-manipulation">Log in</button>
+                    </div>
+                    <div id="landing-signed-in" class="hidden mt-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 max-w-md mx-auto lg:mx-0">
+                        <p class="text-sm text-emerald-300/90 mb-3">Signed in as <span id="landing-signed-in-email" class="font-semibold text-white"></span></p>
+                        <button type="button" onclick="window.openGroupModal()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Enter a group →</button>
+                    </div>
+                    <div id="landing-sign-in-panel" class="hidden mt-6 p-4 rounded-xl border border-purple-500/25 bg-purple-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
+                        <p class="text-sm text-slate-400">Use the email from your invite, or the one you used to create a group. We’ll send a magic link — no password.</p>
+                        <div class="field-wrap">
+                            <input type="email" id="landing-sign-in-email" placeholder="Email address" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
+                        </div>
+                        <button type="button" onclick="window.sendSignInLink({ fromLanding: true })" id="landing-sign-in-send-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition min-h-[44px] touch-manipulation">Send magic link</button>
+                        <p id="landing-sign-in-status" class="text-[11px] text-slate-500"></p>
                     </div>
                 </div>
 
@@ -293,35 +307,40 @@
                 </div>
             </div>
 
-            <!-- TAB 4: GROUP -->
+            <!-- TAB 4: SETTINGS -->
             <div id="tab-group" class="tab-content hidden space-y-6">
                 <div class="flex justify-between items-end mt-4 mb-2">
                     <div>
-                        <h1 class="text-2xl md:text-3xl font-bold">Group Settings</h1>
-                        <p class="text-xs text-slate-400">Manage players and access</p>
+                        <h1 class="text-2xl md:text-3xl font-bold">Settings</h1>
+                        <p class="text-xs text-slate-400">Players, access, and export</p>
                     </div>
                 </div>
                 <div id="group-access-card" class="glass p-5 rounded-xl border border-purple-500/30 bg-purple-950/10">
-                    <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
-                        <div>
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0">
                             <h3 class="font-bold text-white text-sm">Your access</h3>
-                            <p id="group-access-status" class="text-xs text-slate-400 mt-1">View only — anyone with the group name can see stats.</p>
+                            <p id="group-access-status" class="text-xs text-slate-400 mt-1">Anyone with this group link can view stats.</p>
                         </div>
-                        <span id="group-access-pill" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-slate-600 text-slate-400 bg-slate-900">Guest</span>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span id="group-access-badge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80">View only</span>
+                            <button type="button" id="access-sign-in-btn" onclick="window.toggleAccessSignIn()" class="hidden text-[11px] font-bold text-purple-300 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1 rounded-lg transition min-h-[32px] touch-manipulation">Sign in</button>
+                        </div>
                     </div>
-                    <div id="group-guest-signin" class="space-y-2">
-                        <p class="text-xs text-slate-500">Sign in with your invited email to log matches and invite others.</p>
-                        <div class="flex flex-col sm:flex-row gap-2 items-start">
-                            <div class="field-wrap flex-1 w-full min-w-0">
-                                <input type="email" id="sign-in-email" placeholder="you@email.com" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)">
-                            </div>
-                            <button type="button" onclick="window.sendSignInLink()" id="sign-in-send-btn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition shrink-0">Send magic link</button>
+                    <div id="group-sign-in-panel" class="hidden mt-4 pt-4 border-t border-slate-700/50 space-y-2">
+                        <p class="text-xs text-slate-500">Use the email that was invited to this group, or the one you used when creating it.</p>
+                        <div class="field-wrap">
+                            <input type="email" id="sign-in-email" placeholder="Email address" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
                         </div>
+                        <button type="button" onclick="window.sendSignInLink()" id="sign-in-send-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition min-h-[44px] touch-manipulation">Send magic link</button>
                         <p id="sign-in-status" class="text-[11px] text-slate-500"></p>
                     </div>
-                    <div id="group-signed-in" class="hidden flex flex-wrap items-center justify-between gap-2">
-                        <p class="text-xs text-emerald-300/90">Signed in as <span id="signed-in-email" class="font-semibold text-white"></span></p>
-                        <button type="button" onclick="window.authSignOut()" class="text-xs font-bold text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition">Sign out</button>
+                    <div id="group-signed-in" class="hidden mt-4 pt-4 border-t border-slate-700/50 flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-xs text-slate-400">Signed in as <span id="signed-in-email" class="font-semibold text-white"></span></p>
+                        <button type="button" onclick="window.authSignOut()" class="text-xs font-bold text-slate-400 hover:text-white bg-slate-800 px-3 py-2.5 rounded-lg border border-slate-700 transition min-h-[44px] touch-manipulation">Sign out</button>
+                    </div>
+                    <div id="group-access-denied" class="hidden mt-4 pt-4 border-t border-red-500/20 space-y-2">
+                        <p class="text-xs text-red-300/90">This account is not invited to this group. Open the magic link from your invite email, or create a new group with this email.</p>
+                        <button type="button" onclick="window.authSignOut()" class="text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2.5 rounded-lg transition min-h-[44px] touch-manipulation w-full sm:w-auto">Sign out</button>
                     </div>
                 </div>
                 <div class="glass p-5 rounded-xl border border-slate-700">
@@ -341,7 +360,7 @@
                         </ol>
                     </div>
                     <div id="roster-invite-locked" class="hidden mb-4 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-3">
-                        <p class="text-xs text-slate-400">To invite players, sign in above with your owner or invited email. Viewing as guest only lets you see stats.</p>
+                        <p class="text-xs text-slate-400">Sign in with an invited email to manage players and send invites.</p>
                     </div>
                     <div id="add-player-form" class="hidden mb-4 flex flex-col gap-2 opacity-0 transition-opacity duration-300">
                         <div class="field-wrap">
@@ -409,7 +428,7 @@
             <button id="nav-group" onclick="window.switchTab('group')" class="flex flex-col items-center hover:text-purple-400 transition w-14 relative">
                 <div id="nav-indicator-group" class="absolute -top-1 w-8 h-1 bg-purple-500 rounded-full opacity-0 transition-opacity duration-300"></div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                <span class="text-[10px] mt-1 font-semibold">Group</span>
+                <span class="text-[10px] mt-1 font-semibold">Settings</span>
             </button>
         </div>
     </div>
@@ -865,9 +884,24 @@
             if (!isSignInWithEmailLink(auth, window.location.href)) return false;
             let email = window.localStorage.getItem(AUTH_EMAIL_KEY);
             if (!email) {
-                email = window.prompt('Enter the same email you used for the magic link:');
+                const onLanding = document.getElementById('landing-page') && !document.getElementById('landing-page').classList.contains('hidden');
+                if (onLanding) {
+                    const status = document.getElementById('landing-sign-in-status');
+                    if (status) status.textContent = 'Enter the same email you used, then tap Send magic link again.';
+                    if (document.getElementById('landing-sign-in-panel')?.classList.contains('hidden')) {
+                        window.toggleLandingSignIn();
+                    }
+                    document.getElementById('landing-sign-in-email')?.focus();
+                } else {
+                    const status = document.getElementById('sign-in-status');
+                    if (status) status.textContent = 'Enter the same email you used, then tap Send magic link again to finish opening the link.';
+                    const panel = document.getElementById('group-sign-in-panel');
+                    const btn = document.getElementById('access-sign-in-btn');
+                    if (panel && panel.classList.contains('hidden')) window.toggleAccessSignIn();
+                    document.getElementById('sign-in-email')?.focus();
+                }
+                return false;
             }
-            if (!email) return false;
             await signInWithEmailLink(auth, email, window.location.href);
             window.localStorage.removeItem(AUTH_EMAIL_KEY);
             stripAuthParamsFromUrl();
@@ -1004,6 +1038,25 @@
             window.linkedPlayerName = '';
         }
 
+        window.toggleAccessSignIn = function() {
+            const panel = document.getElementById('group-sign-in-panel');
+            const btn = document.getElementById('access-sign-in-btn');
+            if (!panel) return;
+            const opening = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !opening);
+            if (btn) btn.textContent = opening ? 'Hide' : 'Sign in';
+            if (opening) {
+                const input = document.getElementById('sign-in-email');
+                if (input) {
+                    input.value = '';
+                    clearFieldError(input);
+                }
+                const status = document.getElementById('sign-in-status');
+                if (status) status.textContent = '';
+                setTimeout(() => input?.focus(), 50);
+            }
+        };
+
         function updateAccessUI() {
             const canWrite = window.canWrite();
             const isOwner = window.canOwnerDelete();
@@ -1011,14 +1064,15 @@
             const addPlayerBtn = document.getElementById('roster-add-player-btn');
             const ownerDanger = document.getElementById('group-owner-danger');
             const badge = document.getElementById('group-access-badge');
-            const pill = document.getElementById('group-access-pill');
             const status = document.getElementById('group-access-status');
-            const guestSignin = document.getElementById('group-guest-signin');
+            const signInPanel = document.getElementById('group-sign-in-panel');
+            const signInBtn = document.getElementById('access-sign-in-btn');
             const signedIn = document.getElementById('group-signed-in');
             const signedInEmail = document.getElementById('signed-in-email');
+            const accessDenied = document.getElementById('group-access-denied');
             const inviteHelp = document.getElementById('roster-invite-help');
             const inviteLocked = document.getElementById('roster-invite-locked');
-            const signInEmailInput = document.getElementById('sign-in-email');
+
             if (fab) {
                 if (canWrite) fab.classList.remove('hidden');
                 else fab.classList.add('hidden');
@@ -1032,23 +1086,33 @@
                 else ownerDanger.classList.add('hidden');
             }
 
+            const hasFirebaseUser = !!window.currentUser;
+            const deniedForGroup = hasFirebaseUser && !canWrite && window.isGroupValid;
+
             const labels = {
-                viewer: { pill: 'Guest', badge: 'View only', status: 'View only — sign in with your invited email to log matches.' },
-                editor: { pill: 'Editor', badge: 'Can edit', status: 'You can log matches and invite players.' },
-                owner: { pill: 'Owner', badge: 'Owner', status: 'Full edit access. You can wipe match history.' }
+                viewer: {
+                    badge: 'View only',
+                    status: 'Anyone with this group link can view stats.',
+                    badgeClass: 'border-slate-600 text-slate-400 bg-slate-800/80'
+                },
+                editor: {
+                    badge: 'Can edit',
+                    status: 'You can log matches and invite players.',
+                    badgeClass: 'border-emerald-500/50 text-emerald-300 bg-emerald-950/40'
+                },
+                owner: {
+                    badge: 'Owner',
+                    status: 'You can log matches, invite players, and wipe match history.',
+                    badgeClass: 'border-amber-500/50 text-amber-300 bg-amber-950/40'
+                }
             };
             const label = labels[window.groupAccess] || labels.viewer;
 
             if (badge) {
                 badge.classList.remove('hidden');
                 badge.innerText = label.badge;
-                badge.className = `text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${
-                    window.groupAccess === 'viewer' ? 'border-slate-600 text-slate-400 bg-slate-800/80' :
-                    window.groupAccess === 'owner' ? 'border-amber-500/50 text-amber-300 bg-amber-950/40' :
-                    'border-emerald-500/50 text-emerald-300 bg-emerald-950/40'
-                }`;
+                badge.className = `text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${label.badgeClass}`;
             }
-            if (pill) pill.innerText = label.pill;
             if (status) status.innerText = label.status;
 
             if (inviteHelp) {
@@ -1060,25 +1124,32 @@
                 else inviteLocked.classList.add('hidden');
             }
 
-            if (guestSignin && signedIn) {
-                if (window.currentUser) {
-                    guestSignin.classList.add('hidden');
+            if (signInBtn) {
+                if (!hasFirebaseUser && window.isGroupValid) signInBtn.classList.remove('hidden');
+                else signInBtn.classList.add('hidden');
+            }
+            if (signInPanel) {
+                if (hasFirebaseUser || deniedForGroup) {
+                    signInPanel.classList.add('hidden');
+                    if (signInBtn) signInBtn.textContent = 'Sign in';
+                }
+            }
+            if (signedIn) {
+                if (canWrite && hasFirebaseUser) {
                     signedIn.classList.remove('hidden');
                     if (signedInEmail) signedInEmail.innerText = window.currentUser.email || '';
                 } else {
-                    guestSignin.classList.remove('hidden');
                     signedIn.classList.add('hidden');
-                    if (window.groupOwnerEmail && status) {
-                        status.innerText = 'View only — you own this group. Sign in with your owner email below to invite players and log matches.';
-                    }
-                    if (window.groupOwnerEmail && signInEmailInput && !signInEmailInput.value) {
-                        signInEmailInput.value = window.groupOwnerEmail;
-                    }
                 }
+            }
+            if (accessDenied) {
+                if (deniedForGroup) accessDenied.classList.remove('hidden');
+                else accessDenied.classList.add('hidden');
             }
 
             if (canWrite) scheduleEnsureMatchPlayersOnRoster();
             refreshPlayerList();
+            updateLandingAuthUI();
         }
 
         function refreshPlayerList() {
@@ -1090,10 +1161,61 @@
 
         window.updateAccessUI = updateAccessUI;
 
-        window.sendSignInLink = async function() {
-            const input = document.getElementById('sign-in-email');
-            const status = document.getElementById('sign-in-status');
-            const btn = document.getElementById('sign-in-send-btn');
+        function resolveSignInGroupId() {
+            if (window.groupIdRaw) return window.groupIdRaw;
+            try {
+                const fromUrl = new URLSearchParams(window.location.search).get('group');
+                if (fromUrl) return formatGroupSlug(fromUrl.trim());
+            } catch (_) {}
+            return '';
+        }
+
+        function updateLandingAuthUI() {
+            const loginNav = document.getElementById('landing-login-btn');
+            const loginHero = document.getElementById('landing-login-btn-hero');
+            const panel = document.getElementById('landing-sign-in-panel');
+            const signedIn = document.getElementById('landing-signed-in');
+            const signedInEmail = document.getElementById('landing-signed-in-email');
+            const hasUser = !!window.currentUser;
+
+            if (loginNav) loginNav.classList.toggle('hidden', hasUser);
+            if (loginHero) loginHero.classList.toggle('hidden', hasUser);
+            if (panel && hasUser) panel.classList.add('hidden');
+            if (signedIn) {
+                signedIn.classList.toggle('hidden', !hasUser);
+                if (hasUser && signedInEmail) signedInEmail.textContent = window.currentUser.email || '';
+            }
+            if (!hasUser && loginNav && panel) {
+                const panelOpen = !panel.classList.contains('hidden');
+                loginNav.textContent = panelOpen ? 'Hide' : 'Log in';
+                if (loginHero) loginHero.textContent = panelOpen ? 'Hide' : 'Log in';
+            }
+        }
+
+        window.toggleLandingSignIn = function() {
+            const panel = document.getElementById('landing-sign-in-panel');
+            const signedIn = document.getElementById('landing-signed-in');
+            if (!panel || (signedIn && !signedIn.classList.contains('hidden'))) return;
+            const opening = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !opening);
+            if (opening) {
+                const input = document.getElementById('landing-sign-in-email');
+                if (input) {
+                    input.value = '';
+                    clearFieldError(input);
+                }
+                const status = document.getElementById('landing-sign-in-status');
+                if (status) status.textContent = '';
+                setTimeout(() => input?.focus(), 50);
+            }
+            updateLandingAuthUI();
+        };
+
+        window.sendSignInLink = async function(options = {}) {
+            const fromLanding = !!options.fromLanding;
+            const input = document.getElementById(fromLanding ? 'landing-sign-in-email' : 'sign-in-email');
+            const status = document.getElementById(fromLanding ? 'landing-sign-in-status' : 'sign-in-status');
+            const btn = document.getElementById(fromLanding ? 'landing-sign-in-send-btn' : 'sign-in-send-btn');
             const email = normalizeEmail(input?.value);
             if (!email) {
                 setFieldError(input, 'Enter your email.');
@@ -1102,7 +1224,8 @@
                 return;
             }
             clearFieldError(input);
-            if (!window.groupIdRaw) {
+            const groupId = resolveSignInGroupId();
+            if (!groupId && !fromLanding) {
                 if (status) status.textContent = 'Open a group first.';
                 return;
             }
@@ -1111,10 +1234,14 @@
             try {
                 window.localStorage.setItem(AUTH_EMAIL_KEY, email);
                 await sendSignInLinkToEmail(auth, email, {
-                    url: getAuthContinueUrl(window.groupIdRaw),
+                    url: getAuthContinueUrl(groupId || null),
                     handleCodeInApp: true
                 });
-                if (status) status.textContent = 'Check your email and open the link on this device.';
+                if (status) {
+                    status.textContent = groupId
+                        ? 'Check your email and open the link on this device.'
+                        : 'Check your email. Then tap Enter App and open your group (or use the link from your invite).';
+                }
             } catch (e) {
                 console.error(e);
                 if (status) status.textContent = 'Could not send link: ' + e.message;
@@ -1949,8 +2076,14 @@
                 await claimMembershipForCurrentUser();
             } else if (!user) {
                 window.groupAccess = 'viewer';
+                window.linkedPlayerName = '';
             }
             updateAccessUI();
+            if (user && window.isGroupValid && window.canWrite()) {
+                window.switchTab('group');
+            } else if (user && !window.isGroupValid && hasGroupParam) {
+                window.openGroupModal();
+            }
             if (user && window.localStorage.getItem(PENDING_CREATE_GROUP_KEY) && !window.groupIdRaw) {
                 const slug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
                 if (slug) softRouteToGroup(slug, null, 'View stats');
