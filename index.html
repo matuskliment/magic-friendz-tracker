@@ -430,6 +430,7 @@
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner flex flex-col justify-center">
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Highest Elo</p>
                     <p id="cmd-view-peak-elo" class="text-xl font-bold text-white">1200</p>
+                    <p id="cmd-view-peak-elo-hint" class="hidden text-[9px] text-slate-500 mt-1">Baseline only (no games yet)</p>
                 </div>
             </div>
 
@@ -1635,6 +1636,8 @@
             window.appData.commanders = sortDecksByElo(deckElo).map((name, index) => {
                 const s = deckStats[name];
                 const rank = index + 1;
+                const playedEloHistory = (s.eloHistory || []).slice(1);
+                const hasPlayedGames = playedEloHistory.length > 0;
                 
                 let nemesis = MATCHUP_INSUFFICIENT_LABEL, prey = MATCHUP_INSUFFICIENT_LABEL;
                 let minScore = 0, maxScore = 0;
@@ -1658,7 +1661,8 @@
                     name: name,
                     rank: rank,
                     elo: Math.round(deckElo[name]),
-                    highestElo: Math.max(...s.eloHistory),
+                    highestElo: hasPlayedGames ? Math.max(...playedEloHistory) : SETTINGS.STARTING_ELO,
+                    isBaselineOnlyElo: !hasPlayedGames,
                     peakRank: s.peakRank || rank,
                     winRate: ((s.wins / s.plays) * 100).toFixed(1) + "%",
                     owner: s.owner,
@@ -2441,6 +2445,7 @@
             const curRankEl = document.getElementById('cmd-view-current-rank');
             const pkRankEl = document.getElementById('cmd-view-peak-rank');
             const pkEloEl = document.getElementById('cmd-view-peak-elo');
+            const pkEloHintEl = document.getElementById('cmd-view-peak-elo-hint');
             const nemesisEl = document.getElementById('cmd-view-nemesis');
             const nemesisHintEl = document.getElementById('cmd-view-nemesis-hint');
             const preyEl = document.getElementById('cmd-view-prey');
@@ -2502,6 +2507,7 @@
             if(curRankEl) curRankEl.innerText = `#${cmd.rank}`;
             if(pkRankEl) pkRankEl.innerText = `#${Math.min(cmd.peakRank || cmd.rank, cmd.rank)}`;
             if(pkEloEl) pkEloEl.innerText = cmd.highestElo || cmd.elo;
+            if(pkEloHintEl) pkEloHintEl.classList.toggle('hidden', !cmd.isBaselineOnlyElo);
             renderCommanderMatchup(nemesisEl, nemesisHintEl, cmd.nemesis);
             renderCommanderMatchup(preyEl, preyHintEl, cmd.bestMatchup);
             
