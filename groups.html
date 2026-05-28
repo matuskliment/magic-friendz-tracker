@@ -74,7 +74,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, collectionGroup, doc, getDoc, getDocs, query, setDoc, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, collectionGroup, doc, getDoc, getDocs, query, setDoc, where, serverTimestamp, documentId } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
@@ -190,15 +190,21 @@
                 }
             };
 
-            const [ownerByUid, ownerByEmail, memberByEmail] = await Promise.all([
+            const [ownerByUid, ownerByEmail, memberByEmail, memberByUid] = await Promise.all([
                 safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid))),
                 safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email))),
-                safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)))
+                safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email))),
+                safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)))
             ]);
 
             ownerByUid?.docs.forEach((d) => addGroup(d.id, 'owner'));
             ownerByEmail?.docs.forEach((d) => addGroup(d.id, 'owner'));
             memberByEmail?.docs.forEach((d) => {
+                const groupId = d.ref.parent?.parent?.id;
+                const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
+                addGroup(groupId, role);
+            });
+            memberByUid?.docs.forEach((d) => {
                 const groupId = d.ref.parent?.parent?.id;
                 const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                 addGroup(groupId, role);
