@@ -1768,9 +1768,44 @@
         }
 
         window.startCreateGroupFromNoAccess = function() {
+            if (auth.currentUser && window.userHasAnyGroupAccess === false) {
+                window.location.assign(getGroupsHubUrl());
+                return;
+            }
             window.openGroupModal();
             setTimeout(() => window.showCreateGroupPanel(), 50);
         };
+
+        async function routeSignedInUserToWorkspace() {
+            if (!auth.currentUser) return false;
+            if (window.localStorage.getItem(PENDING_CREATE_GROUP_KEY)) return false;
+
+            const onGroupsHub = /groups\.html$/i.test(window.location.pathname);
+            let groups = Array.isArray(window.accessibleGroups) ? window.accessibleGroups : [];
+            if (groups.length === 0 && window.userHasAnyGroupAccess === null) {
+                const fetched = await fetchAccessibleGroupsForCurrentUser();
+                if (fetched === null) return false;
+                groups = fetched;
+                window.accessibleGroups = groups;
+                window.userHasAnyGroupAccess = groups.length > 0;
+                updateLandingAuthUI();
+            }
+
+            if (window.userHasAnyGroupAccess === false) {
+                if (!onGroupsHub) {
+                    window.location.replace(getGroupsHubUrl());
+                    return true;
+                }
+                return false;
+            }
+
+            if (!window.groupIdRaw && !onGroupsHub) {
+                window.location.replace(getGroupsHubUrl());
+                return true;
+            }
+
+            return false;
+        }
 
         window.openBestGroupEntry = async function() {
             if (!window.currentUser) {
@@ -2892,8 +2927,8 @@
                 appBootComplete = true;
                 return;
             }
-            if (auth.currentUser && !window.groupIdRaw) {
-                window.location.replace(getGroupsHubUrl());
+            if (await routeSignedInUserToWorkspace()) {
+                appBootComplete = true;
                 return;
             }
             await bootApplication();
@@ -2931,11 +2966,15 @@
             }
             updateAccessUI();
             const pendingCreateSlug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
-            if (appBootComplete && user && !window.groupIdRaw && !pendingCreateSlug && !autoRouteInFlight) {
-                autoRouteInFlight = true;
-                window.location.replace(getGroupsHubUrl());
-                autoRouteInFlight = false;
-                return;
+            if (appBootComplete && user && !pendingCreateSlug && !autoRouteInFlight) {
+                const onGroupsHub = /groups\.html$/i.test(window.location.pathname);
+                const shouldGoToHub = window.userHasAnyGroupAccess === false || !window.groupIdRaw;
+                if (shouldGoToHub && !onGroupsHub) {
+                    autoRouteInFlight = true;
+                    window.location.replace(getGroupsHubUrl());
+                    autoRouteInFlight = false;
+                    return;
+                }
             }
             if (user && window.isGroupValid) {
                 window.switchTab('home');

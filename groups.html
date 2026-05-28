@@ -91,7 +91,6 @@
         const db = getFirestore(app);
         const AUTH_EMAIL_KEY = 'mf_email_for_sign_in';
         const AUTH_DEBUG_LINK_KEY = 'mf_debug_link_id';
-        const LAST_GROUP_KEY = 'mf_last_group_slug';
 
         const loadingView = document.getElementById('loading-view');
         const groupsView = document.getElementById('groups-view');
@@ -371,28 +370,6 @@
                 window.location.replace(appGroupUrl(groups[0].id));
                 return;
             }
-            const groupFromUrl = (() => {
-                try {
-                    const raw = new URLSearchParams(window.location.search).get('group');
-                    return String(raw || '').trim();
-                } catch (_) {
-                    return '';
-                }
-            })();
-            const lastKnownGroup = String(window.localStorage.getItem(LAST_GROUP_KEY) || '').trim();
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H7',location:'groups.html:onAuthStateChanged:fallbackHints',message:'evaluating fallback hints',data:{groupFromUrl,hasLastKnownGroup:!!lastKnownGroup,lastKnownGroup},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
-            if (groups.length === 0 && (groupFromUrl || lastKnownGroup)) {
-                const fallbackGroup = groupFromUrl || lastKnownGroup;
-                setLoadingState(`Opening ${fallbackGroup}...`, 'Using your last known group.');
-                // #region agent log
-                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'post-fix',hypothesisId:'H8',location:'groups.html:onAuthStateChanged:fallbackRedirect',message:'redirecting via fallback group hint',data:{fallbackGroup},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
-                window.location.replace(appGroupUrl(fallbackGroup));
-                return;
-            }
-
             loadingView.classList.add('hidden');
             if (groups.length > 1 || (manageMode && groups.length >= 1)) {
                 renderGroups(groups);
