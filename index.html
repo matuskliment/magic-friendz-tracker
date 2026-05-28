@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.7.5">
+    <meta name="mf-app-version" content="1.7.6">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3010,10 +3010,11 @@
             const resetIosViewportOffset = mfDebounce(() => {
                 const vv = window.visualViewport;
                 if (!vv || vv.offsetTop <= 0) return;
-                // Only the iOS keyboard "stuck offset" case — i.e. an input/textarea is
-                // focused. Never hijack normal page scrolling (e.g. Settings).
+                // Only the iOS keyboard "stuck offset" case inside a full-screen sheet
+                // (those are pinned to the top). Never hijack normal page scrolling
+                // such as the landing/login page, Settings, or dashboard.
                 const ae = document.activeElement;
-                if (!ae || !mfIsFocusableField(ae)) return;
+                if (!ae || !mfIsFocusableField(ae) || !ae.closest('.mf-mobile-sheet')) return;
                 document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'auto' });
             }, 50);
 
