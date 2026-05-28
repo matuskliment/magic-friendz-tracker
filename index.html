@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <meta name="mf-app-version" content="1.2.0">
     <title>Magic Friendz | Tracker</title>
     <script>
@@ -18,29 +18,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a855f7'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        (function preventIosInputZoom() {
-            const meta = document.querySelector('meta[name="viewport"]');
-            if (!meta) return;
-            const defaultContent = meta.getAttribute('content') || 'width=device-width, initial-scale=1.0';
-            const lockedContent = 'width=device-width, initial-scale=1.0, maximum-scale=1';
-            let lockTimer = null;
-            const isFormField = (el) => el && el.matches && el.matches('input, textarea, select') && el.type !== 'hidden' && el.type !== 'checkbox' && el.type !== 'radio';
-            document.addEventListener('focusin', (e) => {
-                if (!isFormField(e.target)) return;
-                if (lockTimer) clearTimeout(lockTimer);
-                meta.setAttribute('content', lockedContent);
-            });
-            document.addEventListener('focusout', (e) => {
-                if (!isFormField(e.target)) return;
-                lockTimer = setTimeout(() => {
-                    const active = document.activeElement;
-                    if (isFormField(active)) return;
-                    meta.setAttribute('content', defaultContent);
-                }, 120);
-            });
-        })();
-    </script>
     <style>
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .hero-bg { background-image: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 1)), url('https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070&auto=format&fit=crop'); background-size: cover; background-position: center; }
@@ -153,6 +130,7 @@
         #view-log-match input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         #view-log-match textarea,
         #view-log-match select,
+        #view-log-match .mf-date-part,
         #dashboard-view input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         #dashboard-view textarea,
         #dashboard-view select,
@@ -182,32 +160,30 @@
             max-width: 100%;
             overflow: hidden;
         }
-        #form-date.mf-date-input,
-        input[type="date"].mf-date-input {
-            display: block;
-            width: 100% !important;
-            max-width: 100% !important;
-            min-width: 0 !important;
-            box-sizing: border-box !important;
-            font-size: 16px !important;
-            padding-left: 0.75rem;
-            padding-right: 0.5rem;
-            overflow: hidden;
-        }
-        input[type="date"].mf-date-input::-webkit-date-and-time-value {
-            text-align: left;
+        #form-date-mobile {
+            width: 100%;
+            max-width: 100%;
             min-width: 0;
-            overflow: hidden;
         }
-        input[type="date"].mf-date-input::-webkit-datetime-edit,
-        input[type="date"].mf-date-input::-webkit-datetime-edit-fields-wrapper {
-            overflow: hidden;
-            max-width: calc(100% - 2rem);
-            padding: 0;
+        .mf-date-part {
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+            background-color: rgb(15 23 42);
+            border: 1px solid rgb(51 65 85);
+            color: #fff;
+            border-radius: 0.75rem;
+            padding: 0.75rem 0.5rem;
+            font-size: 16px !important;
+            min-height: 48px;
         }
-        input[type="date"].mf-date-input::-webkit-calendar-picker-indicator {
-            margin-left: 0.25rem;
-            flex-shrink: 0;
+        #form-date.mf-date-input {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 16px !important;
+            min-height: 48px;
         }
     </style>
 </head>
@@ -980,10 +956,15 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     Match Settings
                 </h3>
-                <div class="match-settings-grid grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="match-settings-date-cell min-w-0 sm:col-span-1">
+                <div class="match-settings-grid grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="match-settings-date-cell min-w-0 w-full">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Date Played</label>
-                        <input type="date" id="form-date" class="mf-date-input mf-touch-input w-full min-w-0 max-w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                        <div id="form-date-mobile" class="grid grid-cols-3 gap-2 md:hidden w-full min-w-0 max-w-full">
+                            <select id="form-date-month" class="mf-date-part mf-touch-input min-w-0" aria-label="Month"></select>
+                            <select id="form-date-day" class="mf-date-part mf-touch-input min-w-0" aria-label="Day"></select>
+                            <select id="form-date-year" class="mf-date-part mf-touch-input min-w-0" aria-label="Year"></select>
+                        </div>
+                        <input type="date" id="form-date" class="mf-date-input mf-touch-input hidden md:block w-full min-w-0 max-w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
                     <div class="min-w-0">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Pod Size</label>
@@ -1023,11 +1004,11 @@
                     <div class="grid grid-cols-2 gap-4 max-w-xs">
                         <div>
                             <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Hours</span>
-                            <input type="number" id="form-duration-hours" min="0" max="12" step="1" inputmode="numeric" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                            <input type="text" id="form-duration-hours" inputmode="numeric" autocomplete="off" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                         </div>
                         <div>
                             <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Minutes</span>
-                            <input type="number" id="form-duration-minutes" min="0" max="59" step="5" inputmode="numeric" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                            <input type="text" id="form-duration-minutes" inputmode="numeric" autocomplete="off" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                         </div>
                     </div>
                     <p class="text-[10px] text-slate-500 mt-2 ml-1">Each player in the pod gets this time credited toward their hours played.</p>
@@ -2505,6 +2486,87 @@
             if (total <= 0) return null;
             if (total > 12 * 60) return -1;
             return total;
+        }
+
+        function useMobileDatePickers() {
+            return window.matchMedia('(max-width: 767px)').matches;
+        }
+
+        function populateFormDateDayOptions() {
+            const monthEl = document.getElementById('form-date-month');
+            const dayEl = document.getElementById('form-date-day');
+            const yearEl = document.getElementById('form-date-year');
+            if (!monthEl || !dayEl || !yearEl) return;
+            const month = parseInt(monthEl.value, 10) || 1;
+            const year = parseInt(yearEl.value, 10) || new Date().getFullYear();
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const prevDay = parseInt(dayEl.value, 10) || 1;
+            dayEl.innerHTML = '';
+            for (let d = 1; d <= daysInMonth; d++) {
+                const opt = document.createElement('option');
+                opt.value = String(d);
+                opt.textContent = String(d);
+                dayEl.appendChild(opt);
+            }
+            dayEl.value = String(Math.min(prevDay, daysInMonth));
+        }
+
+        function initFormDatePickers(date = new Date()) {
+            const native = document.getElementById('form-date');
+            if (native) native.valueAsDate = date;
+
+            const monthEl = document.getElementById('form-date-month');
+            const dayEl = document.getElementById('form-date-day');
+            const yearEl = document.getElementById('form-date-year');
+            if (!monthEl || !dayEl || !yearEl) return;
+
+            if (!yearEl.dataset.ready) {
+                const y = date.getFullYear();
+                yearEl.innerHTML = '';
+                for (let yr = y + 1; yr >= y - 8; yr--) {
+                    const opt = document.createElement('option');
+                    opt.value = String(yr);
+                    opt.textContent = String(yr);
+                    yearEl.appendChild(opt);
+                }
+                yearEl.dataset.ready = '1';
+                monthEl.addEventListener('change', populateFormDateDayOptions);
+                yearEl.addEventListener('change', populateFormDateDayOptions);
+            }
+
+            if (!monthEl.dataset.ready) {
+                monthEl.innerHTML = '';
+                for (let m = 1; m <= 12; m++) {
+                    const opt = document.createElement('option');
+                    opt.value = String(m);
+                    opt.textContent = new Date(2000, m - 1, 1).toLocaleString('en-US', { month: 'short' });
+                    monthEl.appendChild(opt);
+                }
+                monthEl.dataset.ready = '1';
+            }
+
+            monthEl.value = String(date.getMonth() + 1);
+            yearEl.value = String(date.getFullYear());
+            populateFormDateDayOptions();
+            dayEl.value = String(date.getDate());
+        }
+
+        function readFormMatchDate() {
+            if (useMobileDatePickers()) {
+                const month = parseInt(document.getElementById('form-date-month')?.value, 10);
+                const day = parseInt(document.getElementById('form-date-day')?.value, 10);
+                const year = parseInt(document.getElementById('form-date-year')?.value, 10);
+                if (!month || !day || !year) throw new Error('Pick a valid date.');
+                const dObj = new Date(year, month - 1, day);
+                if (isNaN(dObj.getTime())) throw new Error('Pick a valid date.');
+                return dObj;
+            }
+            const dateRaw = document.getElementById('form-date')?.value;
+            if (!dateRaw) throw new Error('Pick a date.');
+            const [year, month, day] = dateRaw.split('-').map(Number);
+            const dObj = new Date(year, month - 1, day);
+            if (isNaN(dObj.getTime())) throw new Error('Pick a valid date.');
+            return dObj;
         }
 
         function formatDurationLabel(totalMinutes) {
@@ -5460,8 +5522,7 @@
                 return;
             }
             const modal = document.getElementById('view-log-match');
-            const dateInput = document.getElementById('form-date');
-            if(dateInput) dateInput.valueAsDate = new Date();
+            initFormDatePickers(new Date());
             
             const podSizeInput = document.getElementById('form-pod-size');
             if (podSizeInput) {
@@ -5759,9 +5820,7 @@
             btn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                const dateRaw = document.getElementById('form-date').value;
-                const [year, month, day] = dateRaw.split('-').map(Number);
-                const dObj = new Date(year, month - 1, day);
+                const dObj = readFormMatchDate();
                 const dateStr = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
                 const winnersData = [];
