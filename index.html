@@ -1353,10 +1353,6 @@
                 const fromUrl = new URLSearchParams(window.location.search).get('group');
                 if (fromUrl) return formatGroupSlug(fromUrl.trim());
             } catch (_) {}
-            try {
-                const last = window.localStorage.getItem(LAST_GROUP_KEY);
-                if (last) return formatGroupSlug(last);
-            } catch (_) {}
             return '';
         }
 
@@ -1497,7 +1493,15 @@
                 list?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 return;
             }
-            window.openGroupModal();
+            if (window.userHasAnyGroupAccess === false) {
+                window.startCreateGroupFromNoAccess();
+                return;
+            }
+            window.showAppAlert(
+                'Could not load your groups yet. Please refresh and try again.',
+                'Groups not loaded',
+                '⚠️'
+            );
         };
 
         window.openAccessibleGroupFromLanding = function(groupId) {
