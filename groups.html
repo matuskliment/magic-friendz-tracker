@@ -74,7 +74,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, collectionGroup, doc, getDoc, getDocs, query, setDoc, where, serverTimestamp, documentId } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, collectionGroup, doc, getDoc, getDocs, query, setDoc, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
@@ -200,12 +200,15 @@
                     }
                 };
 
-                const [ownerByUid, ownerByEmail, memberByEmail, inviteByEmail] = await Promise.all([
+                const [ownerByUid, ownerByEmail, memberByEmail, inviteCollection] = await Promise.all([
                     safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid)), 'ownerByUid'),
                     safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerByEmail'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'memberByEmail'),
-                    safeGetDocs(query(collectionGroup(db, 'memberEmails'), where(documentId(), '==', email)), 'inviteByEmail')
+                    safeGetDocs(collectionGroup(db, 'memberEmails'), 'inviteCollection')
                 ]);
+                const inviteByEmail = inviteCollection
+                    ? { docs: inviteCollection.docs.filter((d) => normalizeEmail(d.id) === email), size: inviteCollection.docs.filter((d) => normalizeEmail(d.id) === email).length }
+                    : null;
             // #region agent log
             fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:queryResults',message:'raw query results',data:{ownerByUidCount:ownerByUid?.size??null,ownerByEmailCount:ownerByEmail?.size??null,memberByEmailCount:memberByEmail?.size??null,inviteByEmailCount:inviteByEmail?.size??null},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
