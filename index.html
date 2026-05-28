@@ -929,10 +929,12 @@
         let authReady = false;
         let rosterSyncTimer = null;
         let rosterSyncInFlight = false;
+        let autoRouteInFlight = false;
         window.pendingEmailLinkUrl = '';
         window.rosterInviteOpen = new Set();
         window.rosterInviteFlash = {};
         window.userHasAnyGroupAccess = null;
+        window.accessibleGroups = [];
         window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
 
         function normalizeEmail(email) {
@@ -1374,21 +1376,35 @@
             }
         }
 
-        async function checkAnyGroupAccessForCurrentUser() {
-            if (!auth.currentUser) return null;
+        async function fetchAccessibleGroupsForCurrentUser() {
+            if (!auth.currentUser) return [];
             const email = normalizeEmail(auth.currentUser.email);
             const uid = auth.currentUser.uid;
-            if (!email || !uid) return false;
+            if (!email || !uid) return [];
+            const groupsById = new Map();
+            const addGroup = (groupId, roleHint) => {
+                if (!groupId) return;
+                const existing = groupsById.get(groupId) || { id: groupId, role: 'editor' };
+                if (roleHint === 'owner' || existing.role !== 'owner') existing.role = roleHint || existing.role;
+                groupsById.set(groupId, existing);
+            };
             try {
                 const [ownerByUid, ownerByEmail, memberByEmail] = await Promise.all([
-                    getDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid), limit(1))),
-                    getDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email), limit(1))),
-                    getDocs(query(collectionGroup(db, 'members'), where('email', '==', email), limit(1)))
+                    getDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid))),
+                    getDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email))),
+                    getDocs(query(collectionGroup(db, 'members'), where('email', '==', email)))
                 ]);
-                return !ownerByUid.empty || !ownerByEmail.empty || !memberByEmail.empty;
+                ownerByUid.docs.forEach(d => addGroup(d.id, 'owner'));
+                ownerByEmail.docs.forEach(d => addGroup(d.id, 'owner'));
+                memberByEmail.docs.forEach(d => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
+                    addGroup(groupId, role);
+                });
+                return Array.from(groupsById.values());
             } catch (error) {
                 console.warn('Could not check global group access:', error);
-                return null;
+                return [];
             }
         }
 
@@ -2409,7 +2425,8 @@
             window.currentUser = user;
             authReady = true;
             if (user) {
-                window.userHasAnyGroupAccess = await checkAnyGroupAccessForCurrentUser();
+                window.accessibleGroups = await fetchAccessibleGroupsForCurrentUser();
+                window.userHasAnyGroupAccess = window.accessibleGroups.length > 0;
             }
             if (user && window.isGroupValid) {
                 await claimMembershipForCurrentUser();
@@ -2417,8 +2434,24 @@
                 window.groupAccess = 'viewer';
                 window.linkedPlayerName = '';
                 window.userHasAnyGroupAccess = null;
+                window.accessibleGroups = [];
             }
             updateAccessUI();
+            const pendingCreateSlug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
+            if (
+                appBootComplete &&
+                user &&
+                !window.groupIdRaw &&
+                !pendingCreateSlug &&
+                window.accessibleGroups.length === 1 &&
+                !autoRouteInFlight
+            ) {
+                autoRouteInFlight = true;
+                const onlyGroup = window.accessibleGroups[0];
+                softRouteToGroup(onlyGroup.id, null, 'View stats');
+                autoRouteInFlight = false;
+                return;
+            }
             if (user && window.isGroupValid && window.canWrite()) {
                 window.switchTab('group');
             } else if (appBootComplete && user && !window.isGroupValid && window.groupIdRaw) {
