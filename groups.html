@@ -23,7 +23,7 @@
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .state-panel { transition: opacity 220ms ease, transform 220ms ease; }
-        .state-panel.hidden { opacity: 0; transform: translateY(8px); pointer-events: none; }
+        .state-panel.hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans antialiased overflow-x-hidden">
@@ -63,7 +63,8 @@
                         <h2 id="no-groups-title" class="text-lg font-bold text-white">No groups linked yet</h2>
                         <p id="no-groups-body" class="text-sm text-slate-200">This account is signed in, but does not have access to any group yet.</p>
                         <p id="no-groups-hint" class="text-xs text-slate-400">Ask a group owner to invite this email, or create a new group now.</p>
-                        <button id="retry-groups-btn" type="button" class="hidden w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Try again</button>
+                        <p id="no-groups-debug" class="hidden text-xs text-amber-200/90 font-mono break-all"></p>
+                        <button id="retry-groups-btn" type="button" class="hidden w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation disabled:opacity-60">Try again</button>
                     </section>
 
                     <section class="mt-6 rounded-xl border border-purple-500/25 bg-purple-950/20 p-5 space-y-3">
@@ -99,6 +100,7 @@
         const db = getFirestore(app);
         const AUTH_EMAIL_KEY = 'mf_email_for_sign_in';
         const AUTH_DEBUG_LINK_KEY = 'mf_debug_link_id';
+        const LAST_GROUP_KEY = 'mf_last_group_slug';
 
         const loadingView = document.getElementById('loading-view');
         const groupsView = document.getElementById('groups-view');
@@ -110,6 +112,9 @@
         const signOutButton = document.getElementById('sign-out-btn');
         const loadingTitle = document.getElementById('loading-title');
         const loadingSubtitle = document.getElementById('loading-subtitle');
+        const retryGroupsBtn = document.getElementById('retry-groups-btn');
+        const noGroupsDebug = document.getElementById('no-groups-debug');
+        let groupsLoadInFlight = false;
 
         function normalizeEmail(email) {
             return String(email || '').trim().toLowerCase();
@@ -196,11 +201,45 @@
             loadingSubtitle.textContent = subtitle;
         }
 
+        function groupIdFromSubcollectionDoc(docSnap) {
+            const parts = String(docSnap.ref?.path || '').split('/');
+            if (parts[0] === 'groups' && parts[1]) return parts[1];
+            return docSnap.ref?.parent?.parent?.id || '';
+        }
+
+        async function probeLastKnownGroupAccess(user) {
+            const slug = formatGroupSlug(window.localStorage.getItem(LAST_GROUP_KEY) || '');
+            if (!slug) return null;
+            const uid = user.uid;
+            const email = normalizeEmail(user.email);
+            try {
+                const groupSnap = await getDoc(doc(db, 'groups', slug));
+                if (!groupSnap.exists()) return null;
+                const data = groupSnap.data() || {};
+                const memberSnap = await getDoc(doc(db, 'groups', slug, 'members', uid));
+                if (memberSnap.exists()) {
+                    const role = memberSnap.data()?.role === 'owner' ? 'owner' : 'editor';
+                    return { id: slug, role, name: data.name || slug };
+                }
+                if (data.ownerUid === uid || normalizeEmail(data.ownerEmail) === email) {
+                    return { id: slug, role: 'owner', name: data.name || slug };
+                }
+                const inviteSnap = await getDoc(doc(db, 'groups', slug, 'memberEmails', email));
+                if (inviteSnap.exists()) {
+                    return { id: slug, role: 'editor', name: data.name || slug };
+                }
+            } catch (error) {
+                console.warn('Last group probe failed:', error);
+            }
+            return null;
+        }
+
         async function fetchAccessibleGroupsForCurrentUser(user) {
             const email = normalizeEmail(user?.email);
             const uid = user?.uid;
-            if (!email || !uid) return [];
+            if (!email || !uid) return { groups: [], failed: false, failures: [] };
             const groupsById = new Map();
+            const failures = [];
             const addGroup = (groupId, roleHint) => {
                 if (!groupId) return;
                 const existing = groupsById.get(groupId) || { id: groupId, role: 'editor' };
@@ -213,6 +252,7 @@
                         return await getDocs(q);
                     } catch (error) {
                         console.warn(`Group lookup failed (${label}):`, error);
+                        failures.push(`${label}: ${error?.code || error?.message || 'error'}`);
                         return null;
                     }
                 };
@@ -229,27 +269,33 @@
                 ownerByUid?.docs.forEach((d) => addGroup(d.id, 'owner'));
                 ownerByEmail?.docs.forEach((d) => addGroup(d.id, 'owner'));
                 memberByUid?.docs.forEach((d) => {
-                    const groupId = d.ref.parent?.parent?.id;
+                    const groupId = groupIdFromSubcollectionDoc(d);
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
                 memberByEmail?.docs.forEach((d) => {
-                    const groupId = d.ref.parent?.parent?.id;
+                    const groupId = groupIdFromSubcollectionDoc(d);
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
                 inviteByEmail?.docs.forEach((d) => {
-                    const groupId = d.ref.parent?.parent?.id;
-                    addGroup(groupId, 'editor');
+                    addGroup(groupIdFromSubcollectionDoc(d), 'editor');
                 });
                 rosterByEmail?.docs.forEach((d) => {
-                    const groupId = d.ref.parent?.parent?.id;
-                    addGroup(groupId, 'editor');
+                    addGroup(groupIdFromSubcollectionDoc(d), 'editor');
                 });
 
+                if (!groupsById.size) {
+                    const probed = await probeLastKnownGroupAccess(user);
+                    if (probed) addGroup(probed.id, probed.role);
+                }
+
+                const snapshots = [ownerByUid, ownerByEmail, memberByUid, memberByEmail, inviteByEmail, rosterByEmail];
+                const anySucceeded = snapshots.some((s) => s !== null);
                 const groups = Array.from(groupsById.values());
-                if (!groups.length && ownerByUid === null && ownerByEmail === null && memberByUid === null && memberByEmail === null && inviteByEmail === null && rosterByEmail === null) {
-                    return null;
+
+                if (!groups.length && !anySucceeded) {
+                    return { groups: [], failed: true, failures };
                 }
 
                 const withNames = await Promise.all(groups.map(async (g) => {
@@ -262,28 +308,41 @@
                     } catch (_) {}
                     return { ...g, name: g.id };
                 }));
-                return withNames.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
+                return {
+                    groups: withNames.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id))),
+                    failed: failures.length > 0 && !groups.length,
+                    failures
+                };
             } catch (error) {
                 console.warn('Could not discover groups:', error);
-                return null;
+                failures.push(error?.code || error?.message || 'unknown');
+                return { groups: [], failed: true, failures };
             }
         }
 
-        function showNoGroupsState(mode) {
+        function showNoGroupsState(mode, debugText = '') {
             const title = document.getElementById('no-groups-title');
             const body = document.getElementById('no-groups-body');
             const hint = document.getElementById('no-groups-hint');
-            const retryBtn = document.getElementById('retry-groups-btn');
             if (mode === 'error') {
                 if (title) title.textContent = 'Could not load your groups';
-                if (body) body.textContent = 'We could not verify your memberships right now. This is usually a temporary permissions or network issue.';
-                if (hint) hint.textContent = 'Tap Try again. If it keeps failing, ask your group owner to confirm your invite email matches this sign-in.';
-                retryBtn?.classList.remove('hidden');
+                if (body) body.textContent = 'We could not verify your memberships right now. This is usually a permissions or index issue in Firestore.';
+                if (hint) hint.textContent = 'Tap Try again. If it keeps failing, open the browser console (Safari → Develop) and send the red errors to your admin.';
+                retryGroupsBtn?.classList.remove('hidden');
             } else {
                 if (title) title.textContent = 'No groups linked yet';
                 if (body) body.textContent = 'This account is signed in, but does not have access to any group yet.';
                 if (hint) hint.textContent = 'Ask a group owner to invite this email, or create a new group now.';
-                retryBtn?.classList.add('hidden');
+                retryGroupsBtn?.classList.add('hidden');
+            }
+            if (noGroupsDebug) {
+                if (debugText) {
+                    noGroupsDebug.textContent = debugText;
+                    noGroupsDebug.classList.remove('hidden');
+                } else {
+                    noGroupsDebug.textContent = '';
+                    noGroupsDebug.classList.add('hidden');
+                }
             }
             noGroupsView.classList.remove('hidden');
         }
@@ -361,25 +420,30 @@
             }
         }
 
-        (async function bootstrapGroups() {
+        async function loadGroupsForUser(user) {
+            if (!user) {
+                window.location.replace(indexBasePath());
+                return;
+            }
+            if (groupsLoadInFlight) return;
+            groupsLoadInFlight = true;
+            if (retryGroupsBtn) {
+                retryGroupsBtn.disabled = true;
+                retryGroupsBtn.textContent = 'Checking…';
+            }
             try {
-                await tryCompleteEmailSignInOnGroups();
-            } catch (_) {}
-            async function loadGroupsForUser(user) {
-                if (!user) {
-                    window.location.replace(indexBasePath());
-                    return;
-                }
                 accountEmail.textContent = `Signed in as ${user.email || 'your account'}`;
                 setLoadingState('Preparing your workspace...', 'Checking your account and groups.');
                 loadingView.classList.remove('hidden');
                 groupsView.classList.add('hidden');
                 noGroupsView.classList.add('hidden');
 
-                const groups = await fetchAccessibleGroupsForCurrentUser(user);
-                if (groups === null) {
+                const result = await fetchAccessibleGroupsForCurrentUser(user);
+                const groups = result.groups || [];
+
+                if (result.failed) {
                     loadingView.classList.add('hidden');
-                    showNoGroupsState('error');
+                    showNoGroupsState('error', result.failures?.slice(0, 3).join(' · ') || '');
                     return;
                 }
 
@@ -397,17 +461,35 @@
                     return;
                 }
                 showNoGroupsState('empty');
+            } catch (error) {
+                console.error('loadGroupsForUser failed:', error);
+                loadingView.classList.add('hidden');
+                showNoGroupsState('error', error?.message || 'Unexpected error');
+            } finally {
+                groupsLoadInFlight = false;
+                if (retryGroupsBtn) {
+                    retryGroupsBtn.disabled = false;
+                    retryGroupsBtn.textContent = 'Try again';
+                }
             }
+        }
 
+        (async function bootstrapGroups() {
+            try {
+                await tryCompleteEmailSignInOnGroups();
+            } catch (_) {}
             onAuthStateChanged(auth, (user) => {
                 loadGroupsForUser(user);
             });
-
-            document.getElementById('retry-groups-btn')?.addEventListener('click', () => {
-                const user = auth.currentUser;
-                if (user) loadGroupsForUser(user);
-            });
         })();
+
+        retryGroupsBtn?.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const user = auth.currentUser;
+            if (!user) return;
+            loadGroupsForUser(user);
+        });
 
         createButton.addEventListener('click', async () => {
             const user = auth.currentUser;

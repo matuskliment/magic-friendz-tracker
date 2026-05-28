@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.5.1">
+    <meta name="mf-app-version" content="1.5.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1973,6 +1973,40 @@
             }
         }
 
+        function groupIdFromSubcollectionDoc(docSnap) {
+            const parts = String(docSnap.ref?.path || '').split('/');
+            if (parts[0] === 'groups' && parts[1]) return parts[1];
+            return docSnap.ref?.parent?.parent?.id || '';
+        }
+
+        async function probeLastKnownGroupAccess() {
+            if (!auth.currentUser) return null;
+            const slug = formatGroupSlug(window.localStorage.getItem(LAST_GROUP_KEY) || '');
+            if (!slug) return null;
+            const uid = auth.currentUser.uid;
+            const email = normalizeEmail(auth.currentUser.email);
+            try {
+                const groupSnap = await getDoc(doc(db, 'groups', slug));
+                if (!groupSnap.exists()) return null;
+                const data = groupSnap.data() || {};
+                const memberSnap = await getDoc(doc(db, 'groups', slug, 'members', uid));
+                if (memberSnap.exists()) {
+                    const role = memberSnap.data()?.role === 'owner' ? 'owner' : 'editor';
+                    return { id: slug, role, name: data.name || slug };
+                }
+                if (data.ownerUid === uid || normalizeEmail(data.ownerEmail) === email) {
+                    return { id: slug, role: 'owner', name: data.name || slug };
+                }
+                const inviteSnap = await getDoc(doc(db, 'groups', slug, 'memberEmails', email));
+                if (inviteSnap.exists()) {
+                    return { id: slug, role: 'editor', name: data.name || slug };
+                }
+            } catch (error) {
+                console.warn('Last group probe failed:', error);
+            }
+            return null;
+        }
+
         async function fetchAccessibleGroupsForCurrentUser() {
             if (!auth.currentUser) return [];
             const email = normalizeEmail(auth.currentUser.email);
@@ -2007,25 +2041,31 @@
                 if (ownerByUid) ownerByUid.docs.forEach(d => addGroup(d.id, 'owner'));
                 if (ownerByEmail) ownerByEmail.docs.forEach(d => addGroup(d.id, 'owner'));
                 if (memberByUid) memberByUid.docs.forEach(d => {
-                    const groupId = d.ref.parent?.parent?.id;
+                    const groupId = groupIdFromSubcollectionDoc(d);
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
                 if (memberByEmail) memberByEmail.docs.forEach(d => {
-                    const groupId = d.ref.parent?.parent?.id;
+                    const groupId = groupIdFromSubcollectionDoc(d);
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
                 if (inviteByEmail) inviteByEmail.docs.forEach(d => {
-                    const groupId = d.ref.parent?.parent?.id;
-                    addGroup(groupId, 'editor');
+                    addGroup(groupIdFromSubcollectionDoc(d), 'editor');
                 });
                 if (rosterByEmail) rosterByEmail.docs.forEach(d => {
-                    const groupId = d.ref.parent?.parent?.id;
-                    addGroup(groupId, 'editor');
+                    addGroup(groupIdFromSubcollectionDoc(d), 'editor');
                 });
+
+                if (!groupsById.size) {
+                    const probed = await probeLastKnownGroupAccess();
+                    if (probed) addGroup(probed.id, probed.role);
+                }
+
+                const snapshots = [ownerByUid, ownerByEmail, memberByUid, memberByEmail, inviteByEmail, rosterByEmail];
+                const anySucceeded = snapshots.some((s) => s !== null);
                 const entries = Array.from(groupsById.values());
-                if (!entries.length && ownerByUid === null && ownerByEmail === null && memberByUid === null && memberByEmail === null && inviteByEmail === null && rosterByEmail === null) {
+                if (!entries.length && !anySucceeded) {
                     return null;
                 }
                 const names = await Promise.all(entries.map(async g => {
