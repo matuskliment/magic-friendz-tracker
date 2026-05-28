@@ -2471,7 +2471,6 @@
                 appBootComplete = true;
                 return;
             }
-            if (auth.currentUser) restoreGroupContextAfterAuth();
             await bootApplication();
             if (auth.currentUser && window.isGroupValid) {
                 await claimMembershipForCurrentUser();
