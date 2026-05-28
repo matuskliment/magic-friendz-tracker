@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.7.1">
+    <meta name="mf-app-version" content="1.7.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -6499,7 +6499,13 @@
                 const deckName = String(newInput?.value || '').trim();
                 if (!deckName) {
                     newInput?.focus();
-                    window.showAppAlert('Pick a commander name from Scryfall (type 3+ characters), or enter the deck name.', 'Deck name', '⚠️');
+                    window.showAppAlert('Search Scryfall (type 3+ characters) and pick a commander.', 'Deck name', '⚠️');
+                    return;
+                }
+                if (!mfDeckPickedFromScryfall(newInput)) {
+                    try { newInput.focus({ preventScroll: true }); } catch (_) {}
+                    mfSetFieldError(newInput, 'Pick the commander from the Scryfall list.');
+                    window.showAppAlert('Pick the commander from the Scryfall list to create this deck.', 'Choose from Scryfall', '⚠️');
                     return;
                 }
                 let display = deckName;
@@ -6570,9 +6576,17 @@
             mfClearFieldError(input);
         }
 
+        // A new-deck input is only legitimate if its current value matches the name
+        // that was actually picked from the Scryfall dropdown.
+        function mfDeckPickedFromScryfall(newDeckInput) {
+            if (!newDeckInput) return false;
+            const picked = newDeckInput.dataset.mfScryfallName;
+            return !!picked && normalizeName(newDeckInput.value) === normalizeName(picked);
+        }
+
         // Resolve a single slot field's state. type is 'player' or 'deck'.
         function mfSlotFieldInfo(group, dataArray, type) {
-            if (!group) return { filled: false, value: '', valid: false, isNew: false, input: null };
+            if (!group) return { filled: false, value: '', valid: false, isNew: false, input: null, needsScryfall: false };
             const isNew = slotUsesNewMode(group);
             const localSel = type === 'player' ? '.local-player-input' : '.local-deck-input';
             const local = group.querySelector(localSel);
@@ -6580,12 +6594,18 @@
                 const newSel = type === 'player' ? '.new-player-input' : '.new-deck-input';
                 const ni = group.querySelector(newSel);
                 const v = normalizeName(ni?.value);
-                return { filled: !!v, value: v, valid: !!v, isNew: true, input: local || ni };
+                const newModeVisible = !group.querySelector('.new-mode')?.classList.contains('hidden');
+                const target = newModeVisible ? ni : (local || ni);
+                if (type === 'deck') {
+                    const picked = mfDeckPickedFromScryfall(ni);
+                    return { filled: !!v, value: v, valid: !!v && picked, isNew: true, input: target, needsScryfall: !!v && !picked };
+                }
+                return { filled: !!v, value: v, valid: !!v, isNew: true, input: target, needsScryfall: false };
             }
             const v = normalizeName(local?.value);
             const selected = local?.dataset.mfSelected === '1';
             const match = !!v && (dataArray || []).some(x => String(x.name).toLowerCase() === v.toLowerCase());
-            return { filled: !!v, value: v, valid: !!v && (selected || match), isNew: false, input: local };
+            return { filled: !!v, value: v, valid: !!v && (selected || match), isNew: false, input: local, needsScryfall: false };
         }
 
         // Strict validation: existing-mode fields must be a real selection;
@@ -6619,7 +6639,10 @@
                     else if (!p.valid) addIssue(p.input, `${sec.label} ${num}: "${p.value}" isn't a saved player — pick it from the list, or tap + New to create them.`);
 
                     if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), `${sec.label} ${num}: add a deck.`);
-                    else if (!d.valid) addIssue(d.input, `${sec.label} ${num}: "${d.value}" isn't a saved deck — pick it from the list, or tap + New to create it.`);
+                    else if (!d.valid) {
+                        if (d.needsScryfall) addIssue(d.input, `${sec.label} ${num}: pick the commander from the Scryfall list to create "${d.value}".`);
+                        else addIssue(d.input, `${sec.label} ${num}: "${d.value}" isn't a saved deck — pick it from the list, or tap + New to search Scryfall.`);
+                    }
 
                     if (sec.label === 'Victor' && p.valid && d.valid) validWinners++;
                 });
@@ -7009,6 +7032,7 @@
                                 li.classList.add('touch-manipulation');
                                 mfBindDropdownPick(li, activeInput, () => {
                                     activeInput.value = name;
+                                    activeInput.dataset.mfScryfallName = name;
                                 });
                                 ul.appendChild(li);
                             });
