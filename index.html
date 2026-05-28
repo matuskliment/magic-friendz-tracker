@@ -95,10 +95,10 @@
     <!-- LANDING PAGE VIEW -->
     <div id="landing-page" class="min-h-screen flex flex-col transition-opacity duration-500 relative">
         <nav class="w-full p-4 md:p-6 flex justify-between items-center fixed top-0 z-50 glass border-b border-slate-800/50">
-            <div class="text-xl md:text-2xl font-bold tracking-tighter flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+            <button type="button" onclick="window.goAppHome()" class="text-xl md:text-2xl font-bold tracking-tighter flex items-center gap-2 text-left hover:opacity-90 active:opacity-80 transition cursor-pointer touch-manipulation" aria-label="Magic Friendz home">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500 shrink-0" aria-hidden="true"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
                 Magic<span class="text-purple-500">Friendz</span>
-            </div>
+            </button>
             <div class="flex items-center gap-2">
                 <a href="#landing-how-it-works" class="hidden md:inline text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">How it works</a>
                 <button type="button" onclick="window.openFeedbackModal()" class="text-xs sm:text-sm font-semibold text-slate-400 hover:text-white px-2.5 sm:px-3 py-2 rounded-full border border-slate-700 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Feedback</button>
@@ -290,14 +290,20 @@
     <!-- APP DASHBOARD VIEW -->
     <div id="dashboard-view" class="hidden min-h-screen bg-slate-950 pb-24 transition-opacity duration-500 opacity-0 relative">
         <div class="glass sticky top-0 z-40 px-4 py-4 flex justify-between items-center border-b border-slate-800">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                <span class="text-slate-300">Group:</span> <span id="group-name-display" class="text-purple-400">Loading...</span>
-            </h2>
+            <div class="flex items-center gap-3 min-w-0 flex-1 mr-2">
+                <button type="button" onclick="window.goAppHome()" class="flex items-center gap-2 shrink-0 text-left hover:opacity-90 active:opacity-80 transition cursor-pointer touch-manipulation" aria-label="Magic Friendz home">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400 shrink-0" aria-hidden="true"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                    <span class="hidden sm:inline text-base md:text-lg font-bold tracking-tight text-white">Magic<span class="text-purple-400">Friendz</span></span>
+                </button>
+                <div class="min-w-0 border-l border-slate-700/80 pl-3">
+                    <p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold leading-none">Group</p>
+                    <p id="group-name-display" class="text-sm md:text-base font-bold text-purple-400 truncate leading-tight">Loading...</p>
+                </div>
+            </div>
             <div class="flex items-center gap-2 md:gap-3 shrink-0">
                 <button type="button" onclick="window.openFeedbackModal()" class="text-[10px] sm:text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1.5 rounded-lg transition min-h-[32px] touch-manipulation whitespace-nowrap">Feedback</button>
                 <span id="group-header-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80">View only</span>
-                <button id="group-list-btn" onclick="window.openGroupsHubForCurrentUser()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg items-center gap-1 transition">
+                <button id="group-list-btn" onclick="window.openGroupsHubForCurrentUser()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg items-center gap-1 transition touch-manipulation cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     My Groups
                 </button>
@@ -1172,6 +1178,16 @@
             window.openGroupsHub();
         };
 
+        window.goAppHome = function() {
+            if (window.currentUser) {
+                window.openGroupsHubForCurrentUser();
+                return;
+            }
+            window.showLanding();
+            const landing = document.getElementById('landing-page');
+            if (landing) landing.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
         function getAuthContinueUrl(groupId, signInEmail = '', debugLinkId = '') {
             const base = groupId ? `${window.location.origin}${window.location.pathname}` : getGroupsHubUrl();
             const params = new URLSearchParams();
@@ -1546,7 +1562,7 @@
             if (groupListBtn) {
                 const showGroupList = hasFirebaseUser;
                 groupListBtn.classList.toggle('hidden', !showGroupList);
-                groupListBtn.classList.toggle('flex', showGroupList);
+                groupListBtn.classList.toggle('inline-flex', showGroupList);
             }
 
             if (canWrite) scheduleEnsureMatchPlayersOnRoster();
