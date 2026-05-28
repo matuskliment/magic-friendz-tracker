@@ -18,7 +18,9 @@ Also deployed on GitHub Pages; use **one** host consistently for magic links (se
 
 ## Backoffice
 
-[admin.html](admin.html) on the same host — set `admins/{uid}` in Firestore and sign in with Firebase email/password.
+[admin.html](admin.html) on the same host (`/admin.html` or `/admin` after deploy) — set `admins/{uid}` in Firestore and sign in with Firebase email/password.
+
+Local dev: `python3 -m http.server 3000` then open `http://localhost:3000/admin.html` (or `http://localhost:3000/admin/`).
 
 ## Local / setup
 
