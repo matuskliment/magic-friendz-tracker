@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.7.0">
+    <meta name="mf-app-version" content="1.7.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -6447,6 +6447,9 @@
                 mfClearLogMatchFieldDropdowns();
                 document.querySelectorAll('#view-log-match .input-slot-group .new-mode').forEach((panel) => {
                     if (panel === newMode) return;
+                    // Only close panels that are actually OPEN. Leave already-confirmed
+                    // entries (their panel is hidden) intact so they stay valid.
+                    if (panel.classList.contains('hidden')) return;
                     const otherGroup = panel.closest('.input-slot-group');
                     mfReleaseSlotGroup(otherGroup, { hideNewMode: true });
                     if (otherGroup) delete otherGroup.dataset.confirmedNew;
@@ -6667,8 +6670,12 @@
             const validation = window.mfValidateMatchForm();
             if (!validation.ok) {
                 if (validation.firstInvalid) mfScrollFieldIntoView(validation.firstInvalid);
-                const more = validation.issues.length > 1 ? ` (+${validation.issues.length - 1} more)` : '';
-                window.showAppAlert((validation.issues[0] || 'Some pods are missing a player or deck.') + more, 'Check your pods', '⚠️');
+                const issues = validation.issues || [];
+                const maxList = 6;
+                const lines = issues.slice(0, maxList).map(s => '• ' + s);
+                if (issues.length > maxList) lines.push(`…and ${issues.length - maxList} more`);
+                const message = 'Every seat needs both a player and a deck.' + (lines.length ? '\n' + lines.join('\n') : '');
+                window.showAppAlert(message, 'Fill out all players & decks', '⚠️');
                 return;
             }
 
@@ -6885,7 +6892,10 @@
                 if (!isOwner && rawQuery) {
                     const li = document.createElement('li');
                     li.className = 'px-4 py-3 text-sm text-purple-300 hover:bg-purple-600 hover:text-white cursor-pointer transition flex items-center gap-2 touch-manipulation';
-                    li.innerHTML = `<span class="text-base leading-none">+</span><span class="truncate">Create <span class="font-semibold">"${escapeHtml(rawQuery)}"</span> as new ${isDeck ? 'deck' : 'player'}</span>`;
+                    const label = isDeck
+                        ? `Create new deck — search Scryfall for <span class="font-semibold">"${escapeHtml(rawQuery)}"</span>`
+                        : `Create <span class="font-semibold">"${escapeHtml(rawQuery)}"</span> as new player`;
+                    li.innerHTML = `<span class="text-base leading-none">+</span><span class="truncate">${label}</span>`;
                     mfBindDropdownPick(li, input, () => {
                         mfStartNewFromQuery(input, isDeck, rawQuery);
                     });
