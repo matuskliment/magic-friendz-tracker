@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="mf-app-version" content="1.2.2">
+    <meta name="mf-app-version" content="1.3.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -157,7 +157,32 @@
             animation: mfBootSpin 0.75s linear infinite;
             flex-shrink: 0;
         }
-        body.mf-scroll-locked {
+        /* Full-screen mobile sheets (modals / profiles) */
+        .mf-mobile-sheet {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100vh;
+            height: 100dvh;
+            max-height: 100dvh;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            box-sizing: border-box;
+        }
+        .mf-sheet-header {
+            flex-shrink: 0;
+        }
+        .mf-sheet-scroll {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        body.mf-body-locked {
             position: fixed;
             width: 100%;
             left: 0;
@@ -167,7 +192,6 @@
     </style>
     <!-- After Tailwind: 16px form text beats text-sm and stops iOS focus-zoom -->
     <style>
-        #view-log-match,
         #dashboard-view,
         #view-group-modal,
         #view-feedback-modal,
@@ -255,9 +279,6 @@
             margin: 0;
             padding: 0;
             cursor: pointer;
-        }
-        #view-log-match {
-            -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
@@ -789,8 +810,8 @@
     </div>
 
     <!-- FULL SCREEN VIEW: COMMANDER PROFILE -->
-    <div id="view-commander-detail" class="fixed inset-0 z-[100] bg-slate-950 transform translate-x-full transition-transform duration-300 overflow-y-auto flex flex-col hidden">
-        <div class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800">
+    <div id="view-commander-detail" class="mf-mobile-sheet z-[100] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="cmd-view-title">
+        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800">
             <button onclick="window.closeCommanderProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
@@ -799,6 +820,7 @@
             <div class="w-16"></div>
         </div>
 
+        <div class="mf-sheet-scroll">
         <div class="relative pt-8 px-4 md:px-6 max-w-3xl mx-auto w-full flex flex-col md:flex-row items-center md:items-start gap-6 border-b border-slate-800 pb-8">
             <div class="w-48 md:w-56 aspect-[5/7] flex-shrink-0 mx-auto md:mx-0 relative flip-container cursor-pointer group" onclick="document.getElementById('cmd-flip-inner').classList.toggle('is-flipped')">
                 <div id="cmd-flip-inner" class="flip-inner shadow-[0_0_30px_rgba(0,0,0,0.4)] rounded-xl">
@@ -898,11 +920,12 @@
                 <div id="cmd-view-matches" class="space-y-3"></div>
             </div>
         </div>
+        </div>
     </div>
 
     <!-- FULL SCREEN VIEW: PLAYER PROFILE -->
-    <div id="view-player-detail" class="fixed inset-0 z-[100] bg-slate-950 transform translate-x-full transition-transform duration-300 overflow-y-auto flex flex-col hidden">
-        <div class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800">
+    <div id="view-player-detail" class="mf-mobile-sheet z-[100] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="plr-view-name">
+        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800">
             <button onclick="window.closePlayerProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
@@ -911,6 +934,7 @@
             <div class="w-16"></div>
         </div>
 
+        <div class="mf-sheet-scroll">
         <div class="p-4 md:p-6 space-y-6 max-w-3xl mx-auto w-full pb-24">
             <div class="flex items-center gap-4 mb-2">
                 <div id="plr-view-icon" class="w-20 h-20 rounded-full bg-slate-800 border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.3)] flex items-center justify-center text-4xl flex-shrink-0"></div>
@@ -958,11 +982,12 @@
                 <div id="plr-view-owned" class="hidden px-4 pb-4 space-y-2 opacity-0 transition-opacity duration-300"></div>
             </div>
         </div>
+        </div>
     </div>
 
     <!-- FULL SCREEN VIEW: ADMIN MODAL -->
-    <div id="view-admin-modal" class="fixed inset-0 z-[120] bg-slate-950 transform translate-x-full transition-transform duration-300 overflow-y-auto flex flex-col hidden">
-        <div class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
+    <div id="view-admin-modal" class="mf-mobile-sheet z-[120] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true">
+        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
             <button onclick="window.closeAdminModal()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
@@ -971,6 +996,7 @@
             <div class="w-16"></div>
         </div>
 
+        <div class="mf-sheet-scroll">
         <div class="p-4 md:p-6 max-w-3xl mx-auto w-full pb-24 space-y-6">
             
             <div class="glass p-5 rounded-xl border border-purple-500/30 bg-purple-950/10">
@@ -997,11 +1023,12 @@
                 </div>
             </div>
         </div>
+        </div>
     </div>
 
     <!-- FULL SCREEN VIEW: ART DIAGNOSTICS -->
-    <div id="view-art-diagnostics" class="fixed inset-0 z-[130] bg-slate-950 transform translate-x-full transition-transform duration-300 overflow-y-auto flex flex-col hidden">
-        <div class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
+    <div id="view-art-diagnostics" class="mf-mobile-sheet z-[130] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true">
+        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
             <button onclick="window.closeArtDiagnostics()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
@@ -1010,27 +1037,30 @@
             <div class="w-16"></div>
         </div>
 
+        <div class="mf-sheet-scroll">
         <div class="p-4 md:p-6 max-w-3xl mx-auto w-full pb-24">
             <div class="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl mb-6">
                 <p class="text-xs text-blue-200 leading-relaxed">This tool shows you exactly how the tracker is communicating with Scryfall. If an image is wrong or broken, click <strong>"Test Search on Scryfall"</strong> to see what card Scryfall thinks you are looking for.</p>
             </div>
             <div id="art-diagnostics-container" class="space-y-3"></div>
         </div>
+        </div>
     </div>
 
     <!-- FULL SCREEN VIEW: LOG MATCH MODAL -->
-    <div id="view-log-match" class="fixed inset-0 z-[120] bg-slate-950 transform translate-y-full transition-transform duration-300 overflow-y-auto overflow-x-hidden flex flex-col hidden">
-        <div class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
+    <div id="view-log-match" class="mf-mobile-sheet z-[120] bg-slate-950 transform translate-y-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="log-match-title">
+        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
             <button onclick="window.closeLogMatchModal()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 Cancel
             </button>
-            <h2 class="text-sm font-bold text-slate-200">Log New Match</h2>
+            <h2 id="log-match-title" class="text-sm font-bold text-slate-200">Log New Match</h2>
             <button onclick="window.submitMatchForm(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30">Save Match</button>
         </div>
 
-        <div class="p-4 md:p-6 space-y-6 max-w-xl mx-auto w-full min-w-0 pb-24 overflow-x-hidden">
-            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm min-w-0 overflow-hidden">
+        <div id="log-match-scroll" class="mf-sheet-scroll">
+        <div class="p-4 md:p-6 space-y-6 max-w-xl mx-auto w-full min-w-0 pb-24">
+            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm min-w-0">
                 <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     Match Settings
@@ -1094,25 +1124,25 @@
             <div id="form-winners-container" class="space-y-4"></div>
             <div id="form-losers-container" class="space-y-4"></div>
 
-            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative focus-within:z-50">
+            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
                 <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     Winning Cards (Optional)
                 </h3>
                 <div class="space-y-3 mb-5">
-                    <div class="relative focus-within:z-50">
+                    <div class="relative focus-within:z-20">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
                         <input type="text" id="form-card-1" placeholder="Card 1 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
-                    <div class="relative focus-within:z-50">
+                    <div class="relative focus-within:z-20">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
                         <input type="text" id="form-card-2" placeholder="Card 2 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
-                    <div class="relative focus-within:z-50">
+                    <div class="relative focus-within:z-20">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
@@ -1126,6 +1156,7 @@
                 </h3>
                 <textarea id="form-notes" rows="2" placeholder="How did they pull it off? E.g., 'Overwhelming goblins...'" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none shadow-sm"></textarea>
             </div>
+        </div>
         </div>
     </div>
 
@@ -2591,25 +2622,109 @@
             if (el && message) el.textContent = message;
         }
 
-        let mfScrollLockCount = 0;
-        let mfScrollLockY = 0;
-        window.mfLockPageScroll = function() {
-            if (mfScrollLockCount === 0) {
-                mfScrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
-                document.body.classList.add('mf-scroll-locked');
-                document.body.style.top = `-${mfScrollLockY}px`;
+        const MF_OVERLAY_SHEETS = [
+            { id: 'view-log-match', closedClass: 'translate-y-full' },
+            { id: 'view-commander-detail', closedClass: 'translate-x-full' },
+            { id: 'view-player-detail', closedClass: 'translate-x-full' },
+            { id: 'view-admin-modal', closedClass: 'translate-x-full' },
+            { id: 'view-art-diagnostics', closedClass: 'translate-x-full' }
+        ];
+        let mfBodyLockScrollY = 0;
+        let mfTouchMoveBlocker = null;
+
+        function mfIsOverlaySheetOpen() {
+            return MF_OVERLAY_SHEETS.some(({ id, closedClass }) => {
+                const el = document.getElementById(id);
+                return el && !el.classList.contains('hidden') && !el.classList.contains(closedClass);
+            });
+        }
+
+        function mfSetBackgroundInert(inert) {
+            ['dashboard-view', 'landing-page'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.inert = inert;
+            });
+        }
+
+        function mfAttachTouchMoveBlocker() {
+            if (mfTouchMoveBlocker) return;
+            mfTouchMoveBlocker = function(e) {
+                if (!mfIsOverlaySheetOpen()) return;
+                if (e.target.closest('.mf-mobile-sheet')) return;
+                e.preventDefault();
+            };
+            document.addEventListener('touchmove', mfTouchMoveBlocker, { passive: false });
+        }
+
+        function mfDetachTouchMoveBlocker() {
+            if (!mfTouchMoveBlocker) return;
+            document.removeEventListener('touchmove', mfTouchMoveBlocker);
+            mfTouchMoveBlocker = null;
+        }
+
+        function mfLockBodyForOverlay() {
+            mfBodyLockScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+            document.body.classList.add('mf-body-locked');
+            document.body.style.top = `-${mfBodyLockScrollY}px`;
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            document.body.style.width = '100%';
+            mfSetBackgroundInert(true);
+            mfAttachTouchMoveBlocker();
+        }
+
+        function mfUnlockBodyFromOverlay() {
+            const top = document.body.style.top;
+            const restoreY = top ? Math.abs(parseInt(top, 10)) || mfBodyLockScrollY : mfBodyLockScrollY;
+            document.body.classList.remove('mf-body-locked');
+            document.body.style.top = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.width = '';
+            mfSetBackgroundInert(false);
+            mfDetachTouchMoveBlocker();
+            window.scrollTo(0, restoreY);
+        }
+
+        /** Idempotent: lock/unlock from actual overlay DOM state (self-heals stuck scroll). */
+        window.mfSyncPageScroll = function() {
+            const open = mfIsOverlaySheetOpen();
+            const locked = document.body.classList.contains('mf-body-locked');
+            if (open && !locked) mfLockBodyForOverlay();
+            else if (!open && locked) mfUnlockBodyFromOverlay();
+            else if (!open) {
+                document.body.classList.remove('mf-body-locked', 'mf-scroll-locked');
+                document.body.style.removeProperty('top');
+                mfSetBackgroundInert(false);
+                mfDetachTouchMoveBlocker();
             }
-            mfScrollLockCount++;
         };
-        window.mfUnlockPageScroll = function() {
-            if (mfScrollLockCount <= 0) return;
-            mfScrollLockCount--;
-            if (mfScrollLockCount === 0) {
-                document.body.classList.remove('mf-scroll-locked');
-                document.body.style.top = '';
-                window.scrollTo(0, mfScrollLockY);
-            }
-        };
+
+        function mfScrollWithinSheet(el) {
+            if (!el) return;
+            const scroller = el.closest('.mf-sheet-scroll');
+            if (!scroller) return;
+            requestAnimationFrame(() => {
+                const target = el.classList?.contains('new-mode') ? el : el;
+                target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            });
+        }
+
+        function mfBindVisualViewportForSheets() {
+            if (!window.visualViewport) return;
+            const onViewportChange = () => {
+                const logMatch = document.getElementById('view-log-match');
+                const scroller = document.getElementById('log-match-scroll');
+                if (!logMatch || !scroller || logMatch.classList.contains('hidden') || logMatch.classList.contains('translate-y-full')) {
+                    scroller.style.paddingBottom = '';
+                    return;
+                }
+                const gap = Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop);
+                scroller.style.paddingBottom = gap > 0 ? `${gap + 16}px` : '';
+            };
+            visualViewport.addEventListener('resize', onViewportChange);
+            visualViewport.addEventListener('scroll', onViewportChange);
+        }
 
         function formatDurationLabel(totalMinutes) {
             if (!totalMinutes || totalMinutes <= 0) return '';
@@ -4561,6 +4676,7 @@
                 console.error("Error drawing app UI: ", error);
             } finally {
                 hideAppBootLoader();
+                window.mfSyncPageScroll();
             }
         }
 
@@ -4637,6 +4753,7 @@
             }
             window.scrollTo({top: 0, behavior: 'smooth'});
             window.processArtQueue();
+            window.mfSyncPageScroll();
         }
 
         let currentLeaderboardView = 'commander';
@@ -4692,7 +4809,6 @@
             const cmd = window.appData.commanders[index];
             const view = document.getElementById('view-commander-detail');
             if (view) {
-                window.mfLockPageScroll();
                 view.classList.remove('hidden');
             }
             
@@ -4821,6 +4937,7 @@
                 setTimeout(() => {
                     view.classList.remove('translate-x-full');
                     window.processArtQueue();
+                    window.mfSyncPageScroll();
                 }, 10);
             }
         }
@@ -4831,8 +4948,10 @@
                 view.classList.add('translate-x-full');
                 setTimeout(() => {
                     view.classList.add('hidden');
-                    window.mfUnlockPageScroll();
+                    window.mfSyncPageScroll();
                 }, 300);
+            } else {
+                window.mfSyncPageScroll();
             }
         }
 
@@ -4840,7 +4959,6 @@
             const player = window.appData.players[index];
             const view = document.getElementById('view-player-detail');
             if (view) {
-                window.mfLockPageScroll();
                 view.classList.remove('hidden');
             }
             
@@ -4903,6 +5021,7 @@
                 setTimeout(() => {
                     view.classList.remove('translate-x-full');
                     window.processArtQueue();
+                    window.mfSyncPageScroll();
                 }, 10);
             }
         }
@@ -4913,8 +5032,10 @@
                 view.classList.add('translate-x-full');
                 setTimeout(() => {
                     view.classList.add('hidden');
-                    window.mfUnlockPageScroll();
+                    window.mfSyncPageScroll();
                 }, 300);
+            } else {
+                window.mfSyncPageScroll();
             }
         }
 
@@ -4960,9 +5081,11 @@
             }
 
             const modal = document.getElementById('view-admin-modal');
-            window.mfLockPageScroll();
             modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('translate-x-full'), 10);
+            setTimeout(() => {
+                modal.classList.remove('translate-x-full');
+                window.mfSyncPageScroll();
+            }, 10);
         }
 
         window.closeAdminModal = function() {
@@ -4970,7 +5093,7 @@
             modal.classList.add('translate-x-full');
             setTimeout(() => {
                 modal.classList.add('hidden');
-                window.mfUnlockPageScroll();
+                window.mfSyncPageScroll();
             }, 300);
         }
 
@@ -5190,9 +5313,11 @@
             container.innerHTML = html || '<p class="text-slate-500 text-center text-sm p-4">No commanders found.</p>';
             
             const modal = document.getElementById('view-art-diagnostics');
-            window.mfLockPageScroll();
             modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('translate-x-full'), 10);
+            setTimeout(() => {
+                modal.classList.remove('translate-x-full');
+                window.mfSyncPageScroll();
+            }, 10);
         }
 
         window.closeArtDiagnostics = function() {
@@ -5200,7 +5325,7 @@
             modal.classList.add('translate-x-full');
             setTimeout(() => {
                 modal.classList.add('hidden');
-                window.mfUnlockPageScroll();
+                window.mfSyncPageScroll();
             }, 300);
         }
 
@@ -5623,9 +5748,11 @@
             });
             
             if (modal) {
-                window.mfLockPageScroll();
                 modal.classList.remove('hidden'); 
-                setTimeout(() => { modal.classList.remove('translate-y-full'); }, 10);
+                setTimeout(() => {
+                    modal.classList.remove('translate-y-full');
+                    window.mfSyncPageScroll();
+                }, 10);
             }
         }
 
@@ -5635,8 +5762,10 @@
                 modal.classList.add('translate-y-full'); 
                 setTimeout(() => {
                     modal.classList.add('hidden');
-                    window.mfUnlockPageScroll();
+                    window.mfSyncPageScroll();
                 }, 300);
+            } else {
+                window.mfSyncPageScroll();
             }
         }
 
@@ -5661,7 +5790,7 @@
             for (let i = 1; i <= winnerCount; i++) {
                 let title = winnerCount > 1 ? `👑 Co-Winner (${i})` : `👑 The Victor`;
                 wHtml += `
-                <div class="winner-slot glass p-5 rounded-2xl border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)] relative focus-within:z-50">
+                <div class="winner-slot glass p-5 rounded-2xl border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)] relative">
                     <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
                         <div class="absolute -right-6 -top-6 text-green-500/10">
                             <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
@@ -5669,7 +5798,7 @@
                     </div>
                     <h3 class="text-sm text-green-400 font-bold mb-4 flex items-center gap-2 relative z-10">${title}</h3>
                     <div class="space-y-4 relative z-10">
-                        <div class="input-slot-group relative focus-within:z-50" data-type="player">
+                        <div class="input-slot-group relative focus-within:z-20" data-type="player">
                             <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Pilot (Player)</label>
                             <div class="flex gap-2 existing-mode">
                                 <div class="relative flex-grow">
@@ -5689,7 +5818,7 @@
                                 <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full bg-green-600 hover:bg-green-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this player</button>
                             </div>
                         </div>
-                        <div class="input-slot-group relative focus-within:z-50" data-type="deck">
+                        <div class="input-slot-group relative focus-within:z-20" data-type="deck">
                             <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Deck (Commander)</label>
                             <div class="flex gap-2 existing-mode">
                                 <div class="relative flex-grow">
@@ -5733,11 +5862,11 @@
             let loserCount = podSize - winnerCount;
             for (let i = 1; i <= loserCount; i++) {
                 lHtml += `
-                <div class="loser-slot bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative focus-within:z-50">
+                <div class="loser-slot bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
                     <div class="absolute -right-4 -top-4 opacity-5 text-red-500 text-6xl font-black pointer-events-none">💀</div>
                     <h3 class="text-xs text-red-400 font-bold mb-4 flex items-center gap-2 relative z-10">💀 The Fallen (${i})</h3>
                     <div class="space-y-4 relative z-10">
-                        <div class="input-slot-group relative focus-within:z-50" data-type="player">
+                        <div class="input-slot-group relative focus-within:z-20" data-type="player">
                             <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Pilot</label>
                             <div class="flex gap-2 existing-mode">
                                 <div class="relative flex-grow">
@@ -5757,7 +5886,7 @@
                                 <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this player</button>
                             </div>
                         </div>
-                        <div class="input-slot-group relative focus-within:z-50" data-type="deck">
+                        <div class="input-slot-group relative focus-within:z-20" data-type="deck">
                             <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Deck</label>
                             <div class="flex gap-2 existing-mode">
                                 <div class="relative flex-grow">
@@ -5816,7 +5945,10 @@
                 existingMode.classList.add('hidden');
                 newMode.classList.remove('hidden');
                 const firstInput = newMode.querySelector('input');
-                if (firstInput) firstInput.focus();
+                if (firstInput) {
+                    firstInput.focus({ preventScroll: true });
+                    mfScrollWithinSheet(newMode);
+                }
             } else {
                 delete group.dataset.confirmedNew;
                 newMode.classList.add('hidden');
@@ -6228,6 +6360,15 @@
                     }
                 }, 150); 
             }
+        });
+
+        mfBindVisualViewportForSheets();
+        window.mfSyncPageScroll();
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') window.mfSyncPageScroll();
+        });
+        window.addEventListener('pageshow', function() {
+            window.mfSyncPageScroll();
         });
     </script>
 </body>
