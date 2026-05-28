@@ -958,8 +958,16 @@
             return window.groupAccess === 'owner';
         };
 
+        function getGroupsHubUrl() {
+            const { origin, pathname } = window.location;
+            if (pathname.endsWith('/groups.html')) return `${origin}${pathname}`;
+            if (pathname.endsWith('/index.html')) return `${origin}${pathname.replace(/index\.html$/, 'groups.html')}`;
+            if (pathname.endsWith('/')) return `${origin}${pathname}groups.html`;
+            return `${origin}${pathname}/groups.html`;
+        }
+
         function getAuthContinueUrl(groupId, signInEmail = '') {
-            const base = `${window.location.origin}${window.location.pathname}`;
+            const base = groupId ? `${window.location.origin}${window.location.pathname}` : getGroupsHubUrl();
             const params = new URLSearchParams();
             if (groupId) params.set('group', groupId);
             const normalized = normalizeEmail(signInEmail);
@@ -2531,6 +2539,10 @@
                 appBootComplete = true;
                 return;
             }
+            if (auth.currentUser && !window.groupIdRaw) {
+                window.location.replace(getGroupsHubUrl());
+                return;
+            }
             await bootApplication();
             if (auth.currentUser && window.isGroupValid) {
                 await claimMembershipForCurrentUser();
@@ -2568,17 +2580,9 @@
             fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H4',location:'index.html:onAuthStateChanged:postUpdate',message:'post access/UI update state',data:{groupsCount:Array.isArray(window.accessibleGroups)?window.accessibleGroups.length:-1,hasAnyAccess:window.userHasAnyGroupAccess,isGroupValid:window.isGroupValid,groupAccess:window.groupAccess},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
             const pendingCreateSlug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
-            if (
-                appBootComplete &&
-                user &&
-                !window.groupIdRaw &&
-                !pendingCreateSlug &&
-                window.accessibleGroups.length === 1 &&
-                !autoRouteInFlight
-            ) {
+            if (appBootComplete && user && !window.groupIdRaw && !pendingCreateSlug && !autoRouteInFlight) {
                 autoRouteInFlight = true;
-                const onlyGroup = window.accessibleGroups[0];
-                softRouteToGroup(onlyGroup.id, null, 'View stats');
+                window.location.replace(getGroupsHubUrl());
                 autoRouteInFlight = false;
                 return;
             }

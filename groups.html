@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Groups - Magic Friendz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+    <main class="max-w-2xl mx-auto px-4 py-10">
+        <div class="mb-8">
+            <p class="text-xs uppercase tracking-widest text-purple-300 mb-2">Magic Friendz</p>
+            <h1 class="text-3xl font-black mb-2">My Groups</h1>
+            <p id="account-email" class="text-sm text-slate-400"></p>
+        </div>
+
+        <section id="loading-view" class="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
+            <p class="text-slate-300 text-sm">Loading your groups...</p>
+        </section>
+
+        <section id="groups-view" class="hidden space-y-3"></section>
+
+        <section id="no-groups-view" class="hidden rounded-xl border border-purple-500/30 bg-purple-950/20 p-5 space-y-3">
+            <h2 class="text-lg font-bold text-white">No groups linked yet</h2>
+            <p class="text-sm text-purple-100/90">This account is signed in, but does not have access to any group yet. Create one now or ask a group owner to invite this email.</p>
+        </section>
+
+        <section class="mt-8 rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
+            <h2 class="text-lg font-bold text-white">Create a new group</h2>
+            <div class="space-y-2">
+                <input id="new-group-name" type="text" placeholder="Group name" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                <button id="create-group-btn" type="button" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition">Create and open group</button>
+                <p id="create-error" class="hidden text-sm text-red-300"></p>
+            </div>
+        </section>
+
+        <div class="mt-6 flex flex-wrap gap-3">
+            <a id="landing-link" href="index.html" class="text-sm px-3 py-2 rounded-lg border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 transition">Back to landing</a>
+            <button id="sign-out-btn" type="button" class="text-sm px-3 py-2 rounded-lg border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 transition">Sign out</button>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, collection, collectionGroup, doc, getDoc, getDocs, query, setDoc, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
+            authDomain: "magic-friends-82cc6.firebaseapp.com",
+            projectId: "magic-friends-82cc6",
+            storageBucket: "magic-friends-82cc6.firebasestorage.app",
+            messagingSenderId: "822273509499",
+            appId: "1:822273509499:web:1eb431bf22764f96067ade",
+            measurementId: "G-LXRC54R98V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const loadingView = document.getElementById('loading-view');
+        const groupsView = document.getElementById('groups-view');
+        const noGroupsView = document.getElementById('no-groups-view');
+        const accountEmail = document.getElementById('account-email');
+        const createError = document.getElementById('create-error');
+        const createButton = document.getElementById('create-group-btn');
+        const createInput = document.getElementById('new-group-name');
+        const signOutButton = document.getElementById('sign-out-btn');
+        const landingLink = document.getElementById('landing-link');
+
+        function normalizeEmail(email) {
+            return String(email || '').trim().toLowerCase();
+        }
+
+        function formatGroupSlug(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .slice(0, 60);
+        }
+
+        function indexBasePath() {
+            const { origin, pathname } = window.location;
+            if (pathname.endsWith('/groups.html')) return `${origin}${pathname.replace(/groups\.html$/, 'index.html')}`;
+            if (pathname.endsWith('/')) return `${origin}${pathname}index.html`;
+            return `${origin}/index.html`;
+        }
+
+        function appGroupUrl(groupId) {
+            return `${indexBasePath()}?group=${encodeURIComponent(groupId)}`;
+        }
+
+        async function fetchAccessibleGroupsForCurrentUser(user) {
+            const email = normalizeEmail(user?.email);
+            const uid = user?.uid;
+            if (!email || !uid) return [];
+
+            const groupsById = new Map();
+            const addGroup = (groupId, roleHint) => {
+                if (!groupId) return;
+                const existing = groupsById.get(groupId) || { id: groupId, role: 'editor' };
+                if (roleHint === 'owner' || existing.role !== 'owner') existing.role = roleHint || existing.role;
+                groupsById.set(groupId, existing);
+            };
+
+            const safeGetDocs = async (q) => {
+                try {
+                    return await getDocs(q);
+                } catch (_) {
+                    return null;
+                }
+            };
+
+            const [ownerByUid, ownerByEmail, memberByEmail] = await Promise.all([
+                safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid))),
+                safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email))),
+                safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)))
+            ]);
+
+            ownerByUid?.docs.forEach((d) => addGroup(d.id, 'owner'));
+            ownerByEmail?.docs.forEach((d) => addGroup(d.id, 'owner'));
+            memberByEmail?.docs.forEach((d) => {
+                const groupId = d.ref.parent?.parent?.id;
+                const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
+                addGroup(groupId, role);
+            });
+
+            const groups = Array.from(groupsById.values());
+            const withNames = await Promise.all(groups.map(async (g) => {
+                try {
+                    const snap = await getDoc(doc(db, 'groups', g.id));
+                    if (snap.exists()) {
+                        const data = snap.data() || {};
+                        return { ...g, name: data.name || g.id };
+                    }
+                } catch (_) {}
+                return { ...g, name: g.id };
+            }));
+            return withNames.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
+        }
+
+        function renderGroups(groups) {
+            groupsView.innerHTML = '';
+            groups.forEach((group) => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'w-full text-left rounded-xl border border-slate-800 bg-slate-900/60 p-4 hover:border-purple-500/50 hover:bg-slate-900 transition';
+                card.innerHTML = `
+                    <p class="text-white font-semibold">${group.name}</p>
+                    <p class="text-xs text-slate-400 mt-1">Role: ${group.role}</p>
+                `;
+                card.addEventListener('click', () => {
+                    window.location.assign(appGroupUrl(group.id));
+                });
+                groupsView.appendChild(card);
+            });
+        }
+
+        async function createGroupForCurrentUser(user) {
+            const displayName = String(createInput.value || '').trim();
+            if (!displayName) {
+                createError.textContent = 'Enter a group name first.';
+                createError.classList.remove('hidden');
+                createInput.focus();
+                return;
+            }
+
+            const slug = formatGroupSlug(displayName);
+            if (!slug) {
+                createError.textContent = 'Use at least one letter or number in the group name.';
+                createError.classList.remove('hidden');
+                createInput.focus();
+                return;
+            }
+
+            createError.classList.add('hidden');
+            createButton.disabled = true;
+            createButton.textContent = 'Creating...';
+
+            try {
+                const groupRef = doc(db, 'groups', slug);
+                const existing = await getDoc(groupRef);
+                if (existing.exists()) {
+                    throw new Error('This group name is already taken. Try another one.');
+                }
+                const ownerEmail = normalizeEmail(user.email);
+                await setDoc(groupRef, {
+                    id: slug,
+                    name: displayName,
+                    ownerUid: user.uid,
+                    ownerEmail,
+                    createdAt: serverTimestamp()
+                });
+                await setDoc(doc(db, 'groups', slug, 'members', user.uid), {
+                    role: 'owner',
+                    email: ownerEmail,
+                    displayName: user.displayName || ownerEmail || 'Owner',
+                    invitedAt: serverTimestamp(),
+                    joinedAt: serverTimestamp()
+                });
+                window.location.assign(appGroupUrl(slug));
+            } catch (error) {
+                createError.textContent = error?.message || 'Could not create the group right now.';
+                createError.classList.remove('hidden');
+                createButton.disabled = false;
+                createButton.textContent = 'Create and open group';
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.replace(indexBasePath());
+                return;
+            }
+
+            accountEmail.textContent = `Signed in as ${user.email || 'your account'}`;
+            landingLink.href = indexBasePath();
+            loadingView.classList.remove('hidden');
+            groupsView.classList.add('hidden');
+            noGroupsView.classList.add('hidden');
+
+            const groups = await fetchAccessibleGroupsForCurrentUser(user);
+            if (groups.length === 1) {
+                window.location.replace(appGroupUrl(groups[0].id));
+                return;
+            }
+
+            loadingView.classList.add('hidden');
+            if (groups.length > 1) {
+                renderGroups(groups);
+                groupsView.classList.remove('hidden');
+                return;
+            }
+            noGroupsView.classList.remove('hidden');
+        });
+
+        createButton.addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+            await createGroupForCurrentUser(user);
+        });
+
+        createInput.addEventListener('keydown', async (event) => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            const user = auth.currentUser;
+            if (!user) return;
+            await createGroupForCurrentUser(user);
+        });
+
+        signOutButton.addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.replace(indexBasePath());
+        });
+    </script>
+</body>
+</html>
