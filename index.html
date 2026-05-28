@@ -1074,6 +1074,9 @@
         }
 
         async function tryCompleteEmailSignIn() {
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H1',location:'index.html:tryCompleteEmailSignIn:entry',message:'entered email-link completion',data:{href:window.location.href,isEmailLink:isSignInWithEmailLink(auth, window.location.href),groupIdRaw:window.groupIdRaw||''},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (!isSignInWithEmailLink(auth, window.location.href)) {
                 window.pendingEmailLinkUrl = '';
                 return false;
@@ -1101,6 +1104,9 @@
                 return false;
             }
             await signInWithEmailLink(auth, email, window.location.href);
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H2',location:'index.html:tryCompleteEmailSignIn:afterSignIn',message:'email-link sign-in succeeded',data:{emailPresent:!!email,groupIdBeforeStrip:window.groupIdRaw||'',hrefBeforeStrip:window.location.href},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             window.localStorage.removeItem(AUTH_EMAIL_KEY);
             window.pendingEmailLinkUrl = '';
             stripAuthParamsFromUrl();
@@ -1604,6 +1610,9 @@
                 return;
             }
             const groupId = resolveSignInGroupId();
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H3',location:'index.html:sendSignInLink:beforeSend',message:'building email-link continue url',data:{fromLanding,groupIdResolved:groupId||'',groupIdRaw:window.groupIdRaw||'',continueUrl:getAuthContinueUrl(groupId || null, email)},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (!groupId && !fromLanding) {
                 if (status) {
                     status.textContent = 'Open a group first.';
@@ -2539,7 +2548,13 @@
                     window.showAppAlert('Sign-in link failed: ' + friendly, 'Sign in', '❌');
                 }
             }
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H4',location:'index.html:startApp:postTryComplete',message:'post email-link completion decision point',data:{completedEmailLinkSignIn,groupIdResolved:resolveSignInGroupId(),groupIdRaw:window.groupIdRaw||'',currentUserPresent:!!auth.currentUser},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (completedEmailLinkSignIn && !resolveSignInGroupId()) {
+                // #region agent log
+                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H4',location:'index.html:startApp:redirectToGroups',message:'redirecting to groups hub after sign-in',data:{target:getGroupsHubUrl()},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
                 window.location.replace(getGroupsHubUrl());
                 return;
             }
