@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="mf-app-version" content="1.3.0">
+    <meta name="mf-app-version" content="1.3.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -160,27 +160,55 @@
         /* Full-screen mobile sheets (modals / profiles) */
         .mf-mobile-sheet {
             position: fixed;
-            inset: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            height: 100vh;
-            height: 100dvh;
-            max-height: 100dvh;
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+            min-height: 0;
             box-sizing: border-box;
+            touch-action: manipulation;
         }
         .mf-sheet-header {
+            position: relative;
+            z-index: 50;
             flex-shrink: 0;
+            isolation: isolate;
+            background: rgb(2 6 23);
+            padding-top: env(safe-area-inset-top, 0px);
+            touch-action: manipulation;
+        }
+        .mf-sheet-header.glass {
+            backdrop-filter: none;
+            border-color: rgb(30 41 59);
         }
         .mf-sheet-scroll {
-            flex: 1 1 auto;
+            position: relative;
+            z-index: 1;
+            flex: 1 1 0;
+            height: 0;
             min-height: 0;
             overflow-x: hidden;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            touch-action: pan-y;
+        }
+        #view-log-match .static-dropdown-list,
+        #view-log-match .custom-dropdown {
+            z-index: 30;
+        }
+        html.mf-overlay-open #dashboard-view {
+            pointer-events: none !important;
+            user-select: none;
+        }
+        html.mf-overlay-open #dashboard-bottom-nav,
+        html.mf-overlay-open #log-match-fab {
+            visibility: hidden !important;
+            pointer-events: none !important;
         }
         body.mf-body-locked {
             position: fixed;
@@ -780,7 +808,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:rotate-90 transition-transform duration-300"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
 
-        <div class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 flex justify-between px-2 sm:px-6 py-3 pb-safe z-40 text-slate-400 shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
+        <div id="dashboard-bottom-nav" class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 flex justify-between px-2 sm:px-6 py-3 pb-safe z-40 text-slate-400 shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
             <button id="nav-home" onclick="window.switchTab('home')" class="flex flex-col items-center text-purple-400 transition w-14 relative">
                 <div id="nav-indicator-home" class="absolute -top-1 w-8 h-1 bg-purple-500 rounded-full transition-opacity duration-300"></div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -1049,13 +1077,13 @@
 
     <!-- FULL SCREEN VIEW: LOG MATCH MODAL -->
     <div id="view-log-match" class="mf-mobile-sheet z-[120] bg-slate-950 transform translate-y-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="log-match-title">
-        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
-            <button onclick="window.closeLogMatchModal()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
+        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
+            <button type="button" onclick="window.mfCloseLogMatchHeader(event)" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 Cancel
             </button>
             <h2 id="log-match-title" class="text-sm font-bold text-slate-200">Log New Match</h2>
-            <button onclick="window.submitMatchForm(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30">Save Match</button>
+            <button type="button" onclick="window.mfSaveMatchHeader(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30 min-h-[44px] touch-manipulation">Save Match</button>
         </div>
 
         <div id="log-match-scroll" class="mf-sheet-scroll">
@@ -1074,12 +1102,12 @@
                     </div>
                     <div class="min-w-0">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Pod Size</label>
-                        <div class="relative custom-static-dropdown min-w-0" tabindex="0">
+                        <div class="relative custom-static-dropdown min-w-0">
                             <input type="hidden" id="form-pod-size" value="4">
-                            <div class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px]">
+                            <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] touch-manipulation text-left">
                                 <span class="static-dropdown-display">4 Players</span>
-                                <svg class="text-slate-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            </div>
+                                <svg class="text-slate-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
                             <ul class="static-dropdown-list hidden absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto shadow-2xl">
                                 <li data-value="3" class="static-dropdown-option px-4 py-3 text-sm text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50">3 Players</li>
                                 <li data-value="4" class="static-dropdown-option px-4 py-3 text-sm text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50">4 Players</li>
@@ -1090,12 +1118,12 @@
                     </div>
                     <div class="min-w-0">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Winners (Tie)</label>
-                        <div class="relative custom-static-dropdown min-w-0" tabindex="0">
+                        <div class="relative custom-static-dropdown min-w-0">
                             <input type="hidden" id="form-winner-count" value="1">
-                            <div class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px]">
+                            <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] touch-manipulation text-left">
                                 <span class="static-dropdown-display">1 (Solo Win)</span>
-                                <svg class="text-slate-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            </div>
+                                <svg class="text-slate-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
                             <ul class="static-dropdown-list hidden absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto shadow-2xl">
                                 <li data-value="1" class="static-dropdown-option px-4 py-3 text-sm text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50">1 (Solo Win)</li>
                                 <li data-value="2" class="static-dropdown-option px-4 py-3 text-sm text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50">2 (Tie Game)</li>
@@ -2650,7 +2678,7 @@
             if (mfTouchMoveBlocker) return;
             mfTouchMoveBlocker = function(e) {
                 if (!mfIsOverlaySheetOpen()) return;
-                if (e.target.closest('.mf-mobile-sheet')) return;
+                if (e.target.closest('.mf-mobile-sheet') || e.target.closest('.mf-sheet-scroll')) return;
                 e.preventDefault();
             };
             document.addEventListener('touchmove', mfTouchMoveBlocker, { passive: false });
@@ -2687,8 +2715,31 @@
         }
 
         /** Idempotent: lock/unlock from actual overlay DOM state (self-heals stuck scroll). */
+        window.mfCloseStaticDropdowns = function() {
+            document.querySelectorAll('.static-dropdown-list').forEach((list) => list.classList.add('hidden'));
+        };
+
+        window.mfCloseLogMatchHeader = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            window.mfCloseStaticDropdowns();
+            window.closeLogMatchModal();
+        };
+
+        window.mfSaveMatchHeader = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            window.mfCloseStaticDropdowns();
+            window.submitMatchForm(e);
+        };
+
         window.mfSyncPageScroll = function() {
             const open = mfIsOverlaySheetOpen();
+            document.documentElement.classList.toggle('mf-overlay-open', open);
             const locked = document.body.classList.contains('mf-body-locked');
             if (open && !locked) mfLockBodyForOverlay();
             else if (!open && locked) mfUnlockBodyFromOverlay();
@@ -5728,16 +5779,22 @@
             const modal = document.getElementById('view-log-match');
             initFormDatePickers(new Date());
             
+            window.mfCloseStaticDropdowns();
+
             const podSizeInput = document.getElementById('form-pod-size');
-            if (podSizeInput) {
+            const podDropdown = podSizeInput?.closest('.custom-static-dropdown');
+            if (podSizeInput && podDropdown) {
                 podSizeInput.value = '4';
-                podSizeInput.nextElementSibling.querySelector('.static-dropdown-display').innerText = '4 Players';
+                const podLabel = podDropdown.querySelector('.static-dropdown-display');
+                if (podLabel) podLabel.innerText = '4 Players';
             }
 
             const winnerCountInput = document.getElementById('form-winner-count');
-            if (winnerCountInput) {
+            const winnerDropdown = winnerCountInput?.closest('.custom-static-dropdown');
+            if (winnerCountInput && winnerDropdown) {
                 winnerCountInput.value = '1';
-                winnerCountInput.nextElementSibling.querySelector('.static-dropdown-display').innerText = '1 (Solo Win)';
+                const winnerLabel = winnerDropdown.querySelector('.static-dropdown-display');
+                if (winnerLabel) winnerLabel.innerText = '1 (Solo Win)';
             }
             
             window.updatePlayerSlots();
@@ -6151,9 +6208,12 @@
 
             const dropdownHeader = e.target.closest('.static-dropdown-header');
             if (dropdownHeader) {
+                e.stopPropagation();
                 const container = dropdownHeader.closest('.custom-static-dropdown');
+                if (!container) return;
                 const list = container.querySelector('.static-dropdown-list');
-                
+                if (!list) return;
+
                 document.querySelectorAll('.static-dropdown-list').forEach(l => {
                     if (l !== list) l.classList.add('hidden');
                 });
