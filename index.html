@@ -1419,7 +1419,7 @@
                 return Array.from(groupsById.values());
             } catch (error) {
                 console.warn('Could not check global group access:', error);
-                return [];
+                return null;
             }
         }
 
@@ -2440,8 +2440,14 @@
             window.currentUser = user;
             authReady = true;
             if (user) {
-                window.accessibleGroups = await fetchAccessibleGroupsForCurrentUser();
-                window.userHasAnyGroupAccess = window.accessibleGroups.length > 0;
+                const accessibleGroups = await fetchAccessibleGroupsForCurrentUser();
+                if (accessibleGroups === null) {
+                    window.accessibleGroups = [];
+                    window.userHasAnyGroupAccess = null;
+                } else {
+                    window.accessibleGroups = accessibleGroups;
+                    window.userHasAnyGroupAccess = window.accessibleGroups.length > 0;
+                }
             }
             if (user && window.isGroupValid) {
                 await claimMembershipForCurrentUser();
