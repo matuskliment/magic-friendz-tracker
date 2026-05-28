@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.5.6">
+    <meta name="mf-app-version" content="1.5.8">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -2994,6 +2994,15 @@
                 vv.addEventListener('scroll', mfRepositionFloatingDropdowns);
             }
             document.getElementById('log-match-scroll')?.addEventListener('scroll', mfRepositionFloatingDropdowns, { passive: true });
+
+            // Tap anywhere that isn't a dropdown or an autocomplete field → close all dropdowns.
+            const dismissOnOutsidePointer = (e) => {
+                if (!document.querySelector('.mf-floating-dropdown')) return;
+                const t = e.target;
+                if (t.closest && (t.closest('.mf-floating-dropdown') || mfIsLogMatchAutocompleteInput(t))) return;
+                mfDismissAllLogMatchFloatingDropdowns();
+            };
+            document.addEventListener('pointerdown', dismissOnOutsidePointer, true);
         }
 
         function mfGetDropdownHost(input) {
@@ -3058,8 +3067,21 @@
             const gap = 6;
             const margin = 8;
             const viewportH = window.innerHeight;
-            const spaceBelow = viewportH - rect.bottom - gap - margin;
-            const spaceAbove = rect.top - gap - margin;
+
+            // Visible content band: below the sheet header, above the keyboard.
+            const header = document.querySelector('#view-log-match .mf-sheet-header');
+            const bandTop = header ? header.getBoundingClientRect().bottom : 0;
+            const bandBottom = viewportH;
+
+            // Hide if the anchor field is scrolled out of the visible band.
+            if (rect.bottom <= bandTop + 4 || rect.top >= bandBottom - 4) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            dropdown.style.display = '';
+
+            const spaceBelow = bandBottom - rect.bottom - gap - margin;
+            const spaceAbove = rect.top - bandTop - gap - margin;
 
             let top;
             let maxH;
@@ -3071,19 +3093,26 @@
                 top = rect.top - gap - maxH;
             }
 
+            const minTop = bandTop + 4;
+            const maxTop = bandBottom - margin - 60;
+            top = Math.min(Math.max(top, minTop), maxTop);
+
             const width = Math.min(Math.max(rect.width, 200), window.innerWidth - 2 * margin);
             let left = rect.left;
             if (left + width > window.innerWidth - margin) left = window.innerWidth - margin - width;
             if (left < margin) left = margin;
 
             dropdown.style.left = `${Math.round(left)}px`;
-            dropdown.style.top = `${Math.round(Math.max(margin, top))}px`;
+            dropdown.style.top = `${Math.round(top)}px`;
             dropdown.style.width = `${Math.round(width)}px`;
             dropdown.style.maxHeight = `${Math.round(maxH)}px`;
         }
 
         function mfMountFloatingDropdown(input, dropdown) {
-            mfDismissFloatingDropdown(input);
+            // Only one floating dropdown alive at a time — clear any others first.
+            document.querySelectorAll('.mf-floating-dropdown').forEach((d) => {
+                if (d !== dropdown) d.remove();
+            });
             const anchorId = mfEnsureInputDropdownId(input);
             dropdown.classList.add('mf-floating-dropdown', 'fixed', 'z-[300]');
             dropdown.dataset.mfAnchor = anchorId;
@@ -3094,6 +3123,9 @@
             mfPositionFloatingDropdown(input, dropdown);
             // Re-position after layout settles (keyboard/scroll can shift the input).
             requestAnimationFrame(() => mfPositionFloatingDropdown(input, dropdown));
+            document.querySelectorAll('#view-log-match .input-slot-group.mf-slot-active, #view-log-match .mf-search-wrap.mf-slot-active').forEach((g) => {
+                if (g !== mfGetDropdownHost(input)) g.classList.remove('mf-slot-active');
+            });
             const slotGroup = mfGetDropdownHost(input);
             if (slotGroup) slotGroup.classList.add('mf-slot-active');
             mfBindMobileViewportFixes();
@@ -6768,14 +6800,17 @@
             if (e.target && e.target.closest('.mf-mobile-sheet') && e.target.matches(
                 '.scryfall-input, .local-player-input, .local-deck-input, .local-owner-input, .new-player-input, .new-deck-input, .new-deck-variant-input'
             )) {
-                mfScheduleFocusTimer(() => {
+                const blurredInput = e.target;
+                const relatedTarget = e.relatedTarget;
+                // Plain timeout (NOT a focus timer) so mfCleanupFocusSideEffects can't cancel it.
+                setTimeout(() => {
                     if (mfDropdownPickPending) return;
-                    const slotGroup = mfGetDropdownHost(e.target);
+                    const slotGroup = mfGetDropdownHost(blurredInput);
                     const active = document.activeElement;
                     if (slotGroup && active && slotGroup.contains(active)) return;
-                    if (e.relatedTarget && slotGroup?.contains(e.relatedTarget)) return;
-                    if (e.relatedTarget?.closest('.mf-floating-dropdown, .custom-dropdown')) return;
-                    mfDismissFloatingDropdown(e.target);
+                    if (relatedTarget && slotGroup?.contains(relatedTarget)) return;
+                    if (relatedTarget?.closest && relatedTarget.closest('.mf-floating-dropdown, .custom-dropdown')) return;
+                    mfDismissFloatingDropdown(blurredInput);
                 }, 200);
             }
         });
