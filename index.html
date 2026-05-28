@@ -949,16 +949,20 @@
             return window.groupAccess === 'owner';
         };
 
-        function getAuthContinueUrl(groupId) {
+        function getAuthContinueUrl(groupId, signInEmail = '') {
             const base = `${window.location.origin}${window.location.pathname}`;
-            if (!groupId) return base;
-            return `${base}?group=${encodeURIComponent(groupId)}`;
+            const params = new URLSearchParams();
+            if (groupId) params.set('group', groupId);
+            const normalized = normalizeEmail(signInEmail);
+            if (normalized) params.set('si', normalized);
+            const qs = params.toString();
+            return qs ? `${base}?${qs}` : base;
         }
 
         function stripAuthParamsFromUrl() {
             try {
                 const params = new URLSearchParams(window.location.search);
-                ['oobCode', 'apiKey', 'mode', 'lang'].forEach(k => params.delete(k));
+                ['oobCode', 'apiKey', 'mode', 'lang', 'si'].forEach(k => params.delete(k));
                 const group = params.get('group') || window.groupIdRaw || '';
                 if (group) window.groupIdRaw = formatGroupSlug(group);
                 const next = group ? `${window.location.pathname}?group=${encodeURIComponent(window.groupIdRaw || group)}` : window.location.pathname;
@@ -1055,6 +1059,17 @@
             }
             window.pendingEmailLinkUrl = window.location.href;
             let email = window.localStorage.getItem(AUTH_EMAIL_KEY);
+            if (!email) {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const encoded = params.get('si');
+                    const fromUrl = normalizeEmail(encoded ? decodeURIComponent(encoded) : '');
+                    if (fromUrl) {
+                        email = fromUrl;
+                        window.localStorage.setItem(AUTH_EMAIL_KEY, email);
+                    }
+                } catch (_) {}
+            }
             const onLanding = !window.groupIdRaw;
             if (!email) {
                 openSignInPanelForContext(onLanding);
@@ -1490,7 +1505,7 @@
             try {
                 window.localStorage.setItem(AUTH_EMAIL_KEY, email);
                 await sendSignInLinkToEmail(auth, email, {
-                    url: getAuthContinueUrl(groupId || null),
+                    url: getAuthContinueUrl(groupId || null, email),
                     handleCodeInApp: true
                 });
                 showSignInLinkSent(fromLanding, email);
@@ -1573,7 +1588,7 @@
             try {
                 window.localStorage.setItem(AUTH_EMAIL_KEY, email);
                 await sendSignInLinkToEmail(auth, email, {
-                    url: getAuthContinueUrl(slug),
+                    url: getAuthContinueUrl(slug, email),
                     handleCodeInApp: true
                 });
             } catch (e) {
@@ -1777,7 +1792,7 @@
         async function sendInviteToEmail(email, playerName) {
             window.localStorage.setItem(AUTH_EMAIL_KEY, email);
             await sendSignInLinkToEmail(auth, email, {
-                url: getAuthContinueUrl(window.groupIdRaw),
+                url: getAuthContinueUrl(window.groupIdRaw, email),
                 handleCodeInApp: true
             });
         }
@@ -2555,7 +2570,7 @@
                 }
 
                 await sendSignInLinkToEmail(auth, ownerEmail, {
-                    url: getAuthContinueUrl(formatted),
+                    url: getAuthContinueUrl(formatted, ownerEmail),
                     handleCodeInApp: true
                 });
                 showCreateGroupLinkSent(ownerEmail, formatted);
