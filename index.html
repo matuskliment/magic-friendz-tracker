@@ -903,7 +903,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit, documentId } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
@@ -1441,30 +1441,24 @@
                     }
                 };
 
-                const [ownerByUid, ownerByEmail, memberByUid, memberByEmail] = await Promise.all([
+                const [ownerByUid, ownerByEmail, memberByEmail] = await Promise.all([
                     safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid)), 'ownerUid'),
                     safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerEmail'),
-                    safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)), 'member uid'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'member email')
                 ]);
                 // #region agent log
-                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H1',location:'index.html:fetchAccessibleGroupsForCurrentUser:queryResults',message:'query completion snapshot',data:{ownerByUid:ownerByUid!==null?ownerByUid.size:null,ownerByEmail:ownerByEmail!==null?ownerByEmail.size:null,memberByUid:memberByUid!==null?memberByUid.size:null,memberByEmail:memberByEmail!==null?memberByEmail.size:null},timestamp:Date.now()})}).catch(()=>{});
+                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H1',location:'index.html:fetchAccessibleGroupsForCurrentUser:queryResults',message:'query completion snapshot',data:{ownerByUid:ownerByUid!==null?ownerByUid.size:null,ownerByEmail:ownerByEmail!==null?ownerByEmail.size:null,memberByEmail:memberByEmail!==null?memberByEmail.size:null},timestamp:Date.now()})}).catch(()=>{});
                 // #endregion
 
                 if (ownerByUid) ownerByUid.docs.forEach(d => addGroup(d.id, 'owner'));
                 if (ownerByEmail) ownerByEmail.docs.forEach(d => addGroup(d.id, 'owner'));
-                if (memberByUid) memberByUid.docs.forEach(d => {
-                    const groupId = d.ref.parent?.parent?.id;
-                    const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
-                    addGroup(groupId, role);
-                });
                 if (memberByEmail) memberByEmail.docs.forEach(d => {
                     const groupId = d.ref.parent?.parent?.id;
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
                 const entries = Array.from(groupsById.values());
-                if (!entries.length && ownerByUid === null && ownerByEmail === null && memberByUid === null && memberByEmail === null) {
+                if (!entries.length && ownerByUid === null && ownerByEmail === null && memberByEmail === null) {
                     return null;
                 }
                 const names = await Promise.all(entries.map(async g => {
