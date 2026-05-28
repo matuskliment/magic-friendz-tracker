@@ -88,7 +88,7 @@
                     </div>
                     <div id="landing-signed-in" class="hidden mt-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 max-w-md mx-auto lg:mx-0">
                         <p class="text-sm text-emerald-300/90 mb-3">Signed in as <span id="landing-signed-in-email" class="font-semibold text-white"></span></p>
-                        <button type="button" onclick="window.openGroupModal()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Enter a group →</button>
+                        <button type="button" onclick="window.openBestGroupEntry()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Enter a group →</button>
                     </div>
                     <div id="landing-my-groups" class="hidden mt-6 p-4 rounded-xl border border-purple-500/30 bg-purple-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
                         <p class="text-sm text-purple-200">Signed in as <span id="landing-my-groups-email" class="font-semibold text-white"></span></p>
@@ -903,7 +903,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit, documentId } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
@@ -1433,13 +1433,19 @@
                 groupsById.set(groupId, existing);
             };
             try {
-                const [ownerByUid, ownerByEmail, memberByEmail] = await Promise.all([
+                const [ownerByUid, ownerByEmail, memberByUid, memberByEmail] = await Promise.all([
                     getDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid))),
                     getDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email))),
+                    getDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid))),
                     getDocs(query(collectionGroup(db, 'members'), where('email', '==', email)))
                 ]);
                 ownerByUid.docs.forEach(d => addGroup(d.id, 'owner'));
                 ownerByEmail.docs.forEach(d => addGroup(d.id, 'owner'));
+                memberByUid.docs.forEach(d => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
+                    addGroup(groupId, role);
+                });
                 memberByEmail.docs.forEach(d => {
                     const groupId = d.ref.parent?.parent?.id;
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
@@ -1466,6 +1472,32 @@
         window.startCreateGroupFromNoAccess = function() {
             window.openGroupModal();
             setTimeout(() => window.showCreateGroupPanel(), 50);
+        };
+
+        window.openBestGroupEntry = async function() {
+            if (!window.currentUser) {
+                window.openGroupModal();
+                return;
+            }
+            if (!Array.isArray(window.accessibleGroups) || (window.accessibleGroups.length === 0 && window.userHasAnyGroupAccess === null)) {
+                const accessibleGroups = await fetchAccessibleGroupsForCurrentUser();
+                if (accessibleGroups !== null) {
+                    window.accessibleGroups = accessibleGroups;
+                    window.userHasAnyGroupAccess = accessibleGroups.length > 0;
+                    updateLandingAuthUI();
+                }
+            }
+            if (window.accessibleGroups.length === 1) {
+                softRouteToGroup(window.accessibleGroups[0].id, null, 'View stats');
+                return;
+            }
+            if (window.accessibleGroups.length > 1) {
+                updateLandingAuthUI();
+                const list = document.getElementById('landing-my-groups-list');
+                list?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+            window.openGroupModal();
         };
 
         window.openAccessibleGroupFromLanding = function(groupId) {
