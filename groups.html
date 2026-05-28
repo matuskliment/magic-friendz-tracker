@@ -5,40 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Groups - Magic Friendz</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .hero-bg { background-image: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 1)), url('https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070&auto=format&fit=crop'); background-size: cover; background-position: center; }
+        .text-gradient { background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .state-panel { transition: opacity 220ms ease, transform 220ms ease; }
+        .state-panel.hidden { opacity: 0; transform: translateY(8px); pointer-events: none; }
+    </style>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100">
-    <main class="max-w-2xl mx-auto px-4 py-10">
-        <div class="mb-8">
-            <p class="text-xs uppercase tracking-widest text-purple-300 mb-2">Magic Friendz</p>
-            <h1 class="text-3xl font-black mb-2">My Groups</h1>
-            <p id="account-email" class="text-sm text-slate-400"></p>
-        </div>
-
-        <section id="loading-view" class="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-            <p class="text-slate-300 text-sm">Loading your groups...</p>
-        </section>
-
-        <section id="groups-view" class="hidden space-y-3"></section>
-
-        <section id="no-groups-view" class="hidden rounded-xl border border-purple-500/30 bg-purple-950/20 p-5 space-y-3">
-            <h2 class="text-lg font-bold text-white">No groups linked yet</h2>
-            <p class="text-sm text-purple-100/90">This account is signed in, but does not have access to any group yet. Create one now or ask a group owner to invite this email.</p>
-        </section>
-
-        <section class="mt-8 rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
-            <h2 class="text-lg font-bold text-white">Create a new group</h2>
-            <div class="space-y-2">
-                <input id="new-group-name" type="text" placeholder="Group name" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-                <button id="create-group-btn" type="button" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition">Create and open group</button>
-                <p id="create-error" class="hidden text-sm text-red-300"></p>
+<body class="bg-slate-900 text-slate-200 font-sans antialiased overflow-x-hidden">
+    <div class="min-h-screen flex flex-col transition-opacity duration-500 relative">
+        <nav class="w-full p-4 md:p-6 flex justify-between items-center fixed top-0 z-50 glass border-b border-slate-800/50">
+            <div class="text-xl md:text-2xl font-bold tracking-tighter flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                Magic<span class="text-purple-500">Friendz</span>
             </div>
-        </section>
+            <div class="flex items-center gap-2">
+                <button id="sign-out-btn" type="button" class="text-sm bg-slate-800/80 hover:bg-slate-700 text-white border border-slate-600 px-4 py-2 rounded-full font-semibold transition min-h-[44px] touch-manipulation">Sign out</button>
+            </div>
+        </nav>
 
-        <div class="mt-6 flex flex-wrap gap-3">
-            <a id="landing-link" href="index.html" class="text-sm px-3 py-2 rounded-lg border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 transition">Back to landing</a>
-            <button id="sign-out-btn" type="button" class="text-sm px-3 py-2 rounded-lg border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 transition">Sign out</button>
-        </div>
-    </main>
+        <main class="flex-grow flex items-center justify-center hero-bg px-4 md:px-6 pt-28 md:pt-36 pb-14 overflow-hidden relative">
+            <div class="w-full max-w-3xl mx-auto">
+                <div class="glass rounded-3xl p-6 md:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.55)] border border-purple-500/20">
+                    <p class="text-xs uppercase tracking-widest text-purple-300 mb-3">Signed in workspace</p>
+                    <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-2">
+                        Your <span class="text-gradient">Magic Friendz</span> groups
+                    </h1>
+                    <p id="account-email" class="text-sm md:text-base text-slate-300 mb-6"></p>
+
+                    <section id="loading-view" class="state-panel rounded-xl border border-slate-700/70 bg-slate-900/60 p-5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-5 h-5 rounded-full border-2 border-slate-500 border-t-purple-400 spin" aria-hidden="true"></div>
+                            <div>
+                                <p id="loading-title" class="text-slate-100 text-sm font-semibold">Preparing your workspace...</p>
+                                <p id="loading-subtitle" class="text-slate-400 text-xs mt-0.5">Checking your account and groups.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="groups-view" class="state-panel hidden space-y-3"></section>
+
+                    <section id="no-groups-view" class="state-panel hidden rounded-xl border border-amber-500/35 bg-amber-950/20 p-5 space-y-3 mt-1">
+                        <h2 class="text-lg font-bold text-white">No groups linked yet</h2>
+                        <p class="text-sm text-slate-200">This account is signed in, but does not have access to any group yet.</p>
+                        <p class="text-xs text-slate-400">Ask a group owner to invite this email, or create a new group now.</p>
+                    </section>
+
+                    <section class="mt-6 rounded-xl border border-purple-500/25 bg-purple-950/20 p-5 space-y-3">
+                        <h2 class="text-lg font-bold text-white">Create a new group</h2>
+                        <div class="space-y-3">
+                            <input id="new-group-name" type="text" placeholder="Group name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation placeholder:text-slate-500" />
+                            <button id="create-group-btn" type="button" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-5 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation disabled:opacity-50 disabled:pointer-events-none">Create and open group</button>
+                            <p id="create-error" class="hidden text-sm text-red-300"></p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -67,7 +98,8 @@
         const createButton = document.getElementById('create-group-btn');
         const createInput = document.getElementById('new-group-name');
         const signOutButton = document.getElementById('sign-out-btn');
-        const landingLink = document.getElementById('landing-link');
+        const loadingTitle = document.getElementById('loading-title');
+        const loadingSubtitle = document.getElementById('loading-subtitle');
 
         function normalizeEmail(email) {
             return String(email || '').trim().toLowerCase();
@@ -93,6 +125,15 @@
 
         function appGroupUrl(groupId) {
             return `${indexBasePath()}?group=${encodeURIComponent(groupId)}`;
+        }
+
+        function sleep(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        function setLoadingState(title, subtitle = '') {
+            loadingTitle.textContent = title;
+            loadingSubtitle.textContent = subtitle;
         }
 
         async function fetchAccessibleGroupsForCurrentUser(user) {
@@ -149,10 +190,15 @@
             groups.forEach((group) => {
                 const card = document.createElement('button');
                 card.type = 'button';
-                card.className = 'w-full text-left rounded-xl border border-slate-800 bg-slate-900/60 p-4 hover:border-purple-500/50 hover:bg-slate-900 transition';
+                card.className = 'w-full text-left rounded-xl border border-slate-700/70 bg-slate-900/60 p-4 hover:border-purple-500/50 hover:bg-slate-900 transition';
                 card.innerHTML = `
-                    <p class="text-white font-semibold">${group.name}</p>
-                    <p class="text-xs text-slate-400 mt-1">Role: ${group.role}</p>
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-white font-semibold">${group.name}</p>
+                            <p class="text-xs text-slate-400 mt-1">Role: ${group.role}</p>
+                        </div>
+                        <span class="text-sm text-purple-300 font-bold">Open →</span>
+                    </div>
                 `;
                 card.addEventListener('click', () => {
                     window.location.assign(appGroupUrl(group.id));
@@ -219,13 +265,15 @@
             }
 
             accountEmail.textContent = `Signed in as ${user.email || 'your account'}`;
-            landingLink.href = indexBasePath();
+            setLoadingState('Preparing your workspace...', 'Checking your account and groups.');
             loadingView.classList.remove('hidden');
             groupsView.classList.add('hidden');
             noGroupsView.classList.add('hidden');
 
             const groups = await fetchAccessibleGroupsForCurrentUser(user);
             if (groups.length === 1) {
+                setLoadingState(`Opening ${groups[0].name || groups[0].id}...`, 'Taking you to your group now.');
+                await sleep(420);
                 window.location.replace(appGroupUrl(groups[0].id));
                 return;
             }
