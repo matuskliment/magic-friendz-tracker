@@ -1088,9 +1088,6 @@
         }
 
         async function tryCompleteEmailSignIn() {
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run4',hypothesisId:'H7',location:'index.html:tryCompleteEmailSignIn:entry',message:'entered email-link completion',data:{href:window.location.href,path:window.location.pathname,isEmailLink:isSignInWithEmailLink(auth, window.location.href),groupIdRaw:window.groupIdRaw||'',dbgParam:(()=>{try{return new URLSearchParams(window.location.search).get('dbg')||'';}catch(_){return'';}})(),dbgExpected:window.localStorage.getItem(AUTH_DEBUG_LINK_KEY)||''},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (!isSignInWithEmailLink(auth, window.location.href)) {
                 window.pendingEmailLinkUrl = '';
                 return false;
@@ -1118,9 +1115,6 @@
                 return false;
             }
             await signInWithEmailLink(auth, email, window.location.href);
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H2',location:'index.html:tryCompleteEmailSignIn:afterSignIn',message:'email-link sign-in succeeded',data:{emailPresent:!!email,groupIdBeforeStrip:window.groupIdRaw||'',hrefBeforeStrip:window.location.href},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             window.localStorage.removeItem(AUTH_EMAIL_KEY);
             window.pendingEmailLinkUrl = '';
             stripAuthParamsFromUrl();
@@ -1452,9 +1446,6 @@
             if (!auth.currentUser) return [];
             const email = normalizeEmail(auth.currentUser.email);
             const uid = auth.currentUser.uid;
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H1',location:'index.html:fetchAccessibleGroupsForCurrentUser:entry',message:'start group discovery',data:{hasUser:!!auth.currentUser,hasEmail:!!email,uidPresent:!!uid},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (!email || !uid) return [];
             const groupsById = new Map();
             const addGroup = (groupId, roleHint) => {
@@ -1478,9 +1469,6 @@
                     safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerEmail'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'member email')
                 ]);
-                // #region agent log
-                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H1',location:'index.html:fetchAccessibleGroupsForCurrentUser:queryResults',message:'query completion snapshot',data:{ownerByUid:ownerByUid!==null?ownerByUid.size:null,ownerByEmail:ownerByEmail!==null?ownerByEmail.size:null,memberByEmail:memberByEmail!==null?memberByEmail.size:null},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
 
                 if (ownerByUid) ownerByUid.docs.forEach(d => addGroup(d.id, 'owner'));
                 if (ownerByEmail) ownerByEmail.docs.forEach(d => addGroup(d.id, 'owner'));
@@ -1503,15 +1491,9 @@
                     } catch (_) {}
                     return { ...g, name: g.id };
                 }));
-                // #region agent log
-                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H2',location:'index.html:fetchAccessibleGroupsForCurrentUser:return',message:'returning resolved groups',data:{count:names.length,ids:names.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
                 return names.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
             } catch (error) {
                 console.warn('Could not check global group access:', error);
-                // #region agent log
-                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H1',location:'index.html:fetchAccessibleGroupsForCurrentUser:catch',message:'group discovery failed',data:{name:error?.name||'',code:error?.code||'',message:error?.message||''},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
                 return null;
             }
         }
@@ -1522,9 +1504,6 @@
         };
 
         window.openBestGroupEntry = async function() {
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H3',location:'index.html:openBestGroupEntry:entry',message:'enter group CTA pressed',data:{hasUser:!!window.currentUser,groupsCount:Array.isArray(window.accessibleGroups)?window.accessibleGroups.length:-1,groupIdRaw:window.groupIdRaw||'',hasAnyAccess:window.userHasAnyGroupAccess},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (!window.currentUser) {
                 window.openGroupModal();
                 return;
@@ -1626,9 +1605,6 @@
             const groupId = resolveSignInGroupId();
             const debugLinkId = String(Date.now());
             window.localStorage.setItem(AUTH_DEBUG_LINK_KEY, debugLinkId);
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run4',hypothesisId:'H8',location:'index.html:sendSignInLink:beforeSend',message:'building email-link continue url',data:{fromLanding,groupIdResolved:groupId||'',groupIdRaw:window.groupIdRaw||'',debugLinkId,continueUrl:getAuthContinueUrl(groupId || null, email, debugLinkId)},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (!groupId && !fromLanding) {
                 if (status) {
                     status.textContent = 'Open a group first.';
@@ -2564,13 +2540,7 @@
                     window.showAppAlert('Sign-in link failed: ' + friendly, 'Sign in', '❌');
                 }
             }
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H4',location:'index.html:startApp:postTryComplete',message:'post email-link completion decision point',data:{completedEmailLinkSignIn,groupIdResolved:resolveSignInGroupId(),groupIdRaw:window.groupIdRaw||'',currentUserPresent:!!auth.currentUser},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (completedEmailLinkSignIn && !resolveSignInGroupId()) {
-                // #region agent log
-                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H4',location:'index.html:startApp:redirectToGroups',message:'redirecting to groups hub after sign-in',data:{target:getGroupsHubUrl()},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
                 window.location.replace(getGroupsHubUrl());
                 return;
             }
@@ -2603,9 +2573,6 @@
                 resolveInitialAuthState();
                 resolveInitialAuthState = null;
             }
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H4',location:'index.html:onAuthStateChanged:entry',message:'auth state changed',data:{hasUser:!!user,userUid:user?.uid||'',groupIdRaw:window.groupIdRaw||'',appBootComplete},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (user) {
                 const accessibleGroups = await fetchAccessibleGroupsForCurrentUser();
                 if (accessibleGroups === null) {
@@ -2625,9 +2592,6 @@
                 window.accessibleGroups = [];
             }
             updateAccessUI();
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H4',location:'index.html:onAuthStateChanged:postUpdate',message:'post access/UI update state',data:{groupsCount:Array.isArray(window.accessibleGroups)?window.accessibleGroups.length:-1,hasAnyAccess:window.userHasAnyGroupAccess,isGroupValid:window.isGroupValid,groupAccess:window.groupAccess},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             const pendingCreateSlug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
             if (appBootComplete && user && !window.groupIdRaw && !pendingCreateSlug && !autoRouteInFlight) {
                 autoRouteInFlight = true;
