@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="mf-app-version" content="1.3.3">
+    <meta name="mf-app-version" content="1.4.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -197,21 +197,33 @@
             padding-bottom: env(safe-area-inset-bottom, 0px);
             touch-action: pan-y;
         }
-        #view-log-match .static-dropdown-list,
-        #view-log-match .custom-dropdown {
+        .mf-mobile-sheet .static-dropdown-list,
+        .mf-mobile-sheet .custom-dropdown {
             z-index: 30;
         }
-        #view-log-match .input-slot-group {
+        .mf-mobile-sheet .input-slot-group,
+        .mf-mobile-sheet .mf-search-wrap {
             position: relative;
             z-index: 1;
         }
-        #view-log-match .input-slot-group.mf-slot-active {
+        .mf-mobile-sheet .input-slot-group.mf-slot-active,
+        .mf-mobile-sheet .mf-search-wrap.mf-slot-active {
             z-index: 25;
         }
-        #view-log-match .new-mode[hidden],
-        #view-log-match .new-mode.hidden {
+        .mf-mobile-sheet .new-mode[hidden],
+        .mf-mobile-sheet .new-mode.hidden {
             display: none !important;
             pointer-events: none !important;
+        }
+        .winner-slot,
+        .loser-slot {
+            position: relative;
+            isolation: isolate;
+            z-index: 0;
+        }
+        .winner-slot:has(.mf-slot-active),
+        .loser-slot:has(.mf-slot-active) {
+            z-index: 5;
         }
         html.mf-overlay-open #dashboard-view {
             pointer-events: none !important;
@@ -238,9 +250,9 @@
         #landing-page {
             overflow-x: clip;
         }
-        #view-log-match input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
-        #view-log-match textarea,
-        #view-log-match select,
+        .mf-mobile-sheet input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+        .mf-mobile-sheet textarea,
+        .mf-mobile-sheet select,
         #dashboard-view input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         #dashboard-view textarea,
         #dashboard-view select,
@@ -851,8 +863,8 @@
 
     <!-- FULL SCREEN VIEW: COMMANDER PROFILE -->
     <div id="view-commander-detail" class="mf-mobile-sheet z-[100] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="cmd-view-title">
-        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800">
-            <button onclick="window.closeCommanderProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
+        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800">
+            <button type="button" onclick="window.closeCommanderProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
             </button>
@@ -965,8 +977,8 @@
 
     <!-- FULL SCREEN VIEW: PLAYER PROFILE -->
     <div id="view-player-detail" class="mf-mobile-sheet z-[100] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="plr-view-name">
-        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800">
-            <button onclick="window.closePlayerProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
+        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800">
+            <button type="button" onclick="window.closePlayerProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
             </button>
@@ -1027,8 +1039,8 @@
 
     <!-- FULL SCREEN VIEW: ADMIN MODAL -->
     <div id="view-admin-modal" class="mf-mobile-sheet z-[120] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true">
-        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
-            <button onclick="window.closeAdminModal()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
+        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
+            <button type="button" onclick="window.closeAdminModal()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
             </button>
@@ -1068,8 +1080,8 @@
 
     <!-- FULL SCREEN VIEW: ART DIAGNOSTICS -->
     <div id="view-art-diagnostics" class="mf-mobile-sheet z-[130] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true">
-        <div class="mf-sheet-header glass z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
-            <button onclick="window.closeArtDiagnostics()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
+        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
+            <button type="button" onclick="window.closeArtDiagnostics()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
             </button>
@@ -1170,19 +1182,19 @@
                     Winning Cards (Optional)
                 </h3>
                 <div class="space-y-3 mb-5">
-                    <div class="relative focus-within:z-20">
+                    <div class="mf-search-wrap relative">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
                         <input type="text" id="form-card-1" placeholder="Card 1 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
-                    <div class="relative focus-within:z-20">
+                    <div class="mf-search-wrap relative">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
                         <input type="text" id="form-card-2" placeholder="Card 2 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
-                    <div class="relative focus-within:z-20">
+                    <div class="mf-search-wrap relative">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
@@ -2773,14 +2785,35 @@
             });
         }
 
-        function mfClearLogMatchKeyboardPadding() {
-            const scroller = document.getElementById('log-match-scroll');
-            if (scroller) scroller.style.paddingBottom = '';
+        function mfGetOpenOverlaySheetEl() {
+            for (const { id, closedClass } of MF_OVERLAY_SHEETS) {
+                const el = document.getElementById(id);
+                if (el && !el.classList.contains('hidden') && !el.classList.contains(closedClass)) return el;
+            }
+            return null;
         }
 
-        function mfLogMatchHasFocusedField() {
+        function mfIsSheetOpen(el) {
+            if (!el) return false;
+            const entry = MF_OVERLAY_SHEETS.find((s) => s.id === el.id);
+            if (!entry) return false;
+            return !el.classList.contains('hidden') && !el.classList.contains(entry.closedClass);
+        }
+
+        function mfGetSheetScroller(sheet) {
+            if (!sheet) return null;
+            return sheet.querySelector('.mf-sheet-scroll');
+        }
+
+        function mfClearAllSheetKeyboardPadding() {
+            document.querySelectorAll('.mf-sheet-scroll').forEach((scroller) => {
+                scroller.style.paddingBottom = '';
+            });
+        }
+
+        function mfSheetHasFocusedField(sheet) {
             const focused = document.activeElement;
-            if (!focused || !focused.closest('#view-log-match')) return false;
+            if (!focused || !sheet || !sheet.contains(focused)) return false;
             if (!focused.matches('input:not([type="hidden"]), textarea, select')) return false;
             const hiddenNewPanel = focused.closest('.new-mode.hidden, .new-mode[hidden]');
             if (hiddenNewPanel) return false;
@@ -2789,33 +2822,37 @@
             return true;
         }
 
-        /** Clear stuck focus, dropdowns, and keyboard padding across the whole Log Match form. */
-        function mfReleaseLogMatchTouchState() {
-            document.querySelectorAll('#view-log-match .custom-dropdown').forEach((d) => d.remove());
-            document.querySelectorAll('#view-log-match .input-slot-group').forEach((g) => {
+        /** Clear stuck focus, dropdowns, and keyboard padding for any open mobile sheet. */
+        function mfReleaseSheetTouchState(sheet) {
+            const targetSheet = sheet || mfGetOpenOverlaySheetEl();
+            if (!targetSheet) {
+                mfClearAllSheetKeyboardPadding();
+                return;
+            }
+            targetSheet.querySelectorAll('.custom-dropdown').forEach((d) => d.remove());
+            targetSheet.querySelectorAll('.input-slot-group, .mf-search-wrap').forEach((g) => {
                 g.classList.remove('mf-slot-active');
             });
             const active = document.activeElement;
-            if (active && active.closest('#view-log-match')) {
+            if (active && targetSheet.contains(active)) {
                 active.blur();
             }
-            mfClearLogMatchKeyboardPadding();
-            requestAnimationFrame(() => mfSyncLogMatchKeyboardPadding());
+            mfClearAllSheetKeyboardPadding();
+            requestAnimationFrame(() => mfSyncAllSheetKeyboardPadding());
         }
 
-        function mfSyncLogMatchKeyboardPadding() {
-            const logMatch = document.getElementById('view-log-match');
-            const scroller = document.getElementById('log-match-scroll');
-            if (!logMatch || !scroller || logMatch.classList.contains('hidden') || logMatch.classList.contains('translate-y-full')) {
-                mfClearLogMatchKeyboardPadding();
-                return;
-            }
-            if (!mfLogMatchHasFocusedField() || !window.visualViewport) {
-                mfClearLogMatchKeyboardPadding();
-                return;
-            }
+        function mfReleaseLogMatchTouchState() {
+            mfReleaseSheetTouchState(document.getElementById('view-log-match'));
+        }
+
+        function mfSyncAllSheetKeyboardPadding() {
+            mfClearAllSheetKeyboardPadding();
+            const sheet = mfGetOpenOverlaySheetEl();
+            if (!sheet || !window.visualViewport) return;
+            const scroller = mfGetSheetScroller(sheet);
+            if (!scroller || !mfSheetHasFocusedField(sheet)) return;
             const gap = Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop);
-            scroller.style.paddingBottom = gap > 0 ? `${gap + 16}px` : '';
+            if (gap > 0) scroller.style.paddingBottom = `${gap + 16}px`;
         }
 
         function mfRemoveSlotDropdowns(group) {
@@ -2846,9 +2883,96 @@
 
         function mfBindVisualViewportForSheets() {
             if (!window.visualViewport) return;
-            const onViewportChange = () => mfSyncLogMatchKeyboardPadding();
+            const onViewportChange = () => mfSyncAllSheetKeyboardPadding();
             visualViewport.addEventListener('resize', onViewportChange);
             visualViewport.addEventListener('scroll', onViewportChange);
+        }
+
+        function mfGetDropdownHost(input) {
+            return input?.closest('.input-slot-group, .mf-search-wrap') || null;
+        }
+
+        function mfClearLogMatchFieldDropdowns() {
+            document.querySelectorAll('#view-log-match .custom-dropdown').forEach((d) => d.remove());
+            document.querySelectorAll('#view-log-match .input-slot-group, #view-log-match .mf-search-wrap').forEach((g) => {
+                g.classList.remove('mf-slot-active');
+            });
+        }
+
+        /** Shared Victor / Fallen player + deck fields (identical behavior, theme colors only). */
+        function mfBuildPodSlotFields(variant) {
+            const isWinner = variant === 'winner';
+            const accent = isWinner ? 'green' : 'purple';
+            const focusRing = isWinner
+                ? 'focus:border-green-500 focus:ring-1 focus:ring-green-500'
+                : 'focus:border-purple-500 focus:ring-1 focus:ring-purple-500';
+            const panelBorder = isWinner ? 'border-green-500/30' : 'border-purple-500/30';
+            const labelTone = isWinner ? 'text-green-400' : 'text-purple-400';
+            const confirmBtn = isWinner
+                ? 'bg-green-600 hover:bg-green-500'
+                : 'bg-purple-600 hover:bg-purple-500';
+            const playerLabel = isWinner ? 'Pilot (Player)' : 'Pilot';
+            const deckLabel = isWinner ? 'Deck (Commander)' : 'Deck';
+            const newPlayerTitle = 'Add New Player';
+            const newDeckTitle = isWinner ? 'Create New Deck' : 'Search & Add Deck';
+            const newPlayerPlaceholder = isWinner ? 'Enter new player name...' : 'Enter player name...';
+            const cancelBtn = 'text-slate-500 hover:text-white text-xs font-bold transition min-h-[44px] px-2 touch-manipulation';
+
+            return `
+                        <div class="input-slot-group" data-type="player">
+                            <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">${playerLabel}</label>
+                            <div class="flex gap-2 existing-mode">
+                                <div class="relative flex-grow mf-search-wrap">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    </div>
+                                    <input type="text" class="local-player-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search players..." autocomplete="off">
+                                </div>
+                                <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
+                            </div>
+                            <div class="new-mode hidden mt-3 p-4 bg-slate-900/80 border ${panelBorder} rounded-xl shadow-inner space-y-3" inert>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] uppercase font-bold ${labelTone} tracking-wider">${newPlayerTitle}</span>
+                                    <button type="button" onclick="window.toggleNewMode(this)" class="${cancelBtn}">✕ Cancel</button>
+                                </div>
+                                <input type="text" class="new-player-input mf-touch-input w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="${newPlayerPlaceholder}" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
+                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this player</button>
+                            </div>
+                        </div>
+                        <div class="input-slot-group" data-type="deck">
+                            <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">${deckLabel}</label>
+                            <div class="flex gap-2 existing-mode">
+                                <div class="relative flex-grow mf-search-wrap">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    </div>
+                                    <input type="text" class="local-deck-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search existing decks..." autocomplete="off">
+                                </div>
+                                <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
+                            </div>
+                            <div class="new-mode hidden mt-3 p-4 bg-slate-900/80 border ${panelBorder} rounded-xl shadow-inner space-y-3" inert>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] uppercase font-bold ${labelTone} tracking-wider">${newDeckTitle}</span>
+                                    <button type="button" onclick="window.toggleNewMode(this)" class="${cancelBtn}">✕ Cancel</button>
+                                </div>
+                                <div class="relative mf-search-wrap">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    </div>
+                                    <input type="text" class="new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
+                                </div>
+                                <div class="relative mt-2">
+                                    <input type="text" class="new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Optional tag if name exists, e.g. Tokens" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
+                                </div>
+                                <div class="relative mf-search-wrap">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                    </div>
+                                    <input type="text" class="local-owner-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="Deck Owner (Defaults to Pilot)" autocomplete="off">
+                                </div>
+                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this deck</button>
+                            </div>
+                        </div>`;
         }
 
         function formatDurationLabel(totalMinutes) {
@@ -5070,6 +5194,7 @@
         window.closeCommanderProfile = function() {
             const view = document.getElementById('view-commander-detail');
             if (view) {
+                mfReleaseSheetTouchState(view);
                 view.classList.add('translate-x-full');
                 setTimeout(() => {
                     view.classList.add('hidden');
@@ -5154,6 +5279,7 @@
         window.closePlayerProfile = function() {
             const view = document.getElementById('view-player-detail');
             if (view) {
+                mfReleaseSheetTouchState(view);
                 view.classList.add('translate-x-full');
                 setTimeout(() => {
                     view.classList.add('hidden');
@@ -5215,6 +5341,8 @@
 
         window.closeAdminModal = function() {
             const modal = document.getElementById('view-admin-modal');
+            if (!modal) return;
+            mfReleaseSheetTouchState(modal);
             modal.classList.add('translate-x-full');
             setTimeout(() => {
                 modal.classList.add('hidden');
@@ -5447,6 +5575,8 @@
 
         window.closeArtDiagnostics = function() {
             const modal = document.getElementById('view-art-diagnostics');
+            if (!modal) return;
+            mfReleaseSheetTouchState(modal);
             modal.classList.add('translate-x-full');
             setTimeout(() => {
                 modal.classList.add('hidden');
@@ -5852,7 +5982,7 @@
             }
             const modal = document.getElementById('view-log-match');
             initFormDatePickers(new Date());
-            
+            mfReleaseLogMatchTouchState();
             window.mfCloseStaticDropdowns();
 
             const podSizeInput = document.getElementById('form-pod-size');
@@ -5924,7 +6054,7 @@
             const wContainer = document.getElementById('form-winners-container');
             let wHtml = '';
             for (let i = 1; i <= winnerCount; i++) {
-                let title = winnerCount > 1 ? `👑 Co-Winner (${i})` : `👑 The Victor`;
+                const title = winnerCount > 1 ? `👑 Co-Winner (${i})` : `👑 The Victor`;
                 wHtml += `
                 <div class="winner-slot glass p-5 rounded-2xl border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)] relative">
                     <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
@@ -5933,133 +6063,24 @@
                         </div>
                     </div>
                     <h3 class="text-sm text-green-400 font-bold mb-4 flex items-center gap-2 relative z-10">${title}</h3>
-                    <div class="space-y-4 relative z-10">
-                        <div class="input-slot-group" data-type="player">
-                            <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Pilot (Player)</label>
-                            <div class="flex gap-2 existing-mode">
-                                <div class="relative flex-grow">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                    </div>
-                                    <input type="text" class="local-player-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search players..." autocomplete="off">
-                                </div>
-                                <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
-                            </div>
-                            <div class="new-mode hidden mt-3 p-4 bg-slate-900/80 border border-green-500/30 rounded-xl shadow-inner space-y-3" inert>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-[10px] uppercase font-bold text-green-400 tracking-wider">Add New Player</span>
-                                    <button type="button" onclick="window.toggleNewMode(this)" class="text-slate-500 hover:text-white text-xs font-bold transition min-h-[44px] px-2 touch-manipulation">✕ Cancel</button>
-                                </div>
-                                <input type="text" class="new-player-input w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="Enter new player name..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
-                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full bg-green-600 hover:bg-green-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this player</button>
-                            </div>
-                        </div>
-                        <div class="input-slot-group" data-type="deck">
-                            <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Deck (Commander)</label>
-                            <div class="flex gap-2 existing-mode">
-                                <div class="relative flex-grow">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                    </div>
-                                    <input type="text" class="local-deck-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search existing decks..." autocomplete="off">
-                                </div>
-                                <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
-                            </div>
-                            <div class="new-mode hidden mt-3 p-4 bg-slate-900/80 border border-green-500/30 rounded-xl shadow-inner space-y-3" inert>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-[10px] uppercase font-bold text-green-400 tracking-wider">Create New Deck</span>
-                                    <button type="button" onclick="window.toggleNewMode(this)" class="text-slate-500 hover:text-white text-xs font-bold transition">✕ Cancel</button>
-                                </div>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                    </div>
-                                    <input type="text" class="new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
-                                </div>
-                                <div class="relative mt-2">
-                                    <input type="text" class="new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Optional tag if name exists, e.g. Tokens" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
-                                </div>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                    </div>
-                                    <input type="text" class="local-owner-input w-full bg-slate-950 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="Deck Owner (Defaults to Pilot)" autocomplete="off">
-                                </div>
-                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full bg-green-600 hover:bg-green-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this deck</button>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="space-y-4 relative z-10">${mfBuildPodSlotFields('winner')}</div>
                 </div>`;
             }
             wContainer.innerHTML = wHtml;
 
             const lContainer = document.getElementById('form-losers-container');
             let lHtml = '';
-            let loserCount = podSize - winnerCount;
+            const loserCount = podSize - winnerCount;
             for (let i = 1; i <= loserCount; i++) {
                 lHtml += `
                 <div class="loser-slot bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
-                    <div class="absolute -right-4 -top-4 opacity-5 text-red-500 text-6xl font-black pointer-events-none">💀</div>
+                    <div class="absolute -right-4 -top-4 opacity-5 text-red-500 text-6xl font-black pointer-events-none" aria-hidden="true">💀</div>
                     <h3 class="text-xs text-red-400 font-bold mb-4 flex items-center gap-2 relative z-10">💀 The Fallen (${i})</h3>
-                    <div class="space-y-4 relative z-10">
-                        <div class="input-slot-group" data-type="player">
-                            <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Pilot</label>
-                            <div class="flex gap-2 existing-mode">
-                                <div class="relative flex-grow">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                    </div>
-                                    <input type="text" class="local-player-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search players..." autocomplete="off">
-                                </div>
-                                <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
-                            </div>
-                            <div class="new-mode hidden mt-3 p-4 bg-slate-900/80 border border-purple-500/30 rounded-xl shadow-inner space-y-3" inert>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-[10px] uppercase font-bold text-purple-400 tracking-wider">Add New Player</span>
-                                    <button type="button" onclick="window.toggleNewMode(this)" class="text-slate-500 hover:text-white text-xs font-bold transition min-h-[44px] px-2 touch-manipulation">✕ Cancel</button>
-                                </div>
-                                <input type="text" class="new-player-input w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="Enter player name..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
-                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this player</button>
-                            </div>
-                        </div>
-                        <div class="input-slot-group" data-type="deck">
-                            <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Deck</label>
-                            <div class="flex gap-2 existing-mode">
-                                <div class="relative flex-grow">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                    </div>
-                                    <input type="text" class="local-deck-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search existing decks..." autocomplete="off">
-                                </div>
-                                <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
-                            </div>
-                            <div class="new-mode hidden mt-3 p-4 bg-slate-900/80 border border-purple-500/30 rounded-xl shadow-inner space-y-3" inert>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-[10px] uppercase font-bold text-purple-400 tracking-wider">Search & Add Deck</span>
-                                    <button type="button" onclick="window.toggleNewMode(this)" class="text-slate-500 hover:text-white text-xs font-bold transition">✕ Cancel</button>
-                                </div>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                    </div>
-                                    <input type="text" class="new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
-                                </div>
-                                <div class="relative mt-2">
-                                    <input type="text" class="new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Optional tag if name exists, e.g. Tokens" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
-                                </div>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                    </div>
-                                    <input type="text" class="local-owner-input w-full bg-slate-950 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="Deck Owner (Defaults to Pilot)" autocomplete="off">
-                                </div>
-                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this deck</button>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="space-y-4 relative z-10">${mfBuildPodSlotFields('loser')}</div>
                 </div>`;
             }
             lContainer.innerHTML = lHtml;
+            mfClearLogMatchFieldDropdowns();
         }
 
         function slotUsesNewMode(group) {
@@ -6078,6 +6099,7 @@
             if (!existingMode || !newMode) return;
 
             if (newMode.classList.contains('hidden')) {
+                mfClearLogMatchFieldDropdowns();
                 document.querySelectorAll('#view-log-match .input-slot-group .new-mode').forEach((panel) => {
                     if (panel === newMode) return;
                     const otherGroup = panel.closest('.input-slot-group');
@@ -6094,7 +6116,7 @@
                 if (firstInput) {
                     firstInput.focus({ preventScroll: true });
                     mfScrollWithinSheet(newMode);
-                    requestAnimationFrame(() => mfSyncLogMatchKeyboardPadding());
+                    requestAnimationFrame(() => mfSyncAllSheetKeyboardPadding());
                 }
             } else {
                 delete group.dataset.confirmedNew;
@@ -6335,7 +6357,7 @@
         });
         
         window.renderLocalDropdown = function(input, dataArray, isDeck) {
-            const slotGroup = input.closest('.input-slot-group');
+            const slotGroup = mfGetDropdownHost(input);
             let dropdown = input.parentNode.querySelector('.custom-dropdown');
             if (dropdown) dropdown.remove();
             if (slotGroup) slotGroup.classList.remove('mf-slot-active');
@@ -6382,9 +6404,10 @@
                     li.onmousedown = (evt) => {
                         evt.preventDefault();
                         input.value = item.name;
-                        const group = input.closest('.input-slot-group');
-                        if (group) delete group.dataset.confirmedNew;
+                        const group = mfGetDropdownHost(input);
+                        if (group?.classList.contains('input-slot-group')) delete group.dataset.confirmedNew;
                         dropdown.remove();
+                        if (group) group.classList.remove('mf-slot-active');
                     };
                     dropdown.appendChild(li);
                 });
@@ -6401,7 +6424,7 @@
             if (!container) return;
             const existing = container.querySelector('.custom-dropdown');
             if (existing) existing.remove();
-            const slotGroup = input?.closest('.input-slot-group');
+            const slotGroup = mfGetDropdownHost(input);
             if (slotGroup && !slotGroup.querySelector('.custom-dropdown')) {
                 slotGroup.classList.remove('mf-slot-active');
             }
@@ -6415,7 +6438,7 @@
             ul.className = SCRYFALL_DROPDOWN_CLASS;
             buildItems(ul, input);
             container.appendChild(ul);
-            const slotGroup = input.closest('.input-slot-group');
+            const slotGroup = mfGetDropdownHost(input);
             if (slotGroup) slotGroup.classList.add('mf-slot-active');
         }
 
@@ -6474,7 +6497,7 @@
                                     evt.preventDefault();
                                     activeInput.value = name;
                                     removeScryfallDropdown(activeInput);
-                                    const slotGroup = activeInput.closest('.input-slot-group');
+                                    const slotGroup = mfGetDropdownHost(activeInput);
                                     if (slotGroup) slotGroup.classList.remove('mf-slot-active');
                                 };
                                 ul.appendChild(li);
@@ -6512,17 +6535,15 @@
         });
 
         document.addEventListener('focusout', function(e) {
-            if (e.target && e.target.closest('#view-log-match')) {
-                setTimeout(() => {
-                    mfSyncLogMatchKeyboardPadding();
-                }, 120);
+            if (e.target && e.target.closest('.mf-mobile-sheet')) {
+                setTimeout(() => mfSyncAllSheetKeyboardPadding(), 120);
             }
-            if (e.target && e.target.closest('#view-log-match') && e.target.matches(
+            if (e.target && e.target.closest('.mf-mobile-sheet') && e.target.matches(
                 '.scryfall-input, .local-player-input, .local-deck-input, .local-owner-input, .new-player-input, .new-deck-input, .new-deck-variant-input'
             )) {
                 setTimeout(() => {
                     const container = e.target.parentElement;
-                    const slotGroup = e.target.closest('.input-slot-group');
+                    const slotGroup = mfGetDropdownHost(e.target);
                     if (container) {
                         const dropdown = container.querySelector('.custom-dropdown');
                         if (dropdown) dropdown.remove();
@@ -6530,7 +6551,7 @@
                     if (slotGroup && !slotGroup.querySelector('.custom-dropdown')) {
                         slotGroup.classList.remove('mf-slot-active');
                     }
-                    mfSyncLogMatchKeyboardPadding();
+                    mfSyncAllSheetKeyboardPadding();
                 }, 150);
             }
         });
