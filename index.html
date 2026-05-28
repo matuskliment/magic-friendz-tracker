@@ -77,6 +77,7 @@
                 Magic<span class="text-purple-500">Friendz</span>
             </div>
             <div class="flex items-center gap-2">
+                <button type="button" onclick="window.openFeedbackModal()" class="text-xs sm:text-sm font-semibold text-slate-400 hover:text-white px-2.5 sm:px-3 py-2 rounded-full border border-slate-700 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Feedback</button>
                 <button type="button" id="landing-login-btn" onclick="window.toggleLandingSignIn()" class="text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Log in</button>
                 <button type="button" onclick="window.openGroupModal()" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation">Enter App</button>
             </div>
@@ -223,7 +224,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 <span class="text-slate-300">Group:</span> <span id="group-name-display" class="text-purple-400">Loading...</span>
             </h2>
-            <div class="flex items-center gap-2 md:gap-3">
+            <div class="flex items-center gap-2 md:gap-3 shrink-0">
+                <button type="button" onclick="window.openFeedbackModal()" class="text-[10px] sm:text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1.5 rounded-lg transition min-h-[32px] touch-manipulation whitespace-nowrap">Feedback</button>
                 <span id="group-header-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80">View only</span>
                 <button id="group-list-btn" onclick="window.openGroupsHub()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg items-center gap-1 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -235,6 +237,14 @@
         <div class="p-4 max-w-3xl mx-auto mt-2 pb-20">
             <!-- TAB 1: HOME (DASHBOARD) -->
             <div id="tab-home" class="tab-content block space-y-6">
+
+                <div class="glass p-4 md:p-5 rounded-xl border border-purple-500/35 bg-purple-950/20 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-sm md:text-base font-bold text-white">Feedback &amp; ideas</h2>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">Found a bug or have a feature idea? Mat reads every message.</p>
+                    </div>
+                    <button type="button" onclick="window.openFeedbackModal()" class="w-full sm:w-auto shrink-0 bg-purple-600 hover:bg-purple-500 text-white px-5 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation shadow-lg shadow-purple-500/25">Share feedback</button>
+                </div>
                 
                 <div id="home-last-session">
                     <div id="session-details" class="hidden mt-4 pt-4 border-t border-slate-700/50 space-y-2 opacity-0 transition-opacity duration-300">
@@ -453,6 +463,11 @@
                         </div>
                     </div>
                     <ul id="roster-list" class="space-y-3"></ul>
+                </div>
+                <div class="glass p-5 rounded-xl border border-purple-500/30 bg-purple-950/10">
+                    <h3 class="font-bold text-white mb-2 flex items-center gap-2"><span class="text-purple-400">💬</span> Feedback &amp; ideas</h3>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">Report bugs, UX issues, or feature requests. Anyone with the group link can send feedback.</p>
+                    <button type="button" onclick="window.openFeedbackModal()" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Send feedback</button>
                 </div>
                 <div class="glass p-5 rounded-xl border border-emerald-500/30 bg-emerald-950/10">
                     <h3 class="font-bold text-white mb-2 flex items-center gap-2"><span class="text-emerald-400">📦</span> Data Export</h3>
@@ -898,6 +913,37 @@
         </div>
     </div>
 
+    <!-- FEEDBACK MODAL -->
+    <div id="feedback-modal" class="fixed inset-0 z-[280] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target === this) window.closeFeedbackModal()">
+        <div class="glass p-5 md:p-6 rounded-t-2xl sm:rounded-2xl w-full max-w-md transform scale-95 transition-transform duration-300 shadow-2xl border border-purple-500/30 border-b-0 sm:border-b max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <h2 class="text-xl font-black text-white mb-1">Share feedback</h2>
+            <p class="text-xs text-slate-400 mb-4 leading-relaxed">Bugs, ideas, or anything confusing — all welcome.</p>
+            <div class="space-y-3">
+                <div>
+                    <label for="feedback-type" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-1">Type</label>
+                    <select id="feedback-type" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation">
+                        <option value="idea">Feature idea</option>
+                        <option value="bug">Bug report</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="field-wrap">
+                    <label for="feedback-message" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-1">Message</label>
+                    <textarea id="feedback-message" rows="4" placeholder="What happened? What would you like to see?" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition resize-none min-h-[100px] touch-manipulation" oninput="window.clearFieldError(this)"></textarea>
+                </div>
+                <div id="feedback-email-wrap" class="field-wrap">
+                    <label for="feedback-email" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-1">Your email (optional)</label>
+                    <input type="email" id="feedback-email" placeholder="So Mat can reply" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
+                </div>
+                <p id="feedback-form-error" class="hidden text-xs text-red-400/90"></p>
+                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                    <button type="button" onclick="window.closeFeedbackModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-4 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Cancel</button>
+                    <button type="button" id="feedback-submit-btn" onclick="window.submitFeedback()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation disabled:opacity-50">Send feedback</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- CUSTOM APP MODAL -->
     <div id="app-modal" class="fixed inset-0 z-[300] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-center justify-center p-4">
         <div class="glass p-6 md:p-8 rounded-2xl w-full max-w-sm transform scale-95 transition-transform duration-300 shadow-2xl border border-slate-700/50 text-center">
@@ -915,7 +961,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
@@ -1367,6 +1413,7 @@
             if (canWrite) scheduleEnsureMatchPlayersOnRoster();
             refreshPlayerList();
             updateLandingAuthUI();
+            updateFeedbackEmailField();
         }
 
         function refreshPlayerList() {
@@ -2854,6 +2901,105 @@
         }
 
         let modalConfirmCallback = null;
+
+        function updateFeedbackEmailField() {
+            const wrap = document.getElementById('feedback-email-wrap');
+            const input = document.getElementById('feedback-email');
+            if (!wrap || !input) return;
+            if (auth.currentUser?.email) {
+                wrap.classList.add('hidden');
+                input.value = auth.currentUser.email;
+            } else {
+                wrap.classList.remove('hidden');
+            }
+        }
+
+        window.openFeedbackModal = function() {
+            const modal = document.getElementById('feedback-modal');
+            const panel = modal?.querySelector('.glass');
+            const err = document.getElementById('feedback-form-error');
+            if (err) { err.classList.add('hidden'); err.textContent = ''; }
+            const msg = document.getElementById('feedback-message');
+            if (msg) clearFieldError(msg);
+            updateFeedbackEmailField();
+            if (modal) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    if (panel) panel.classList.remove('scale-95');
+                    msg?.focus();
+                }, 10);
+            }
+        };
+
+        window.closeFeedbackModal = function() {
+            const modal = document.getElementById('feedback-modal');
+            const panel = modal?.querySelector('.glass');
+            if (modal) {
+                modal.classList.add('opacity-0');
+                if (panel) panel.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        };
+
+        window.submitFeedback = async function() {
+            const typeEl = document.getElementById('feedback-type');
+            const msgEl = document.getElementById('feedback-message');
+            const emailEl = document.getElementById('feedback-email');
+            const errEl = document.getElementById('feedback-form-error');
+            const submitBtn = document.getElementById('feedback-submit-btn');
+            const message = String(msgEl?.value || '').trim();
+            if (!message || message.length < 10) {
+                if (msgEl) setFieldError(msgEl, 'Please write at least 10 characters.');
+                if (errEl) {
+                    errEl.textContent = 'Please write at least 10 characters.';
+                    errEl.classList.remove('hidden');
+                }
+                return;
+            }
+            if (msgEl) clearFieldError(msgEl);
+            if (errEl) errEl.classList.add('hidden');
+            const type = typeEl?.value || 'other';
+            let email = '';
+            if (auth.currentUser?.email) {
+                email = normalizeEmail(auth.currentUser.email);
+            } else if (emailEl?.value?.trim()) {
+                email = normalizeEmail(emailEl.value);
+            }
+            if (submitBtn) submitBtn.disabled = true;
+            try {
+                await addDoc(collection(db, 'feedback'), {
+                    type,
+                    message,
+                    status: 'new',
+                    groupId: window.groupIdRaw || null,
+                    groupName: window.groupDisplayName || null,
+                    uid: auth.currentUser?.uid || null,
+                    email: email || null,
+                    page: window.groupIdRaw ? 'group-app' : 'landing',
+                    appVersion: MF_APP_VERSION,
+                    userAgent: String(navigator.userAgent || '').slice(0, 500),
+                    createdAt: serverTimestamp()
+                });
+                if (msgEl) msgEl.value = '';
+                if (emailEl && !auth.currentUser) emailEl.value = '';
+                window.closeFeedbackModal();
+                window.showAppAlert(
+                    'Thanks for sharing! Mat will review your message and get back to you.',
+                    'Feedback sent',
+                    '✅'
+                );
+            } catch (e) {
+                console.error('Feedback submit failed:', e);
+                if (errEl) {
+                    errEl.textContent = 'Could not send feedback. Please try again in a moment.';
+                    errEl.classList.remove('hidden');
+                }
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        };
+
         window.showAppAlert = function(message, title = "Notice", icon = "⚠️") {
             const titleEl = document.getElementById('app-modal-title');
             const msgEl = document.getElementById('app-modal-message');

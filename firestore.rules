@@ -83,6 +83,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /feedback/{feedbackId} {
+      allow create: if request.resource.data.message is string
+        && request.resource.data.message.size() >= 10
+        && request.resource.data.message.size() <= 2000
+        && request.resource.data.type in ['bug', 'idea', 'other'];
+      allow read, update, delete: if isGlobalAdmin();
+    }
+
     match /groups/{groupId} {
       allow get: if true;
       allow list: if isGlobalAdmin()
