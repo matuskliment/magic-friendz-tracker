@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.7.3">
+    <meta name="mf-app-version" content="1.7.5">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1132,8 +1132,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 Cancel
             </button>
-            <h2 id="log-match-title" class="text-sm font-bold text-slate-200">Log New Match</h2>
-            <button type="button" onclick="window.mfSaveMatchHeader(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30 min-h-[44px] touch-manipulation">Save Match</button>
+            <h2 id="log-match-title" class="text-sm font-bold text-slate-200 whitespace-nowrap">Log New Match</h2>
+            <button type="button" onclick="window.mfSaveMatchHeader(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30 min-h-[44px] min-w-[112px] text-center whitespace-nowrap touch-manipulation">Save Match</button>
         </div>
 
         <div id="log-match-scroll" class="mf-sheet-scroll">
@@ -3009,9 +3009,12 @@
 
             const resetIosViewportOffset = mfDebounce(() => {
                 const vv = window.visualViewport;
-                if (vv && vv.offsetTop > 0) {
-                    document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-                }
+                if (!vv || vv.offsetTop <= 0) return;
+                // Only the iOS keyboard "stuck offset" case — i.e. an input/textarea is
+                // focused. Never hijack normal page scrolling (e.g. Settings).
+                const ae = document.activeElement;
+                if (!ae || !mfIsFocusableField(ae)) return;
+                document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'auto' });
             }, 50);
 
             const onViewportResize = () => {
@@ -6733,7 +6736,7 @@
 
             const btn = event.target;
             const originalText = btn.innerText;
-            btn.innerText = "Saving to Database...";
+            btn.innerText = "Saving…";
             btn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
