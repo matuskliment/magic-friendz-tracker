@@ -728,7 +728,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner text-center">
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Total Plays</p>
                     <p id="plr-view-plays" class="text-2xl font-black text-white mt-1">0</p>
@@ -740,6 +740,10 @@
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner text-center">
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Win Rate</p>
                     <p id="plr-view-winrate" class="text-2xl font-black text-green-400 mt-1">0%</p>
+                </div>
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner text-center">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Hours Played</p>
+                    <p id="plr-view-hours" class="text-2xl font-black text-purple-300 mt-1">—</p>
                 </div>
             </div>
             
@@ -876,6 +880,20 @@
                             </ul>
                         </div>
                     </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-800/80">
+                    <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Game length <span class="text-slate-500 font-semibold normal-case">(optional)</span></label>
+                    <div class="grid grid-cols-2 gap-4 max-w-xs">
+                        <div>
+                            <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Hours</span>
+                            <input type="number" id="form-duration-hours" min="0" max="12" step="1" inputmode="numeric" placeholder="—" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Minutes</span>
+                            <input type="number" id="form-duration-minutes" min="0" max="59" step="5" inputmode="numeric" placeholder="—" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-2 ml-1">Each player in the pod gets this time credited toward their hours played.</p>
                 </div>
             </div>
 
@@ -2256,6 +2274,56 @@
             return String(str).trim().replace(/\s+/g, " ");
         }
 
+        function parseFormDurationMinutes() {
+            const hEl = document.getElementById('form-duration-hours');
+            const mEl = document.getElementById('form-duration-minutes');
+            const hasHours = hEl && hEl.value !== '';
+            const hasMinutes = mEl && mEl.value !== '';
+            if (!hasHours && !hasMinutes) return null;
+            const hours = hasHours ? Math.max(0, parseInt(hEl.value, 10) || 0) : 0;
+            const mins = hasMinutes ? Math.max(0, parseInt(mEl.value, 10) || 0) : 0;
+            const total = hours * 60 + mins;
+            if (total <= 0) return null;
+            if (total > 12 * 60) return -1;
+            return total;
+        }
+
+        function formatDurationLabel(totalMinutes) {
+            if (!totalMinutes || totalMinutes <= 0) return '';
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            if (h > 0 && m > 0) return `${h}h ${m}m`;
+            if (h > 0) return `${h}h`;
+            return `${m}m`;
+        }
+
+        function formatPlayerHoursPlayed(totalMinutes) {
+            if (!totalMinutes || totalMinutes <= 0) return '—';
+            const hours = totalMinutes / 60;
+            if (hours >= 10) return `${Math.round(hours)}h`;
+            if (hours >= 1) return `${hours.toFixed(1)}h`;
+            return formatDurationLabel(totalMinutes);
+        }
+
+        function renderMatchExtrasBlock(m) {
+            const cardsHtml = m.winningCards && m.winningCards.length > 0 ? `
+                <p class="text-[10px] text-purple-400 uppercase font-bold tracking-widest mb-2">Winning Cards</p>
+                <div class="flex flex-wrap gap-2 mb-3">
+                    ${m.winningCards.map(c => `<span class="bg-purple-500/20 text-purple-300 text-[11px] px-2 py-1 rounded border border-purple-500/30 font-medium">${c}</span>`).join('')}
+                </div>
+            ` : '';
+            const durationHtml = m.durationMinutes > 0 ? `
+                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Game Length</p>
+                <p class="text-xs text-slate-300 mb-3">${formatDurationLabel(m.durationMinutes)} at the table</p>
+            ` : '';
+            const notesHtml = m.notes ? `
+                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Match Notes</p>
+                <p class="text-xs text-slate-300 italic border-l-2 border-slate-600 pl-2 ml-1 whitespace-pre-wrap">"${m.notes}"</p>
+            ` : '';
+            if (!cardsHtml && !durationHtml && !notesHtml) return '';
+            return `<div class="mt-4 bg-slate-900/50 p-3 rounded-lg border border-slate-800">${cardsHtml}${durationHtml}${notesHtml}</div>`;
+        }
+
         const MF_APP_VERSION = document.querySelector('meta[name="mf-app-version"]')?.content || '1.1.0';
         const ART_CACHE_KEY = 'mf_art_cache_v8';
         const ART_CACHE_SCHEMA_KEY = 'mf_art_cache_schema';
@@ -3319,7 +3387,8 @@
                 });
                 
                 const allPlayers = [...m.winners.map(w=>w.player), ...m.losers.map(l => l.player)];
-                allPlayers.forEach(p => { if (!playerStats[p]) playerStats[p] = { wins: 0, plays: 0, decks: {} }; });
+                allPlayers.forEach(p => { if (!playerStats[p]) playerStats[p] = { wins: 0, plays: 0, minutesPlayed: 0, decks: {} }; });
+                const matchDuration = typeof m.durationMinutes === 'number' && m.durationMinutes > 0 ? m.durationMinutes : 0;
 
                 m.winners.forEach(w => {
                     if (w.owner && w.owner !== "") deckStats[w.name].owner = w.owner;
@@ -3372,6 +3441,9 @@
                     });
                 });
                 allPlayers.forEach(p => playerStats[p].plays++);
+                if (matchDuration > 0) {
+                    allPlayers.forEach(p => { playerStats[p].minutesPlayed += matchDuration; });
+                }
                 m.losers.forEach(l => { playerStats[l.player].decks[l.name] = (playerStats[l.player].decks[l.name] || 0) + 1; });
 
                 let deltas = {};
@@ -3418,7 +3490,7 @@
             });
 
             (window.appData.explicitRoster || []).forEach(playerObj => {
-                if (!playerStats[playerObj.name]) { playerStats[playerObj.name] = { wins: 0, plays: 0, decks: {} }; }
+                if (!playerStats[playerObj.name]) { playerStats[playerObj.name] = { wins: 0, plays: 0, minutesPlayed: 0, decks: {} }; }
             });
 
             window.appData.commanders = sortDecksByElo(deckElo).map((name, index) => {
@@ -3480,6 +3552,8 @@
                     name: name,
                     wins: s.wins,
                     plays: s.plays,
+                    minutesPlayed: s.minutesPlayed || 0,
+                    hoursPlayedLabel: formatPlayerHoursPlayed(s.minutesPlayed || 0),
                     winRate: winRateVal.toFixed(1) + "%",
                     topDeck: topDeck,
                     avatarInitials: getPlayerInitials(name),
@@ -3611,7 +3685,7 @@
                     </div>
                     <div class="text-right z-10 ml-2">
                         <div class="font-bold text-lg md:text-xl text-white">${p.winRate}</div>
-                        <div class="text-[10px] sm:text-xs mt-1 font-bold px-2 py-0.5 rounded inline-block ${parseFloat(p.winRate) >= 30 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700/50 text-slate-300 border border-slate-600/50'}">${p.wins} Wins / ${p.plays} Plays</div>
+                        <div class="text-[10px] sm:text-xs mt-1 font-bold px-2 py-0.5 rounded inline-block ${parseFloat(p.winRate) >= 30 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700/50 text-slate-300 border border-slate-600/50'}">${p.wins} Wins / ${p.plays} Plays${p.minutesPlayed > 0 ? ` · ${p.hoursPlayedLabel}` : ''}</div>
                     </div>
                 </div>
             `;
@@ -3648,9 +3722,15 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>`;
 
+            const durationBadge = m.durationMinutes > 0
+                ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded whitespace-nowrap">${formatDurationLabel(m.durationMinutes)}</span>`
+                : '';
             const cardHeaderHtml = showDate
                 ? `<div class="flex items-center justify-between gap-3 mb-2 pb-2 border-b border-slate-700/40">
-                        <time class="text-xs text-slate-400 font-mono whitespace-nowrap">${m.date}</time>
+                        <div class="flex items-center gap-2 min-w-0">
+                            <time class="text-xs text-slate-400 font-mono whitespace-nowrap">${m.date}</time>
+                            ${durationBadge}
+                        </div>
                         ${chevronHtml}
                     </div>
                     <div class="space-y-2.5 min-w-0">${winnersHtml}</div>`
@@ -3709,18 +3789,7 @@
                             </div>`;
                         }).join('')}
 
-                        <div class="mt-4 bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-                            ${m.winningCards && m.winningCards.length > 0 ? `
-                                <p class="text-[10px] text-purple-400 uppercase font-bold tracking-widest mb-2">Winning Cards</p>
-                                <div class="flex flex-wrap gap-2 mb-3">
-                                    ${m.winningCards.map(c => `<span class="bg-purple-500/20 text-purple-300 text-[11px] px-2 py-1 rounded border border-purple-500/30 font-medium">${c}</span>`).join('')}
-                                </div>
-                            ` : ''}
-                            ${m.notes ? `
-                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Match Notes</p>
-                                <p class="text-xs text-slate-300 italic border-l-2 border-slate-600 pl-2 ml-1 whitespace-pre-wrap">"${m.notes}"</p>
-                            ` : ''}
-                        </div>
+                        ${renderMatchExtrasBlock(m)}
                     </div>
                 </div>
             `;
@@ -3742,7 +3811,7 @@
                 <div onclick="window.toggleMatchDetails('cmd-${safeId}')" class="glass p-4 md:p-5 rounded-xl border border-slate-700/50 hover:bg-slate-800/80 transition-all duration-300 cursor-pointer group shadow-sm hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]">
                     <div class="flex justify-between items-center">
                         <div class="flex flex-col">
-                            <span class="text-[10px] text-slate-400 font-mono mb-1">${m.date}</span>
+                            <span class="text-[10px] text-slate-400 font-mono mb-1">${m.date}${m.durationMinutes > 0 ? ` · ${formatDurationLabel(m.durationMinutes)}` : ''}</span>
                             <h3 class="font-bold ${titleColor} text-sm md:text-base flex items-center gap-2">
                                 ${titleText}
                                 <span class="${deltaColor} font-black text-xs ${badgeColor} px-1.5 py-0.5 rounded shrink-0">${sign}${delta} Elo</span>
@@ -3791,18 +3860,7 @@
                             </div>`;
                         }).join('')}
 
-                        <div class="mt-4 bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-                            ${m.winningCards && m.winningCards.length > 0 ? `
-                                <p class="text-[10px] text-purple-400 uppercase font-bold tracking-widest mb-2">Winning Cards</p>
-                                <div class="flex flex-wrap gap-2 mb-3">
-                                    ${m.winningCards.map(c => `<span class="bg-purple-500/20 text-purple-300 text-[11px] px-2 py-1 rounded border border-purple-500/30 font-medium">${c}</span>`).join('')}
-                                </div>
-                            ` : ''}
-                            ${m.notes ? `
-                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Match Notes</p>
-                                <p class="text-xs text-slate-300 italic border-l-2 border-slate-600 pl-2 ml-1 whitespace-pre-wrap">"${m.notes}"</p>
-                            ` : ''}
-                        </div>
+                        ${renderMatchExtrasBlock(m)}
                     </div>
                 </div>
             `;
@@ -4380,12 +4438,14 @@
             const playsEl = document.getElementById('plr-view-plays');
             const winsEl = document.getElementById('plr-view-wins');
             const winrateEl = document.getElementById('plr-view-winrate');
+            const hoursEl = document.getElementById('plr-view-hours');
             
             if(iconEl) iconEl.innerHTML = renderPlayerAvatar(player, 'w-20 h-20', 'text-lg', 'border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.3)]');
             if(nameEl) nameEl.innerText = player.name;
             if(playsEl) playsEl.innerText = player.plays;
             if(winsEl) winsEl.innerText = player.wins;
             if(winrateEl) winrateEl.innerText = player.winRate;
+            if(hoursEl) hoursEl.innerText = player.hoursPlayedLabel || '—';
             
             const armory = window.appData.commanders.filter(c => c.pilots && c.pilots.includes(player.name));
             if(armory.length > 0) {
@@ -4626,7 +4686,8 @@
                 participants[4]?.player || '', participants[4]?.name || '',
                 winnerDeckNames,
                 match.notes || '',
-                cards[0] || '', cards[1] || '', cards[2] || '', cards[3] || ''
+                cards[0] || '', cards[1] || '', cards[2] || '', cards[3] || '',
+                (typeof match.durationMinutes === 'number' && match.durationMinutes > 0) ? String(match.durationMinutes) : ''
             ];
             return row.map(csvEscape).join(',');
         }
@@ -4652,7 +4713,8 @@
                     'P5', 'D5',
                     'Winner',
                     'Notes',
-                    'Card1', 'Card2', 'Card3', 'Card4'
+                    'Card1', 'Card2', 'Card3', 'Card4',
+                    'DurationMinutes'
                 ].join(',');
 
                 const rows = [header, ...matches.map(buildMatchCsvRow)];
@@ -5074,6 +5136,9 @@
                             timestamp = dObj.getTime() + i;
                         }
 
+                        const durationRaw = rowVals[17] || '';
+                        const durationMinutes = durationRaw !== '' ? Math.max(0, parseInt(durationRaw, 10) || 0) : 0;
+
                         const matchObj = {
                             date: dateStr,
                             timestamp: timestamp,
@@ -5082,6 +5147,7 @@
                             winningCards: cardsArray,
                             notes: notesStr
                         };
+                        if (durationMinutes > 0) matchObj.durationMinutes = durationMinutes;
 
                         await addDoc(collection(db, "groups", window.groupIdRaw, "matches"), matchObj);
                         count++;
@@ -5091,7 +5157,7 @@
                     window.showAppAlert(`Successfully parsed and uploaded ${count} historical matches!`, "Import Complete", "✅");
                 } catch (error) {
                     console.error("CSV Import error:", error);
-                    window.showAppAlert("Failed to parse CSV. Ensure it follows the expected 17-column format.", "Import Failed", "❌");
+                    window.showAppAlert("Failed to parse CSV. Ensure it follows the expected format (17 columns; optional 18th for DurationMinutes).", "Import Failed", "❌");
                 } finally {
                     btn.innerText = originalText;
                     btn.disabled = false;
@@ -5130,7 +5196,7 @@
             
             window.updatePlayerSlots();
 
-            ['form-card-1', 'form-card-2', 'form-card-3', 'form-notes'].forEach(id => {
+            ['form-card-1', 'form-card-2', 'form-card-3', 'form-notes', 'form-duration-hours', 'form-duration-minutes'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
@@ -5417,6 +5483,14 @@
                 
                 const notes = nEl ? nEl.value.trim() : "";
 
+                const durationMinutes = parseFormDurationMinutes();
+                if (durationMinutes === -1) {
+                    window.showAppAlert('Game length cannot exceed 12 hours.', 'Invalid duration', '⚠️');
+                    btn.innerText = originalText;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    return;
+                }
+
                 const newPlayerNames = [...new Set(
                     allSubmitted.filter(d => d.isNewPlayer && d.player).map(d => normalizeName(d.player))
                 )];
@@ -5432,6 +5506,7 @@
                     winningCards: cards,
                     notes: notes
                 };
+                if (durationMinutes > 0) newMatch.durationMinutes = durationMinutes;
 
                 await addDoc(collection(db, "groups", window.groupIdRaw, "matches"), newMatch);
 
