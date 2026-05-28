@@ -383,7 +383,7 @@
                     </div>
                 </div>
 
-                <div class="mt-8 mb-4">
+                <div id="home-top-commanders-block" class="mt-8 mb-4">
                     <div class="flex justify-between items-end mb-4">
                         <h2 class="text-xl font-bold">Top 5 Commanders</h2>
                     </div>
@@ -393,7 +393,7 @@
                     <button onclick="window.switchTab('ranks'); window.setLeaderboardView('commander');" class="w-full py-3 mt-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-bold text-purple-400 hover:text-purple-300 transition border border-slate-700/50">View All Commanders →</button>
                 </div>
 
-                <div class="mt-8 mb-4">
+                <div id="home-top-players-block" class="mt-8 mb-4">
                     <div class="flex justify-between items-end mb-4">
                         <h2 class="text-xl font-bold">Top 5 Players</h2>
                     </div>
@@ -1649,6 +1649,7 @@
             refreshPlayerList();
             updateLandingAuthUI();
             updateFeedbackEmailField();
+            refreshEmptyGroupOnboardingIfNeeded();
         }
 
         function refreshPlayerList() {
@@ -4012,27 +4013,85 @@
             `;
         }
 
+        function setHomeLeaderboardBlocksVisible(show) {
+            const cmdBlock = document.getElementById('home-top-commanders-block');
+            const plyBlock = document.getElementById('home-top-players-block');
+            if (cmdBlock) cmdBlock.classList.toggle('hidden', !show);
+            if (plyBlock) plyBlock.classList.toggle('hidden', !show);
+        }
+
+        function renderEmptyGroupHomeOnboarding() {
+            const groupLabel = escapeHtml(window.groupDisplayName || window.groupIdRaw || 'your playgroup');
+            if (window.canWrite()) {
+                return `
+                <div class="glass rounded-2xl border border-purple-500/35 bg-gradient-to-br from-purple-950/40 to-slate-900/80 p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.35)] text-left">
+                    <p class="text-[10px] uppercase tracking-widest text-purple-300 font-bold mb-2">Getting started</p>
+                    <h2 class="text-xl md:text-2xl font-extrabold text-white mb-2 leading-tight">${groupLabel} is ready</h2>
+                    <p class="text-sm text-slate-300 leading-relaxed mb-4">Log a match to start your first <span class="text-white font-semibold">session</span> — games on the same night group together automatically, and leaderboards fill in as you play.</p>
+                    <ol class="text-sm text-slate-400 space-y-2 mb-5 list-none pl-0">
+                        <li class="flex gap-2.5"><span class="text-purple-400 font-bold shrink-0">1.</span><span>Tap <span class="text-slate-200">Log first match</span> and add pilots &amp; decks (use <span class="text-slate-200">+ New</span> for anyone not on the list yet).</span></li>
+                        <li class="flex gap-2.5"><span class="text-purple-400 font-bold shrink-0">2.</span><span>Optional: add players under <span class="text-slate-200">Group</span> before the night starts.</span></li>
+                        <li class="flex gap-2.5"><span class="text-purple-400 font-bold shrink-0">3.</span><span>Come back here for session recap, Elo shifts, and insights.</span></li>
+                    </ol>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button type="button" onclick="window.openLogMatchModal()" class="w-full sm:flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white px-5 py-3.5 rounded-xl text-sm font-bold transition min-h-[52px] touch-manipulation shadow-lg shadow-purple-500/30">Log first match</button>
+                        <button type="button" onclick="window.switchTab('group')" class="w-full sm:flex-1 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 px-5 py-3.5 rounded-xl text-sm font-bold transition min-h-[52px] touch-manipulation">Add players first</button>
+                    </div>
+                </div>`;
+            }
+            return `
+                <div class="glass rounded-2xl border border-slate-700/80 bg-slate-900/60 p-5 md:p-6 text-center">
+                    <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">No games yet</p>
+                    <h2 class="text-lg font-bold text-white mb-2">Waiting for the first match</h2>
+                    <p class="text-sm text-slate-400 leading-relaxed">This group has no logged games yet. Ask someone with edit access to log a match after your next Commander night.</p>
+                </div>`;
+        }
+
+        function refreshEmptyGroupOnboardingIfNeeded() {
+            if (!window.isGroupValid || !window.appData || window.appData.matches.length > 0) return;
+            setHomeLeaderboardBlocksVisible(false);
+            safeSetHTML('home-last-session', renderEmptyGroupHomeOnboarding());
+            safeSetHTML('match-feed-container', renderEmptyMatchesOnboarding());
+        }
+
+        function renderEmptyMatchesOnboarding() {
+            if (window.canWrite()) {
+                return `
+                <div class="text-center mt-8 md:mt-12 bg-slate-900/80 p-6 md:p-8 rounded-2xl border border-purple-500/25 border-dashed">
+                    <p class="text-3xl mb-3" aria-hidden="true">🎲</p>
+                    <h2 class="text-lg font-bold text-white mb-2">Start your first session</h2>
+                    <p class="text-sm text-slate-400 mb-5 max-w-sm mx-auto leading-relaxed">Log a match to build your group's history. You can also use the <span class="text-purple-300 font-semibold">+</span> button at the bottom right.</p>
+                    <button type="button" onclick="window.openLogMatchModal()" class="w-full max-w-xs mx-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white px-6 py-3.5 rounded-xl text-sm font-bold transition min-h-[52px] touch-manipulation shadow-lg shadow-purple-500/30">Log first match</button>
+                </div>`;
+            }
+            return `
+                <div class="text-center text-slate-500 mt-12 bg-slate-900 p-8 rounded-xl border border-slate-800 border-dashed">
+                    <p class="text-sm leading-relaxed">No match history yet.<br>Editors can log games after signing in.</p>
+                </div>`;
+        }
+
         function initApp() {
             try {
                 if(window.appData.matches.length === 0) {
-                    safeSetHTML('home-top-commanders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">No commander data available.</p></div>`);
-                    safeSetHTML('home-last-session', `<div class="glass p-5 rounded-2xl border border-slate-800 text-center text-slate-500"><p class="text-sm">No matches logged yet. Play a game!</p></div>`);
-                    safeSetHTML('analytics-synergy', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log at least 3 games with a deck to establish a Signature Synergy!</p></div>`);
-                    safeSetHTML('match-feed-container', `<div class="text-center text-slate-500 mt-12 bg-slate-900 p-8 rounded-xl border border-slate-800 border-dashed">No match history found.<br>Click the purple + button to log your first game!</div>`);
-                    safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8">No commanders tracked yet.</div>`);
-                    
+                    setHomeLeaderboardBlocksVisible(false);
+                    safeSetHTML('home-last-session', renderEmptyGroupHomeOnboarding());
+                    safeSetHTML('match-feed-container', renderEmptyMatchesOnboarding());
+                    safeSetHTML('analytics-synergy', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log matches to unlock Signature Synergy and other insights.</p></div>`);
+                    safeSetHTML('analytics-meta', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">The meta appears after you log games.</p></div>`);
+                    safeSetHTML('analytics-upset', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Biggest upsets show up once you have match history.</p></div>`);
+                    safeSetHTML('analytics-rivalry', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Rivalries need a few logged games first.</p></div>`);
+                    safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet — log a match to track decks.</div>`);
+                    safeSetHTML('home-top-commanders', '');
+                    safeSetHTML('roster-list', renderPlayerListHtml());
                     if (window.appData.players.length > 0) {
-                        safeSetHTML('home-top-players', window.appData.players.slice(0, 3).map((p, i) => generatePlayerRow(p, i)).join(''));
-                        safeSetHTML('roster-list', renderPlayerListHtml());
                         safeSetHTML('player-view', window.appData.players.map((p, i) => generatePlayerRow(p, i)).join(''));
                     } else {
-                        safeSetHTML('home-top-players', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">No player data available.</p></div>`);
-                        safeSetHTML('roster-list', renderPlayerListHtml());
-                        safeSetHTML('player-view', `<div class="text-center text-slate-500 mt-8">No players tracked yet.</div>`);
+                        safeSetHTML('player-view', `<div class="text-center text-slate-500 mt-8 p-6">No players on the roster yet. Add them under <button type="button" onclick="window.switchTab('group')" class="text-purple-400 font-bold hover:text-purple-300">Group</button>, or when logging a match.</div>`);
                     }
                     return; 
                 }
 
+                setHomeLeaderboardBlocksVisible(true);
                 safeSetHTML('home-top-commanders', window.appData.commanders.slice(0, 5).map((cmd, i) => generateCommanderRow(cmd, i)).join(''));
                 safeSetHTML('home-top-players', window.appData.players.slice(0, 5).map((p, i) => generatePlayerRow(p, i)).join(''));
                 
