@@ -257,29 +257,19 @@
                     }
                 };
 
-                const [ownerByUid, ownerByEmail, memberByUid, memberByEmail, inviteByEmail, rosterByEmail] = await Promise.all([
+                const [ownerByUid, ownerByEmail, memberByEmail, rosterByEmail] = await Promise.all([
                     safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid)), 'ownerByUid'),
                     safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerByEmail'),
-                    safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)), 'memberByUid'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'memberByEmail'),
-                    safeGetDocs(query(collectionGroup(db, 'memberEmails'), where(documentId(), '==', email)), 'memberEmails'),
                     safeGetDocs(query(collectionGroup(db, 'roster'), where('email', '==', email)), 'rosterByEmail')
                 ]);
 
                 ownerByUid?.docs.forEach((d) => addGroup(d.id, 'owner'));
                 ownerByEmail?.docs.forEach((d) => addGroup(d.id, 'owner'));
-                memberByUid?.docs.forEach((d) => {
-                    const groupId = groupIdFromSubcollectionDoc(d);
-                    const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
-                    addGroup(groupId, role);
-                });
                 memberByEmail?.docs.forEach((d) => {
                     const groupId = groupIdFromSubcollectionDoc(d);
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
-                });
-                inviteByEmail?.docs.forEach((d) => {
-                    addGroup(groupIdFromSubcollectionDoc(d), 'editor');
                 });
                 rosterByEmail?.docs.forEach((d) => {
                     addGroup(groupIdFromSubcollectionDoc(d), 'editor');
@@ -290,7 +280,7 @@
                     if (probed) addGroup(probed.id, probed.role);
                 }
 
-                const snapshots = [ownerByUid, ownerByEmail, memberByUid, memberByEmail, inviteByEmail, rosterByEmail];
+                const snapshots = [ownerByUid, ownerByEmail, memberByEmail, rosterByEmail];
                 const anySucceeded = snapshots.some((s) => s !== null);
                 const groups = Array.from(groupsById.values());
 
