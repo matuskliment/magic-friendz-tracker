@@ -96,8 +96,8 @@ service cloud.firestore {
       allow delete: if canDeleteMatches(groupId);
 
       match /members/{uid} {
-        // Explicit get/list rules help collectionGroup discovery queries.
-        allow get, list: if isSignedIn();
+        // Broad read for signed-in users (debug: verify collectionGroup access).
+        allow read: if isSignedIn();
         allow create: if isGlobalAdmin()
           || (isSignedIn()
             && request.auth.uid == uid
@@ -115,8 +115,8 @@ service cloud.firestore {
       }
 
       match /memberEmails/{emailId} {
-        // Allow signed-in users to list invite docs via collectionGroup.
-        allow get, list: if isSignedIn();
+        // Broad read for signed-in users (debug: verify collectionGroup access).
+        allow read: if isSignedIn();
         allow create, update, delete: if canManageGroup(groupId);
       }
 
@@ -127,8 +127,8 @@ service cloud.firestore {
       }
 
       match /roster/{rosterId} {
-        // Allow signed-in users to list roster docs via collectionGroup.
-        allow get, list: if isSignedIn();
+        // Broad read for signed-in users (debug: verify collectionGroup access).
+        allow read: if isSignedIn();
         allow create, update, delete: if canManageGroup(groupId);
       }
 

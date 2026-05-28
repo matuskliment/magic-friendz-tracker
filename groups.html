@@ -324,6 +324,9 @@
             // #region agent log
             fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H4',location:'groups.html:onAuthStateChanged:entry',message:'auth state on groups',data:{hasUser:!!user,hasUid:!!user?.uid},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H9',location:'groups.html:onAuthStateChanged:runtimeConfig',message:'runtime firebase config snapshot',data:{projectId:db?.app?.options?.projectId||'',authDomain:db?.app?.options?.authDomain||'',currentHost:window.location.host||''},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (!user) {
                 window.location.replace(indexBasePath());
                 return;
