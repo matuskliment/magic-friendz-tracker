@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.6.0">
+    <meta name="mf-app-version" content="1.7.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3024,6 +3024,7 @@
         }
 
         let mfDropdownPickPending = false;
+        let mfSuppressAutoDropdown = false;
 
         function mfIsLogMatchAutocompleteInput(input) {
             return !!(input && input.closest('#view-log-match') && input.matches(
@@ -4148,22 +4149,97 @@
             }
         };
 
-        window.showAppAlert = function(message, title = "Notice", icon = "⚠️") {
-            const titleEl = document.getElementById('app-modal-title');
-            const msgEl = document.getElementById('app-modal-message');
-            const iconEl = document.getElementById('app-modal-icon');
-            const cancelBtn = document.getElementById('app-modal-cancel');
-            const confirmBtn = document.getElementById('app-modal-confirm');
-            if (titleEl) titleEl.innerText = title;
-            if (msgEl) msgEl.innerText = message;
-            if (iconEl) iconEl.innerText = icon;
-            if (cancelBtn) cancelBtn.classList.add('hidden');
-            if (confirmBtn) {
-                confirmBtn.innerText = "OK";
-                confirmBtn.className = "bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-purple-500/30";
+        // ==========================================
+        // GLOBAL FEEDBACK: toasts + inline field state
+        // One-way notifications use non-modal toasts (mobile-friendly).
+        // Only true confirmations (showAppConfirm) keep the modal.
+        // ==========================================
+        function mfEnsureFeedbackStyles() {
+            if (document.getElementById('mf-feedback-styles')) return;
+            const style = document.createElement('style');
+            style.id = 'mf-feedback-styles';
+            style.textContent = `
+                #mf-toast-root { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 8px; width: min(92vw, 440px); pointer-events: none; }
+                .mf-toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 10px; background: #1e293b; border: 1px solid #334155; border-left-width: 4px; border-radius: 12px; padding: 12px 14px; box-shadow: 0 12px 32px rgba(0,0,0,.5); color: #e2e8f0; transform: translateY(-12px); opacity: 0; transition: opacity .2s ease, transform .2s ease; }
+                .mf-toast.show { opacity: 1; transform: translateY(0); }
+                .mf-toast-icon { font-size: 18px; line-height: 1.3; flex-shrink: 0; }
+                .mf-toast-body { flex: 1; min-width: 0; }
+                .mf-toast-title { font-weight: 700; font-size: 13px; margin-bottom: 2px; color: #f1f5f9; }
+                .mf-toast-msg { font-size: 12.5px; line-height: 1.45; white-space: pre-line; color: #cbd5e1; word-break: break-word; }
+                .mf-toast-close { flex-shrink: 0; background: none; border: none; color: #94a3b8; font-size: 15px; cursor: pointer; padding: 0 2px; line-height: 1; min-height: 24px; }
+                .mf-toast-close:hover { color: #e2e8f0; }
+                .mf-toast-error { border-left-color: #ef4444; }
+                .mf-toast-warning { border-left-color: #f59e0b; }
+                .mf-toast-success { border-left-color: #22c55e; }
+                .mf-toast-info { border-left-color: #6366f1; }
+                .mf-field-invalid { border-color: #f59e0b !important; box-shadow: 0 0 0 1px #f59e0b !important; }
+                .mf-field-valid { border-color: #22c55e !important; }
+                .mf-slot-hint { display: none; margin: 6px 2px 0; font-size: 11px; line-height: 1.35; }
+                .mf-slot-hint.show { display: block; }
+                .mf-slot-hint-error { color: #fbbf24; }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function mfToastRoot() {
+            let root = document.getElementById('mf-toast-root');
+            if (!root) {
+                root = document.createElement('div');
+                root.id = 'mf-toast-root';
+                document.body.appendChild(root);
             }
-            modalConfirmCallback = () => { window.closeAppModal(); };
-            window.openAppModal();
+            return root;
+        }
+
+        const MF_TOAST_DEFAULT_DURATION = { error: 7000, warning: 5000, success: 3000, info: 4000 };
+        const MF_TOAST_DEFAULT_ICON = { error: '❌', warning: '⚠️', success: '✅', info: 'ℹ️' };
+
+        window.mfToast = function(message, opts = {}) {
+            mfEnsureFeedbackStyles();
+            const root = mfToastRoot();
+            const type = opts.type || 'info';
+            const icon = opts.icon || MF_TOAST_DEFAULT_ICON[type] || MF_TOAST_DEFAULT_ICON.info;
+            const el = document.createElement('div');
+            el.className = `mf-toast mf-toast-${type}`;
+            el.setAttribute('role', 'status');
+            el.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+            el.innerHTML = `<span class="mf-toast-icon">${icon}</span>` +
+                `<div class="mf-toast-body">${opts.title ? `<div class="mf-toast-title">${escapeHtml(opts.title)}</div>` : ''}<div class="mf-toast-msg"></div></div>` +
+                `<button type="button" class="mf-toast-close" aria-label="Dismiss">✕</button>`;
+            el.querySelector('.mf-toast-msg').textContent = message;
+            root.appendChild(el);
+            requestAnimationFrame(() => el.classList.add('show'));
+
+            let dismissed = false;
+            let timer = null;
+            const dismiss = () => {
+                if (dismissed) return;
+                dismissed = true;
+                if (timer) clearTimeout(timer);
+                el.classList.remove('show');
+                setTimeout(() => el.remove(), 220);
+            };
+            el.querySelector('.mf-toast-close').addEventListener('click', (ev) => { ev.stopPropagation(); dismiss(); });
+            el.addEventListener('click', dismiss);
+
+            const duration = opts.duration != null ? opts.duration : (MF_TOAST_DEFAULT_DURATION[type] || 4000);
+            if (duration > 0) timer = setTimeout(dismiss, duration);
+
+            // Keep the stack small; drop the oldest if we exceed 3.
+            const existing = root.querySelectorAll('.mf-toast');
+            if (existing.length > 3) existing[0].remove();
+            return el;
+        };
+
+        function mfIconToToastType(icon) {
+            if (icon === '❌' || icon === '🛑') return 'error';
+            if (icon === '✅') return 'success';
+            if (icon === '⚠️' || icon === '🔒') return 'warning';
+            return 'info';
+        }
+
+        window.showAppAlert = function(message, title = "Notice", icon = "⚠️") {
+            window.mfToast(message, { title, icon, type: mfIconToToastType(icon) });
         }
 
         window.showAppConfirm = function(message, onConfirm, title = "Confirm Action", icon = "❓", options = {}) {
@@ -6286,6 +6362,11 @@
                 mfReleaseSlotGroup(g, { hideNewMode: true });
                 delete g.dataset.confirmedNew;
             });
+            document.querySelectorAll('#view-log-match .mf-field-invalid, #view-log-match .mf-field-valid').forEach((el) => {
+                el.classList.remove('mf-field-invalid', 'mf-field-valid');
+                delete el.dataset.mfSelected;
+            });
+            document.querySelectorAll('#view-log-match .mf-slot-hint.show').forEach((el) => el.classList.remove('show'));
             mfReleaseLogMatchTouchState();
             const modal = document.getElementById('view-log-match');
             if (modal) {
@@ -6396,6 +6477,7 @@
             const newMode = group.querySelector('.new-mode');
             if (!existingMode || !newMode) return;
 
+            let fieldToRefocus = null;
             if (type === 'player') {
                 const newInput = group.querySelector('.new-player-input');
                 const localInput = group.querySelector('.local-player-input');
@@ -6406,6 +6488,7 @@
                     return;
                 }
                 if (localInput) localInput.value = name;
+                fieldToRefocus = localInput;
             } else if (type === 'deck') {
                 const newInput = group.querySelector('.new-deck-input');
                 const variantInput = group.querySelector('.new-deck-variant-input');
@@ -6420,11 +6503,128 @@
                 const variant = String(variantInput?.value || '').trim();
                 if (variant) display = `${deckName} (${variant})`;
                 if (localInput) localInput.value = display;
+                fieldToRefocus = localInput;
             }
 
             group.dataset.confirmedNew = '1';
             mfReleaseSlotGroup(group, { hideNewMode: true });
             mfReleaseLogMatchTouchState();
+
+            // Return focus to the field we just filled (without auto-opening its list).
+            // Focus synchronously to stay within the tap gesture so iOS reopens the keyboard.
+            if (fieldToRefocus) {
+                mfClearFieldError(fieldToRefocus);
+                fieldToRefocus.classList.add('mf-field-valid');
+                mfSuppressAutoDropdown = true;
+                try { fieldToRefocus.focus({ preventScroll: true }); } catch (_) {}
+                mfScrollFieldIntoView(fieldToRefocus);
+                setTimeout(() => { mfSuppressAutoDropdown = false; }, 0);
+            }
+        };
+
+        // ---- Inline field validity feedback (no modals) ----
+        function mfSlotHintEl(group, create) {
+            if (!group) return null;
+            let hint = group.querySelector(':scope > .mf-slot-hint');
+            if (!hint && create) {
+                hint = document.createElement('p');
+                hint.className = 'mf-slot-hint';
+                group.appendChild(hint);
+            }
+            return hint;
+        }
+
+        function mfSetFieldError(input, msg) {
+            if (!input) return;
+            mfEnsureFeedbackStyles();
+            input.classList.add('mf-field-invalid');
+            input.classList.remove('mf-field-valid');
+            const hint = mfSlotHintEl(input.closest('.input-slot-group'), true);
+            if (hint) {
+                hint.textContent = msg;
+                hint.classList.add('mf-slot-hint-error', 'show');
+            }
+        }
+
+        function mfClearFieldError(input) {
+            if (!input) return;
+            input.classList.remove('mf-field-invalid');
+            const hint = mfSlotHintEl(input.closest('.input-slot-group'), false);
+            if (hint) hint.classList.remove('show');
+        }
+
+        function mfMarkFieldSelected(input) {
+            if (!input) return;
+            input.dataset.mfSelected = '1';
+            input.classList.remove('mf-field-invalid');
+            mfClearFieldError(input);
+        }
+
+        function mfClearFieldSelected(input) {
+            if (!input) return;
+            input.dataset.mfSelected = '';
+            input.classList.remove('mf-field-valid');
+            mfClearFieldError(input);
+        }
+
+        // Resolve a single slot field's state. type is 'player' or 'deck'.
+        function mfSlotFieldInfo(group, dataArray, type) {
+            if (!group) return { filled: false, value: '', valid: false, isNew: false, input: null };
+            const isNew = slotUsesNewMode(group);
+            const localSel = type === 'player' ? '.local-player-input' : '.local-deck-input';
+            const local = group.querySelector(localSel);
+            if (isNew) {
+                const newSel = type === 'player' ? '.new-player-input' : '.new-deck-input';
+                const ni = group.querySelector(newSel);
+                const v = normalizeName(ni?.value);
+                return { filled: !!v, value: v, valid: !!v, isNew: true, input: local || ni };
+            }
+            const v = normalizeName(local?.value);
+            const selected = local?.dataset.mfSelected === '1';
+            const match = !!v && (dataArray || []).some(x => String(x.name).toLowerCase() === v.toLowerCase());
+            return { filled: !!v, value: v, valid: !!v && (selected || match), isNew: false, input: local };
+        }
+
+        // Strict validation: existing-mode fields must be a real selection;
+        // creation only happens through the + New flow. Returns inline errors.
+        window.mfValidateMatchForm = function() {
+            document.querySelectorAll('#view-log-match .mf-field-invalid').forEach(mfClearFieldError);
+            const issues = [];
+            let firstInvalid = null;
+            const addIssue = (input, msg) => {
+                issues.push(msg);
+                if (input) {
+                    mfSetFieldError(input, msg);
+                    if (!firstInvalid) firstInvalid = input;
+                }
+            };
+            let validWinners = 0;
+            const sections = [
+                { sel: '.winner-slot', label: 'Victor' },
+                { sel: '.loser-slot', label: 'Fallen' }
+            ];
+            sections.forEach(sec => {
+                document.querySelectorAll('#view-log-match ' + sec.sel).forEach((slot, idx) => {
+                    const num = idx + 1;
+                    const pg = slot.querySelector('.input-slot-group[data-type="player"]');
+                    const dg = slot.querySelector('.input-slot-group[data-type="deck"]');
+                    const p = mfSlotFieldInfo(pg, window.appData.players, 'player');
+                    const d = mfSlotFieldInfo(dg, window.appData.commanders, 'deck');
+                    if (!p.filled && !d.filled) return; // empty seat is fine
+
+                    if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), `${sec.label} ${num}: add a player.`);
+                    else if (!p.valid) addIssue(p.input, `${sec.label} ${num}: "${p.value}" isn't a saved player — pick it from the list, or tap + New to create them.`);
+
+                    if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), `${sec.label} ${num}: add a deck.`);
+                    else if (!d.valid) addIssue(d.input, `${sec.label} ${num}: "${d.value}" isn't a saved deck — pick it from the list, or tap + New to create it.`);
+
+                    if (sec.label === 'Victor' && p.valid && d.valid) validWinners++;
+                });
+            });
+            if (validWinners === 0 && issues.length === 0) {
+                issues.push('Add at least one Victor with a player and a deck.');
+            }
+            return { ok: issues.length === 0 && validWinners > 0, issues, firstInvalid };
         };
 
         function extractSlotData(container) {
@@ -6461,6 +6661,17 @@
                 window.showAppAlert('Sign in to log matches.', 'View only', '🔒');
                 return;
             }
+
+            // Strict, non-modal validation: every filled pod needs a real player
+            // and deck. Highlights the offending fields inline.
+            const validation = window.mfValidateMatchForm();
+            if (!validation.ok) {
+                if (validation.firstInvalid) mfScrollFieldIntoView(validation.firstInvalid);
+                const more = validation.issues.length > 1 ? ` (+${validation.issues.length - 1} more)` : '';
+                window.showAppAlert((validation.issues[0] || 'Some pods are missing a player or deck.') + more, 'Check your pods', '⚠️');
+                return;
+            }
+
             const btn = event.target;
             const originalText = btn.innerText;
             btn.innerText = "Saving to Database...";
@@ -6563,7 +6774,7 @@
                 }, 800);
             } catch(e) {
                 console.error(e);
-                window.showAppAlert("Failed to save match: Make sure all dropdowns are filled out!", "Missing Info", "⚠️");
+                window.showAppAlert("Couldn't save the match. Make sure every pod has a saved player and deck selected.", "Missing Info", "⚠️");
                 btn.innerText = originalText;
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
@@ -6619,6 +6830,21 @@
             }
         });
         
+        // Route an unmatched search straight into the + New flow, prefilled.
+        function mfStartNewFromQuery(input, isDeck, query) {
+            const group = input.closest('.input-slot-group');
+            if (!group) return;
+            const newBtn = group.querySelector('.existing-mode button');
+            if (!newBtn) return;
+            window.toggleNewMode(newBtn);
+            const newInput = group.querySelector(isDeck ? '.new-deck-input' : '.new-player-input');
+            if (newInput) {
+                newInput.value = query;
+                try { newInput.focus({ preventScroll: true }); } catch (_) {}
+                if (isDeck) window.queueScryfallAutocomplete(newInput);
+            }
+        }
+
         window.renderLocalDropdown = function(input, dataArray, isDeck) {
             const slotGroup = mfGetDropdownHost(input);
             const useFloating = mfIsLogMatchAutocompleteInput(input);
@@ -6654,10 +6880,22 @@
             dropdown.className = useFloating ? dropdownClass : dropdownClass + ' absolute z-[200] mt-2';
 
             if (filtered.length === 0) {
-                const li = document.createElement('li');
-                li.className = 'dropdown-empty px-4 py-3 text-sm border-b border-slate-700/50 last:border-0';
-                li.textContent = isDeck ? 'No decks match your search' : 'No players match your search';
-                dropdown.appendChild(li);
+                const isOwner = input.classList.contains('local-owner-input');
+                const rawQuery = String(input.value || '').trim();
+                if (!isOwner && rawQuery) {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 text-sm text-purple-300 hover:bg-purple-600 hover:text-white cursor-pointer transition flex items-center gap-2 touch-manipulation';
+                    li.innerHTML = `<span class="text-base leading-none">+</span><span class="truncate">Create <span class="font-semibold">"${escapeHtml(rawQuery)}"</span> as new ${isDeck ? 'deck' : 'player'}</span>`;
+                    mfBindDropdownPick(li, input, () => {
+                        mfStartNewFromQuery(input, isDeck, rawQuery);
+                    });
+                    dropdown.appendChild(li);
+                } else {
+                    const li = document.createElement('li');
+                    li.className = 'dropdown-empty px-4 py-3 text-sm border-b border-slate-700/50 last:border-0';
+                    li.textContent = isDeck ? 'No decks match your search' : 'No players match your search';
+                    dropdown.appendChild(li);
+                }
             } else {
                 filtered.forEach(item => {
                     const li = document.createElement('li');
@@ -6672,8 +6910,9 @@
 
                     mfBindDropdownPick(li, input, () => {
                         input.value = item.name;
-                        const group = mfGetDropdownHost(input);
-                        if (group?.classList.contains('input-slot-group')) delete group.dataset.confirmedNew;
+                        mfMarkFieldSelected(input);
+                        const group = input.closest('.input-slot-group');
+                        if (group) delete group.dataset.confirmedNew;
                     });
                     dropdown.appendChild(li);
                 });
@@ -6787,6 +7026,7 @@
                     mfScheduleFocusTimer(() => mfScrollFieldIntoView(e.target), 0);
                 }
             }
+            if (mfSuppressAutoDropdown) return;
             if (e.target && e.target.classList.contains('local-player-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
             if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, window.appData.commanders, true); }
             if (e.target && e.target.classList.contains('local-owner-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
@@ -6794,6 +7034,13 @@
         });
 
         document.addEventListener('input', function(e) {
+            const t = e.target;
+            if (t && (t.classList.contains('local-player-input') || t.classList.contains('local-deck-input') || t.classList.contains('local-owner-input'))) {
+                // Manual typing invalidates a prior pick: existing-mode is pick-only.
+                mfClearFieldSelected(t);
+                const grp = t.closest('.input-slot-group');
+                if (grp) delete grp.dataset.confirmedNew;
+            }
             if (e.target && e.target.classList.contains('local-player-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
             if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, window.appData.commanders, true); }
             if (e.target && e.target.classList.contains('local-owner-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
