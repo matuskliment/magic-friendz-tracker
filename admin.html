@@ -16,8 +16,21 @@
             <button id="sign-out-btn" class="hidden bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-4 py-2 rounded-lg text-sm font-bold transition">Sign out</button>
         </header>
 
-        <section id="login-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 max-w-md mx-auto">
+        <section id="auth-loading" class="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md mx-auto text-center">
+            <div class="w-8 h-8 mx-auto mb-4 rounded-full border-2 border-slate-600 border-t-purple-400 animate-spin" aria-hidden="true"></div>
+            <p class="text-sm font-semibold text-slate-200">Connecting to Firebase…</p>
+            <p class="text-xs text-slate-500 mt-2">Use <span class="font-mono text-slate-400">/admin.html</span> locally (not <span class="font-mono text-slate-400">/admin</span> unless your server redirects).</p>
+        </section>
+
+        <section id="boot-error-card" class="hidden bg-red-950/40 border border-red-500/30 rounded-2xl p-5 md:p-6 max-w-lg mx-auto">
+            <h2 class="text-lg font-bold text-red-300 mb-2">Something went wrong</h2>
+            <p id="boot-error-message" class="text-sm text-red-200/90 whitespace-pre-wrap"></p>
+            <button type="button" id="boot-error-retry" class="mt-4 bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 px-4 py-2 rounded-lg text-sm font-bold transition">Show login</button>
+        </section>
+
+        <section id="login-card" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 max-w-md mx-auto">
             <h2 class="text-lg font-bold text-white mb-4">Admin Login</h2>
+            <p class="text-xs text-slate-500 mb-4">Backoffice uses <span class="text-slate-300 font-semibold">email + password</span> (not the magic link from the main app).</p>
             <div class="space-y-3">
                 <input id="email-input" type="email" placeholder="Email" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-purple-500">
                 <input id="password-input" type="password" placeholder="Password" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-purple-500">
@@ -158,6 +171,10 @@
         const auth = getAuth(app);
 
         const els = {
+            authLoading: document.getElementById('auth-loading'),
+            bootErrorCard: document.getElementById('boot-error-card'),
+            bootErrorMessage: document.getElementById('boot-error-message'),
+            bootErrorRetry: document.getElementById('boot-error-retry'),
             loginCard: document.getElementById('login-card'),
             unauthorizedCard: document.getElementById('unauthorized-card'),
             dashboard: document.getElementById('dashboard'),
@@ -241,6 +258,50 @@
             els.loginStatus.className = `text-xs mt-3 ${isError ? 'text-red-300' : 'text-slate-400'}`;
         }
 
+        function hideAllMainPanels() {
+            els.authLoading?.classList.add('hidden');
+            els.bootErrorCard?.classList.add('hidden');
+            els.loginCard?.classList.add('hidden');
+            els.unauthorizedCard?.classList.add('hidden');
+            els.dashboard?.classList.add('hidden');
+            els.signOutBtn?.classList.add('hidden');
+        }
+
+        function showBootError(message) {
+            hideAllMainPanels();
+            if (els.bootErrorMessage) els.bootErrorMessage.textContent = message;
+            els.bootErrorCard?.classList.remove('hidden');
+        }
+
+        function showAuthLoading() {
+            hideAllMainPanels();
+            els.authLoading?.classList.remove('hidden');
+        }
+
+        function showLoginPanel() {
+            hideAllMainPanels();
+            els.loginCard?.classList.remove('hidden');
+        }
+
+        function showUnauthorizedPanel() {
+            hideAllMainPanels();
+            els.unauthorizedCard?.classList.remove('hidden');
+            els.signOutBtn?.classList.remove('hidden');
+        }
+
+        function showDashboardPanel() {
+            hideAllMainPanels();
+            els.dashboard?.classList.remove('hidden');
+            els.signOutBtn?.classList.remove('hidden');
+        }
+
+        if (els.bootErrorRetry) {
+            els.bootErrorRetry.addEventListener('click', () => {
+                showLoginPanel();
+                showLoginStatus('Sign in with your admin email and password.', false);
+            });
+        }
+
         async function isCurrentUserAdmin(user) {
             if (!user) return false;
             const adminSnap = await getDoc(doc(db, 'admins', user.uid));
@@ -306,13 +367,20 @@
         }
 
         async function loadGroupsOverview() {
+            els.groupsTbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 text-sm">Loading groups…</td></tr>`;
             const groupSnap = await getDocs(collection(db, 'groups'));
             const groups = [];
             let totalMatches = 0;
             let totalRoster = 0;
+            const docs = groupSnap.docs;
+            const total = docs.length;
 
-            for (const g of groupSnap.docs) {
+            for (let i = 0; i < docs.length; i++) {
+                const g = docs[i];
                 const groupId = g.id;
+                if (total > 3) {
+                    els.groupsTbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 text-sm">Loading groups (${i + 1}/${total})…</td></tr>`;
+                }
                 const [matchesSnap, rosterSnap] = await Promise.all([
                     getDocs(collection(db, 'groups', groupId, 'matches')),
                     getDocs(collection(db, 'groups', groupId, 'roster'))
@@ -663,21 +731,52 @@
             if (!els.feedbackList) return;
             els.feedbackList.innerHTML = '<p class="text-slate-500 text-sm py-4">Loading feedback…</p>';
             try {
-                const snap = await getDocs(query(collection(db, 'feedback'), orderBy('createdAt', 'desc')));
+                let snap;
+                try {
+                    snap = await getDocs(query(collection(db, 'feedback'), orderBy('createdAt', 'desc')));
+                } catch (indexErr) {
+                    if (indexErr?.code === 'failed-precondition') {
+                        snap = await getDocs(collection(db, 'feedback'));
+                    } else {
+                        throw indexErr;
+                    }
+                }
                 feedbackItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                feedbackItems.sort((a, b) => {
+                    const ta = a.createdAt?.toMillis?.() ?? a.createdAt ?? 0;
+                    const tb = b.createdAt?.toMillis?.() ?? b.createdAt ?? 0;
+                    return tb - ta;
+                });
+                feedbackPage = 0;
                 renderFeedbackList();
             } catch (e) {
+                console.error('loadFeedback failed:', e);
                 els.feedbackList.innerHTML = `<p class="text-red-300 text-sm py-4">Failed to load feedback: ${escapeHtml(e.message)}</p>`;
                 if (els.feedbackStat) els.feedbackStat.textContent = 'Error loading feedback';
             }
         }
 
         async function initializeDashboard() {
-            await loadGroupsOverview();
-            await loadFeedback();
             setActionButtonsEnabled(false);
             els.selectedGroupLabel.textContent = 'Select a group on the left.';
             els.ownershipList.innerHTML = 'Select a group to load deck ownership.';
+            const [groupsResult, feedbackResult] = await Promise.allSettled([
+                loadGroupsOverview(),
+                loadFeedback()
+            ]);
+            const errors = [];
+            if (groupsResult.status === 'rejected') {
+                console.error('loadGroupsOverview failed:', groupsResult.reason);
+                errors.push('Groups: ' + (groupsResult.reason?.message || groupsResult.reason));
+                els.groupsTbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-red-300 text-sm">Failed to load groups. Check Firestore rules and admin access.</td></tr>`;
+            }
+            if (feedbackResult.status === 'rejected') {
+                console.error('loadFeedback failed:', feedbackResult.reason);
+                errors.push('Feedback: ' + (feedbackResult.reason?.message || feedbackResult.reason));
+            }
+            if (errors.length) {
+                showLoginStatus('Partial load: ' + errors.join(' · '), true);
+            }
         }
 
         if (els.feedbackSearch) {
@@ -808,30 +907,62 @@
             els.deleteGroupBtn.disabled = false;
         });
 
-        onAuthStateChanged(auth, async (user) => {
+        async function handleAuthUser(user) {
             currentUser = user;
-            els.loginCard.classList.add('hidden');
-            els.unauthorizedCard.classList.add('hidden');
-            els.dashboard.classList.add('hidden');
-            els.signOutBtn.classList.add('hidden');
-
             if (!user) {
-                els.loginCard.classList.remove('hidden');
-                showLoginStatus('');
+                showLoginPanel();
+                showLoginStatus('Sign in with the Firebase email/password for your admin account.', false);
                 return;
             }
 
-            const isAdmin = await isCurrentUserAdmin(user);
+            let isAdmin = false;
+            try {
+                isAdmin = await isCurrentUserAdmin(user);
+            } catch (e) {
+                console.error('Admin check failed:', e);
+                showBootError(
+                    'Could not verify admin access.\n\n' +
+                    (e?.message || e) +
+                    '\n\nIf you use magic-link sign-in on the main app, sign out there and use email + password here. ' +
+                    'Your uid must exist in Firestore admins/{uid}.'
+                );
+                return;
+            }
+
             if (!isAdmin) {
-                els.unauthorizedCard.classList.remove('hidden');
-                els.signOutBtn.classList.remove('hidden');
+                showUnauthorizedPanel();
                 return;
             }
 
-            els.signOutBtn.classList.remove('hidden');
-            els.dashboard.classList.remove('hidden');
-            await initializeDashboard();
+            showDashboardPanel();
+            try {
+                await initializeDashboard();
+            } catch (e) {
+                console.error('initializeDashboard failed:', e);
+                showLoginStatus('Dashboard error: ' + (e?.message || e), true);
+            }
+        }
+
+        showAuthLoading();
+
+        onAuthStateChanged(auth, (user) => {
+            handleAuthUser(user).catch((e) => {
+                console.error('Auth handler failed:', e);
+                showBootError('Unexpected error: ' + (e?.message || e));
+            });
         });
+
+        setTimeout(() => {
+            if (els.authLoading && !els.authLoading.classList.contains('hidden')) {
+                showBootError(
+                    'Firebase auth is taking too long.\n\n' +
+                    '• Open http://localhost:3000/admin.html (not /admin)\n' +
+                    '• Add localhost to Firebase Auth → Authorized domains\n' +
+                    '• Disable ad blockers for this page\n' +
+                    '• Check the browser console (F12) for errors'
+                );
+            }
+        }, 12000);
     </script>
 </body>
 </html>
