@@ -920,6 +920,7 @@
         const db = getFirestore(app);
 
         const AUTH_EMAIL_KEY = 'mf_email_for_sign_in';
+        const AUTH_DEBUG_LINK_KEY = 'mf_debug_link_id';
         const PENDING_CREATE_GROUP_KEY = 'mf_pending_create_group';
         const PENDING_CREATE_NAME_KEY = 'mf_pending_create_display_name';
         const LAST_GROUP_KEY = 'mf_last_group_slug';
@@ -970,12 +971,13 @@
             return `${origin}${pathname}/groups.html`;
         }
 
-        function getAuthContinueUrl(groupId, signInEmail = '') {
+        function getAuthContinueUrl(groupId, signInEmail = '', debugLinkId = '') {
             const base = groupId ? `${window.location.origin}${window.location.pathname}` : getGroupsHubUrl();
             const params = new URLSearchParams();
             if (groupId) params.set('group', groupId);
             const normalized = normalizeEmail(signInEmail);
             if (normalized) params.set('si', normalized);
+            if (debugLinkId) params.set('dbg', String(debugLinkId));
             const qs = params.toString();
             return qs ? `${base}?${qs}` : base;
         }
@@ -1075,7 +1077,7 @@
 
         async function tryCompleteEmailSignIn() {
             // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H1',location:'index.html:tryCompleteEmailSignIn:entry',message:'entered email-link completion',data:{href:window.location.href,isEmailLink:isSignInWithEmailLink(auth, window.location.href),groupIdRaw:window.groupIdRaw||''},timestamp:Date.now()})}).catch(()=>{});
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run4',hypothesisId:'H7',location:'index.html:tryCompleteEmailSignIn:entry',message:'entered email-link completion',data:{href:window.location.href,path:window.location.pathname,isEmailLink:isSignInWithEmailLink(auth, window.location.href),groupIdRaw:window.groupIdRaw||'',dbgParam:(()=>{try{return new URLSearchParams(window.location.search).get('dbg')||'';}catch(_){return'';}})(),dbgExpected:window.localStorage.getItem(AUTH_DEBUG_LINK_KEY)||''},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
             if (!isSignInWithEmailLink(auth, window.location.href)) {
                 window.pendingEmailLinkUrl = '';
@@ -1610,8 +1612,10 @@
                 return;
             }
             const groupId = resolveSignInGroupId();
+            const debugLinkId = String(Date.now());
+            window.localStorage.setItem(AUTH_DEBUG_LINK_KEY, debugLinkId);
             // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run2',hypothesisId:'H3',location:'index.html:sendSignInLink:beforeSend',message:'building email-link continue url',data:{fromLanding,groupIdResolved:groupId||'',groupIdRaw:window.groupIdRaw||'',continueUrl:getAuthContinueUrl(groupId || null, email)},timestamp:Date.now()})}).catch(()=>{});
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run4',hypothesisId:'H8',location:'index.html:sendSignInLink:beforeSend',message:'building email-link continue url',data:{fromLanding,groupIdResolved:groupId||'',groupIdRaw:window.groupIdRaw||'',debugLinkId,continueUrl:getAuthContinueUrl(groupId || null, email, debugLinkId)},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
             if (!groupId && !fromLanding) {
                 if (status) {
@@ -1630,7 +1634,7 @@
             try {
                 window.localStorage.setItem(AUTH_EMAIL_KEY, email);
                 await sendSignInLinkToEmail(auth, email, {
-                    url: getAuthContinueUrl(groupId || null, email),
+                    url: getAuthContinueUrl(groupId || null, email, debugLinkId),
                     handleCodeInApp: true
                 });
                 showSignInLinkSent(fromLanding, email);

@@ -73,7 +73,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getFirestore, collection, collectionGroup, doc, getDoc, getDocs, query, setDoc, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -89,6 +89,12 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const AUTH_EMAIL_KEY = 'mf_email_for_sign_in';
+        const AUTH_DEBUG_LINK_KEY = 'mf_debug_link_id';
+
+        // #region agent log
+        fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run4',hypothesisId:'H9',location:'groups.html:script:init',message:'groups script loaded',data:{href:window.location.href,path:window.location.pathname,dbgParam:(()=>{try{return new URLSearchParams(window.location.search).get('dbg')||'';}catch(_){return'';}})(),dbgExpected:window.localStorage.getItem(AUTH_DEBUG_LINK_KEY)||''},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
 
         const loadingView = document.getElementById('loading-view');
         const groupsView = document.getElementById('groups-view');
@@ -125,6 +131,42 @@
 
         function appGroupUrl(groupId) {
             return `${indexBasePath()}?group=${encodeURIComponent(groupId)}`;
+        }
+
+        function stripAuthParamsFromGroupsUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                ['oobCode', 'apiKey', 'mode', 'lang', 'si'].forEach((k) => params.delete(k));
+                const next = window.location.pathname;
+                window.history.replaceState({}, '', next);
+            } catch (_) {}
+        }
+
+        async function tryCompleteEmailSignInOnGroups() {
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run3',hypothesisId:'H5',location:'groups.html:tryCompleteEmailSignInOnGroups:entry',message:'entered groups email-link completion',data:{href:window.location.href,isEmailLink:isSignInWithEmailLink(auth, window.location.href)},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+            if (!isSignInWithEmailLink(auth, window.location.href)) return false;
+            let email = window.localStorage.getItem(AUTH_EMAIL_KEY);
+            if (!email) {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const encoded = params.get('si');
+                    const fromUrl = normalizeEmail(encoded ? decodeURIComponent(encoded) : '');
+                    if (fromUrl) {
+                        email = fromUrl;
+                        window.localStorage.setItem(AUTH_EMAIL_KEY, email);
+                    }
+                } catch (_) {}
+            }
+            if (!email) return false;
+            await signInWithEmailLink(auth, email, window.location.href);
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run3',hypothesisId:'H5',location:'groups.html:tryCompleteEmailSignInOnGroups:afterSignIn',message:'groups email-link sign-in succeeded',data:{emailPresent:!!email},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+            window.localStorage.removeItem(AUTH_EMAIL_KEY);
+            stripAuthParamsFromGroupsUrl();
+            return true;
         }
 
         function sleep(ms) {
@@ -258,7 +300,14 @@
             }
         }
 
-        onAuthStateChanged(auth, async (user) => {
+        (async function bootstrapGroups() {
+            try {
+                await tryCompleteEmailSignInOnGroups();
+            } catch (_) {}
+            onAuthStateChanged(auth, async (user) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run3',hypothesisId:'H6',location:'groups.html:onAuthStateChanged:entry',message:'groups auth state changed',data:{hasUser:!!user,userUid:user?.uid||''},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (!user) {
                 window.location.replace(indexBasePath());
                 return;
@@ -285,7 +334,8 @@
                 return;
             }
             noGroupsView.classList.remove('hidden');
-        });
+            });
+        })();
 
         createButton.addEventListener('click', async () => {
             const user = auth.currentUser;
