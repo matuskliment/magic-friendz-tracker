@@ -920,6 +920,7 @@
         let authReady = false;
         let rosterSyncTimer = null;
         let rosterSyncInFlight = false;
+        window.pendingEmailLinkUrl = '';
         window.rosterInviteOpen = new Set();
         window.rosterInviteFlash = {};
         window.rosterInviteFlash = {};
@@ -1037,19 +1038,24 @@
         }
 
         async function tryCompleteEmailSignIn() {
-            if (!isSignInWithEmailLink(auth, window.location.href)) return false;
+            if (!isSignInWithEmailLink(auth, window.location.href)) {
+                window.pendingEmailLinkUrl = '';
+                return false;
+            }
+            window.pendingEmailLinkUrl = window.location.href;
             let email = window.localStorage.getItem(AUTH_EMAIL_KEY);
             const onLanding = !window.groupIdRaw;
             if (!email) {
                 openSignInPanelForContext(onLanding);
                 setSignInPanelError(
                     onLanding,
-                    'Enter the same email you used for the magic link, then tap Send magic link.'
+                    'Enter the same email you used for this magic link, then tap Send magic link to finish signing in. No new email is sent.'
                 );
                 return false;
             }
             await signInWithEmailLink(auth, email, window.location.href);
             window.localStorage.removeItem(AUTH_EMAIL_KEY);
+            window.pendingEmailLinkUrl = '';
             stripAuthParamsFromUrl();
             return true;
         }
@@ -1385,6 +1391,32 @@
                 return;
             }
             clearFieldError(input);
+            const pendingEmailLinkUrl = window.pendingEmailLinkUrl || (isSignInWithEmailLink(auth, window.location.href) ? window.location.href : '');
+            if (pendingEmailLinkUrl && !options.resend) {
+                if (btn) btn.disabled = true;
+                if (status) {
+                    status.textContent = 'Signing you in…';
+                    status.classList.remove('hidden', 'text-red-400/90');
+                    status.classList.add('text-slate-400');
+                }
+                try {
+                    window.localStorage.setItem(AUTH_EMAIL_KEY, email);
+                    await signInWithEmailLink(auth, email, pendingEmailLinkUrl);
+                    window.localStorage.removeItem(AUTH_EMAIL_KEY);
+                    window.pendingEmailLinkUrl = '';
+                    stripAuthParamsFromUrl();
+                    if (status) status.classList.add('hidden');
+                } catch (e) {
+                    console.error(e);
+                    if (status) {
+                        status.textContent = getFriendlyAuthLinkError(e);
+                        status.classList.remove('hidden', 'text-slate-400');
+                        status.classList.add('text-red-400/90');
+                    }
+                    if (btn) btn.disabled = false;
+                }
+                return;
+            }
             const groupId = resolveSignInGroupId();
             if (!groupId && !fromLanding) {
                 if (status) {
