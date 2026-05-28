@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.5.5">
+    <meta name="mf-app-version" content="1.5.6">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -846,6 +846,10 @@
                         <p class="text-xs text-slate-400">Permanently remove all match history for this group. Cannot be undone.</p>
                         <button type="button" onclick="window.wipeGroupData()" class="w-full bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition">Wipe all match history</button>
                     </div>
+                </div>
+                <div class="pt-2 pb-6 text-center">
+                    <p class="text-[11px] text-slate-500">Magic Friendz Tracker</p>
+                    <p class="text-[11px] text-slate-600 mt-0.5">Version <span id="settings-app-version" class="font-mono text-slate-500">—</span></p>
                 </div>
             </div>
         </div>
@@ -3219,6 +3223,17 @@
         }
 
         const MF_APP_VERSION = document.querySelector('meta[name="mf-app-version"]')?.content || '1.1.0';
+        (function showAppVersionInSettings() {
+            const setVersion = () => {
+                const el = document.getElementById('settings-app-version');
+                if (el) el.textContent = MF_APP_VERSION;
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setVersion);
+            } else {
+                setVersion();
+            }
+        })();
         const ART_CACHE_KEY = 'mf_art_cache_v8';
         const ART_CACHE_SCHEMA_KEY = 'mf_art_cache_schema';
         const ART_CACHE_SCHEMA = 8;
