@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.5.3">
+    <meta name="mf-app-version" content="1.5.4">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -2883,7 +2883,7 @@
             } catch (_) {}
             const anchorId = field.dataset.mfInputAnchorId;
             if (anchorId) {
-                const dd = document.querySelector(`#view-log-match .mf-floating-dropdown[data-mf-anchor="${anchorId}"]`);
+                const dd = document.querySelector(`.mf-floating-dropdown[data-mf-anchor="${anchorId}"]`);
                 if (dd) mfPositionFloatingDropdown(field, dd);
             }
         }
@@ -2919,6 +2919,8 @@
         function mfReleaseSheetTouchState(sheet) {
             const targetSheet = sheet || mfGetOpenOverlaySheetEl();
             mfCleanupFocusSideEffects();
+            // Floating dropdowns are mounted on <body>, so clear them globally too.
+            document.querySelectorAll('.mf-floating-dropdown').forEach((d) => d.remove());
             if (!targetSheet) return;
             targetSheet.querySelectorAll('.custom-dropdown, .mf-floating-dropdown').forEach((d) => d.remove());
             targetSheet.querySelectorAll('.input-slot-group, .mf-search-wrap').forEach((g) => {
@@ -2962,7 +2964,7 @@
         }
 
         function mfRepositionFloatingDropdowns() {
-            document.querySelectorAll('#view-log-match .mf-floating-dropdown').forEach((dd) => {
+            document.querySelectorAll('.mf-floating-dropdown').forEach((dd) => {
                 const anchorId = dd.dataset.mfAnchor;
                 if (!anchorId) return;
                 const input = document.querySelector(`#view-log-match [data-mf-input-anchor-id="${anchorId}"]`);
@@ -3019,7 +3021,7 @@
             const anchors = slotGroup.querySelectorAll('[data-mf-input-anchor-id]');
             for (const inp of anchors) {
                 const id = inp.dataset.mfInputAnchorId;
-                if (id && document.querySelector(`#view-log-match .mf-floating-dropdown[data-mf-anchor="${id}"]`)) return true;
+                if (id && document.querySelector(`.mf-floating-dropdown[data-mf-anchor="${id}"]`)) return true;
             }
             return false;
         }
@@ -3028,7 +3030,7 @@
             if (!input) return;
             const anchorId = input.dataset.mfInputAnchorId;
             if (anchorId) {
-                document.querySelectorAll(`#view-log-match .mf-floating-dropdown[data-mf-anchor="${anchorId}"]`).forEach((d) => d.remove());
+                document.querySelectorAll(`.mf-floating-dropdown[data-mf-anchor="${anchorId}"]`).forEach((d) => d.remove());
             }
             input.parentElement?.querySelector('.custom-dropdown')?.remove();
             const slotGroup = mfGetDropdownHost(input);
@@ -3038,7 +3040,7 @@
         }
 
         function mfDismissAllLogMatchFloatingDropdowns() {
-            document.querySelectorAll('#view-log-match .mf-floating-dropdown').forEach((d) => d.remove());
+            document.querySelectorAll('.mf-floating-dropdown').forEach((d) => d.remove());
             document.querySelectorAll('#view-log-match .custom-dropdown').forEach((d) => d.remove());
             document.querySelectorAll('#view-log-match .input-slot-group, #view-log-match .mf-search-wrap').forEach((g) => {
                 g.classList.remove('mf-slot-active');
@@ -3074,7 +3076,9 @@
             dropdown.classList.add('mf-floating-dropdown', 'fixed', 'z-[300]');
             dropdown.dataset.mfAnchor = anchorId;
             dropdown.dataset.mfFloatingDropdown = '1';
-            document.getElementById('view-log-match')?.appendChild(dropdown);
+            // Mount on body: the sheet has a CSS transform, which would otherwise
+            // become the containing block for position:fixed and offset the dropdown.
+            document.body.appendChild(dropdown);
             mfPositionFloatingDropdown(input, dropdown);
             const slotGroup = mfGetDropdownHost(input);
             if (slotGroup) slotGroup.classList.add('mf-slot-active');
