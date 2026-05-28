@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.5.9">
+    <meta name="mf-app-version" content="1.6.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3003,14 +3003,16 @@
             }
             document.getElementById('log-match-scroll')?.addEventListener('scroll', mfRepositionFloatingDropdowns, { passive: true });
 
-            // Tap anywhere that isn't a dropdown or an autocomplete field → close all dropdowns.
-            const dismissOnOutsidePointer = (e) => {
+            // Tap (not scroll) anywhere that isn't a dropdown or an autocomplete field
+            // → close all dropdowns. Using 'click' (not 'pointerdown') so scrolling the
+            // sheet keeps the list open; a scroll gesture never fires a click.
+            const dismissOnOutsideTap = (e) => {
                 if (!document.querySelector('.mf-floating-dropdown')) return;
                 const t = e.target;
                 if (t.closest && (t.closest('.mf-floating-dropdown') || mfIsLogMatchAutocompleteInput(t))) return;
                 mfDismissAllLogMatchFloatingDropdowns();
             };
-            document.addEventListener('pointerdown', dismissOnOutsidePointer, true);
+            document.addEventListener('click', dismissOnOutsideTap, true);
         }
 
         function mfGetDropdownHost(input) {
