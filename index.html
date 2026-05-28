@@ -90,6 +90,15 @@
                         <p class="text-sm text-emerald-300/90 mb-3">Signed in as <span id="landing-signed-in-email" class="font-semibold text-white"></span></p>
                         <button type="button" onclick="window.openGroupModal()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Enter a group →</button>
                     </div>
+                    <div id="landing-my-groups" class="hidden mt-6 p-4 rounded-xl border border-purple-500/30 bg-purple-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
+                        <p class="text-sm text-purple-200">Signed in as <span id="landing-my-groups-email" class="font-semibold text-white"></span></p>
+                        <p class="text-xs text-slate-400">Choose a group:</p>
+                        <div id="landing-my-groups-list" class="space-y-2"></div>
+                        <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                            <button type="button" onclick="window.startCreateGroupFromNoAccess()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition min-h-[42px] touch-manipulation">Create a group</button>
+                            <button type="button" onclick="window.authSignOut()" class="flex-1 bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-slate-200 px-4 py-2.5 rounded-lg text-sm font-bold transition min-h-[42px] touch-manipulation">Use different email</button>
+                        </div>
+                    </div>
                     <div id="landing-no-access" class="hidden mt-6 p-4 rounded-xl border border-amber-500/35 bg-amber-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
                         <p class="text-sm text-amber-200">Signed in as <span id="landing-no-access-email" class="font-semibold text-white"></span></p>
                         <p class="text-sm text-slate-300">This email is not linked to any group yet.</p>
@@ -1368,17 +1377,35 @@
             const panel = document.getElementById('landing-sign-in-panel');
             const signedIn = document.getElementById('landing-signed-in');
             const signedInEmail = document.getElementById('landing-signed-in-email');
+            const myGroups = document.getElementById('landing-my-groups');
+            const myGroupsEmail = document.getElementById('landing-my-groups-email');
+            const myGroupsList = document.getElementById('landing-my-groups-list');
             const noAccess = document.getElementById('landing-no-access');
             const noAccessEmail = document.getElementById('landing-no-access-email');
             const hasUser = !!window.currentUser;
+            const showMyGroups = hasUser && !window.groupIdRaw && Array.isArray(window.accessibleGroups) && window.accessibleGroups.length > 1;
             const showNoAccess = hasUser && !window.groupIdRaw && window.userHasAnyGroupAccess === false;
 
             if (loginNav) loginNav.classList.toggle('hidden', hasUser);
             if (loginHero) loginHero.classList.toggle('hidden', hasUser);
             if (panel && hasUser) panel.classList.add('hidden');
             if (signedIn) {
-                signedIn.classList.toggle('hidden', !hasUser || showNoAccess);
+                signedIn.classList.toggle('hidden', !hasUser || showNoAccess || showMyGroups);
                 if (hasUser && signedInEmail) signedInEmail.textContent = window.currentUser.email || '';
+            }
+            if (myGroups) {
+                myGroups.classList.toggle('hidden', !showMyGroups);
+                if (showMyGroups && myGroupsEmail) myGroupsEmail.textContent = window.currentUser.email || '';
+                if (showMyGroups && myGroupsList) {
+                    myGroupsList.innerHTML = window.accessibleGroups.map(g => {
+                        const label = escapeHtml(g.name || g.id);
+                        const role = g.role === 'owner' ? 'Owner' : 'Can edit';
+                        return `<button type="button" onclick="window.openAccessibleGroupFromLanding('${escapeJsString(g.id)}')" class="w-full text-left bg-slate-900/80 hover:bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 transition">
+                            <span class="block text-sm font-bold text-white truncate">${label}</span>
+                            <span class="block text-[11px] text-slate-400">${role}</span>
+                        </button>`;
+                    }).join('');
+                }
             }
             if (noAccess) {
                 noAccess.classList.toggle('hidden', !showNoAccess);
@@ -1416,7 +1443,18 @@
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
-                return Array.from(groupsById.values());
+                const entries = Array.from(groupsById.values());
+                const names = await Promise.all(entries.map(async g => {
+                    try {
+                        const snap = await getDoc(doc(db, 'groups', g.id));
+                        if (snap.exists()) {
+                            const data = snap.data() || {};
+                            return { ...g, name: data.name || g.id };
+                        }
+                    } catch (_) {}
+                    return { ...g, name: g.id };
+                }));
+                return names.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
             } catch (error) {
                 console.warn('Could not check global group access:', error);
                 return null;
@@ -1426,6 +1464,12 @@
         window.startCreateGroupFromNoAccess = function() {
             window.openGroupModal();
             setTimeout(() => window.showCreateGroupPanel(), 50);
+        };
+
+        window.openAccessibleGroupFromLanding = function(groupId) {
+            const formatted = formatGroupSlug(groupId || '');
+            if (!formatted) return;
+            softRouteToGroup(formatted, null, 'View stats');
         };
 
         window.toggleLandingSignIn = function() {
