@@ -78,6 +78,27 @@ service cloud.firestore {
         && groupDoc(groupId).data.ownerEmail == authEmailLower();
     }
 
+    // Collection-group queries (groups.html / index group discovery).
+    match /{path=**}/members/{memberId} {
+      allow read: if isSignedIn()
+        && (
+          memberId == request.auth.uid
+          || (authEmailLower() != '' && resource.data.email == authEmailLower())
+        );
+    }
+
+    match /{path=**}/memberEmails/{emailId} {
+      allow read: if isSignedIn()
+        && authEmailLower() != ''
+        && emailId == authEmailLower();
+    }
+
+    match /{path=**}/roster/{rosterId} {
+      allow read: if isSignedIn()
+        && authEmailLower() != ''
+        && resource.data.email == authEmailLower();
+    }
+
     match /admins/{uid} {
       allow read: if isSignedIn() && request.auth.uid == uid;
       allow write: if false;

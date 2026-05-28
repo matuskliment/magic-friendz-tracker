@@ -60,9 +60,10 @@
                     <section id="groups-view" class="state-panel hidden space-y-3"></section>
 
                     <section id="no-groups-view" class="state-panel hidden rounded-xl border border-amber-500/35 bg-amber-950/20 p-5 space-y-3 mt-1">
-                        <h2 class="text-lg font-bold text-white">No groups linked yet</h2>
-                        <p class="text-sm text-slate-200">This account is signed in, but does not have access to any group yet.</p>
-                        <p class="text-xs text-slate-400">Ask a group owner to invite this email, or create a new group now.</p>
+                        <h2 id="no-groups-title" class="text-lg font-bold text-white">No groups linked yet</h2>
+                        <p id="no-groups-body" class="text-sm text-slate-200">This account is signed in, but does not have access to any group yet.</p>
+                        <p id="no-groups-hint" class="text-xs text-slate-400">Ask a group owner to invite this email, or create a new group now.</p>
+                        <button id="retry-groups-btn" type="button" class="hidden w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Try again</button>
                     </section>
 
                     <section class="mt-6 rounded-xl border border-purple-500/25 bg-purple-950/20 p-5 space-y-3">
@@ -198,63 +199,59 @@
         async function fetchAccessibleGroupsForCurrentUser(user) {
             const email = normalizeEmail(user?.email);
             const uid = user?.uid;
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H1',location:'groups.html:fetchAccessibleGroupsForCurrentUser:entry',message:'group discovery started',data:{hasEmail:!!email,hasUid:!!uid},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (!email || !uid) return [];
+            const groupsById = new Map();
+            const addGroup = (groupId, roleHint) => {
+                if (!groupId) return;
+                const existing = groupsById.get(groupId) || { id: groupId, role: 'editor' };
+                if (roleHint === 'owner' || existing.role !== 'owner') existing.role = roleHint || existing.role;
+                groupsById.set(groupId, existing);
+            };
             try {
-                const groupsById = new Map();
-                const addGroup = (groupId, roleHint) => {
-                    if (!groupId) return;
-                    const existing = groupsById.get(groupId) || { id: groupId, role: 'editor' };
-                    if (roleHint === 'owner' || existing.role !== 'owner') existing.role = roleHint || existing.role;
-                    groupsById.set(groupId, existing);
-                };
-
                 const safeGetDocs = async (q, label) => {
                     try {
-                        const result = await getDocs(q);
-                        // #region agent log
-                        fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:safeGetDocsSuccess',message:'group query succeeded',data:{label,count:result.size},timestamp:Date.now()})}).catch(()=>{});
-                        // #endregion
-                        return result;
+                        return await getDocs(q);
                     } catch (error) {
-                        // #region agent log
-                        fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:safeGetDocsCatch',message:'group query failed',data:{label,errorCode:error?.code||'',errorName:error?.name||''},timestamp:Date.now()})}).catch(()=>{});
-                        // #endregion
+                        console.warn(`Group lookup failed (${label}):`, error);
                         return null;
                     }
                 };
 
-                const [ownerByUid, ownerByEmail, memberByUid, memberByEmail, rosterByEmail] = await Promise.all([
+                const [ownerByUid, ownerByEmail, memberByUid, memberByEmail, inviteByEmail, rosterByEmail] = await Promise.all([
                     safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid)), 'ownerByUid'),
                     safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerByEmail'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)), 'memberByUid'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'memberByEmail'),
+                    safeGetDocs(query(collectionGroup(db, 'memberEmails'), where(documentId(), '==', email)), 'memberEmails'),
                     safeGetDocs(query(collectionGroup(db, 'roster'), where('email', '==', email)), 'rosterByEmail')
                 ]);
 
-            ownerByUid?.docs.forEach((d) => addGroup(d.id, 'owner'));
-            ownerByEmail?.docs.forEach((d) => addGroup(d.id, 'owner'));
-            memberByUid?.docs.forEach((d) => {
-                const groupId = d.ref.parent?.parent?.id;
-                const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
-                addGroup(groupId, role);
-            });
-            memberByEmail?.docs.forEach((d) => {
-                const groupId = d.ref.parent?.parent?.id;
-                const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
-                addGroup(groupId, role);
-            });
-            rosterByEmail?.docs.forEach((d) => {
-                const groupId = d.ref.parent?.parent?.id;
-                addGroup(groupId, 'editor');
-            });
+                ownerByUid?.docs.forEach((d) => addGroup(d.id, 'owner'));
+                ownerByEmail?.docs.forEach((d) => addGroup(d.id, 'owner'));
+                memberByUid?.docs.forEach((d) => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
+                    addGroup(groupId, role);
+                });
+                memberByEmail?.docs.forEach((d) => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
+                    addGroup(groupId, role);
+                });
+                inviteByEmail?.docs.forEach((d) => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    addGroup(groupId, 'editor');
+                });
+                rosterByEmail?.docs.forEach((d) => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    addGroup(groupId, 'editor');
+                });
 
                 const groups = Array.from(groupsById.values());
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H3',location:'groups.html:fetchAccessibleGroupsForCurrentUser:mergedGroups',message:'merged group candidates',data:{groupCount:groups.length,groupIds:groups.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
+                if (!groups.length && ownerByUid === null && ownerByEmail === null && memberByUid === null && memberByEmail === null && inviteByEmail === null && rosterByEmail === null) {
+                    return null;
+                }
+
                 const withNames = await Promise.all(groups.map(async (g) => {
                     try {
                         const snap = await getDoc(doc(db, 'groups', g.id));
@@ -265,16 +262,30 @@
                     } catch (_) {}
                     return { ...g, name: g.id };
                 }));
-                // #region agent log
-                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H3',location:'groups.html:fetchAccessibleGroupsForCurrentUser:return',message:'returning discovered groups',data:{groupCount:withNames.length,groupIds:withNames.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
                 return withNames.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
             } catch (error) {
-                // #region agent log
-                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H6',location:'groups.html:fetchAccessibleGroupsForCurrentUser:outerCatch',message:'unexpected discovery failure',data:{errorName:error?.name||'',errorCode:error?.code||''},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
-                return [];
+                console.warn('Could not discover groups:', error);
+                return null;
             }
+        }
+
+        function showNoGroupsState(mode) {
+            const title = document.getElementById('no-groups-title');
+            const body = document.getElementById('no-groups-body');
+            const hint = document.getElementById('no-groups-hint');
+            const retryBtn = document.getElementById('retry-groups-btn');
+            if (mode === 'error') {
+                if (title) title.textContent = 'Could not load your groups';
+                if (body) body.textContent = 'We could not verify your memberships right now. This is usually a temporary permissions or network issue.';
+                if (hint) hint.textContent = 'Tap Try again. If it keeps failing, ask your group owner to confirm your invite email matches this sign-in.';
+                retryBtn?.classList.remove('hidden');
+            } else {
+                if (title) title.textContent = 'No groups linked yet';
+                if (body) body.textContent = 'This account is signed in, but does not have access to any group yet.';
+                if (hint) hint.textContent = 'Ask a group owner to invite this email, or create a new group now.';
+                retryBtn?.classList.add('hidden');
+            }
+            noGroupsView.classList.remove('hidden');
         }
 
         function renderGroups(groups) {
@@ -354,45 +365,47 @@
             try {
                 await tryCompleteEmailSignInOnGroups();
             } catch (_) {}
-            onAuthStateChanged(auth, async (user) => {
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H4',location:'groups.html:onAuthStateChanged:entry',message:'auth state on groups',data:{hasUser:!!user,hasUid:!!user?.uid},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H9',location:'groups.html:onAuthStateChanged:runtimeConfig',message:'runtime firebase config snapshot',data:{projectId:db?.app?.options?.projectId||'',authDomain:db?.app?.options?.authDomain||'',currentHost:window.location.host||''},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
-            if (!user) {
-                window.location.replace(indexBasePath());
-                return;
+            async function loadGroupsForUser(user) {
+                if (!user) {
+                    window.location.replace(indexBasePath());
+                    return;
+                }
+                accountEmail.textContent = `Signed in as ${user.email || 'your account'}`;
+                setLoadingState('Preparing your workspace...', 'Checking your account and groups.');
+                loadingView.classList.remove('hidden');
+                groupsView.classList.add('hidden');
+                noGroupsView.classList.add('hidden');
+
+                const groups = await fetchAccessibleGroupsForCurrentUser(user);
+                if (groups === null) {
+                    loadingView.classList.add('hidden');
+                    showNoGroupsState('error');
+                    return;
+                }
+
+                const manageMode = isManageMode();
+                if (groups.length === 1 && !manageMode) {
+                    setLoadingState(`Opening ${groups[0].name || groups[0].id}...`, 'Taking you to your group now.');
+                    await sleep(420);
+                    window.location.replace(appGroupUrl(groups[0].id));
+                    return;
+                }
+                loadingView.classList.add('hidden');
+                if (groups.length > 1 || (manageMode && groups.length >= 1)) {
+                    renderGroups(groups);
+                    groupsView.classList.remove('hidden');
+                    return;
+                }
+                showNoGroupsState('empty');
             }
 
-            accountEmail.textContent = `Signed in as ${user.email || 'your account'}`;
-            setLoadingState('Preparing your workspace...', 'Checking your account and groups.');
-            loadingView.classList.remove('hidden');
-            groupsView.classList.add('hidden');
-            noGroupsView.classList.add('hidden');
+            onAuthStateChanged(auth, (user) => {
+                loadGroupsForUser(user);
+            });
 
-            const groups = await fetchAccessibleGroupsForCurrentUser(user);
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H5',location:'groups.html:onAuthStateChanged:postDiscovery',message:'routing decision input',data:{resolvedGroupCount:groups.length,resolvedGroupIds:groups.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
-            const manageMode = isManageMode();
-            if (groups.length === 1 && !manageMode) {
-                setLoadingState(`Opening ${groups[0].name || groups[0].id}...`, 'Taking you to your group now.');
-                // #region agent log
-                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H5',location:'groups.html:onAuthStateChanged:autoRedirect',message:'auto redirecting to single group',data:{targetGroupId:groups[0].id},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
-                await sleep(420);
-                window.location.replace(appGroupUrl(groups[0].id));
-                return;
-            }
-            loadingView.classList.add('hidden');
-            if (groups.length > 1 || (manageMode && groups.length >= 1)) {
-                renderGroups(groups);
-                groupsView.classList.remove('hidden');
-                return;
-            }
-            noGroupsView.classList.remove('hidden');
+            document.getElementById('retry-groups-btn')?.addEventListener('click', () => {
+                const user = auth.currentUser;
+                if (user) loadGroupsForUser(user);
             });
         })();
 

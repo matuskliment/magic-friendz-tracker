@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.5.0">
+    <meta name="mf-app-version" content="1.5.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1995,11 +1995,12 @@
                     }
                 };
 
-                const [ownerByUid, ownerByEmail, memberByUid, memberByEmail, rosterByEmail] = await Promise.all([
+                const [ownerByUid, ownerByEmail, memberByUid, memberByEmail, inviteByEmail, rosterByEmail] = await Promise.all([
                     safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid)), 'ownerUid'),
                     safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerEmail'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)), 'member uid'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'member email'),
+                    safeGetDocs(query(collectionGroup(db, 'memberEmails'), where(documentId(), '==', email)), 'memberEmails'),
                     safeGetDocs(query(collectionGroup(db, 'roster'), where('email', '==', email)), 'roster email')
                 ]);
 
@@ -2015,12 +2016,16 @@
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
+                if (inviteByEmail) inviteByEmail.docs.forEach(d => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    addGroup(groupId, 'editor');
+                });
                 if (rosterByEmail) rosterByEmail.docs.forEach(d => {
                     const groupId = d.ref.parent?.parent?.id;
                     addGroup(groupId, 'editor');
                 });
                 const entries = Array.from(groupsById.values());
-                if (!entries.length && ownerByUid === null && ownerByEmail === null && memberByUid === null && memberByEmail === null && rosterByEmail === null) {
+                if (!entries.length && ownerByUid === null && ownerByEmail === null && memberByUid === null && memberByEmail === null && inviteByEmail === null && rosterByEmail === null) {
                     return null;
                 }
                 const names = await Promise.all(entries.map(async g => {
