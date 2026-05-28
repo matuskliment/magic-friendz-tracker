@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="mf-app-version" content="1.4.1">
+    <meta name="mf-app-version" content="1.4.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -2775,14 +2775,55 @@
             }
         };
 
+        function mfIsFocusableField(el) {
+            return el && el.matches('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea, select');
+        }
+
+        /** Keep the focused field in the visible area above the on-screen keyboard (iOS Safari). */
+        function mfEnsureFieldVisibleAboveKeyboard(field) {
+            if (!mfIsFocusableField(field)) return;
+
+            const sheet = field.closest('.mf-mobile-sheet');
+            const scroller = sheet && mfIsSheetOpen(sheet) ? mfGetSheetScroller(sheet) : null;
+
+            const adjust = () => {
+                const vv = window.visualViewport;
+                const pad = 24;
+                let safeTop = pad;
+                let safeBottom = window.innerHeight - pad;
+
+                if (vv) {
+                    const header = sheet?.querySelector('.mf-sheet-header');
+                    const headerBottom = header ? header.getBoundingClientRect().bottom : vv.offsetTop;
+                    safeTop = Math.max(vv.offsetTop + pad, headerBottom + 8);
+                    safeBottom = vv.offsetTop + vv.height - pad;
+                }
+
+                const rect = field.getBoundingClientRect();
+                let delta = 0;
+                if (rect.bottom > safeBottom) delta = rect.bottom - safeBottom;
+                else if (rect.top < safeTop) delta = rect.top - safeTop;
+
+                if (!delta) return;
+
+                if (scroller) {
+                    scroller.scrollTop += delta;
+                } else if (!document.body.classList.contains('mf-body-locked')) {
+                    window.scrollBy({ top: delta, left: 0, behavior: 'smooth' });
+                }
+            };
+
+            requestAnimationFrame(adjust);
+            setTimeout(adjust, 80);
+            setTimeout(adjust, 200);
+            setTimeout(adjust, 450);
+        }
+
         function mfScrollWithinSheet(el) {
             if (!el) return;
-            const scroller = el.closest('.mf-sheet-scroll');
-            if (!scroller) return;
-            requestAnimationFrame(() => {
-                const target = el.classList?.contains('new-mode') ? el : el;
-                target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            });
+            const focusTarget = el.matches('input, textarea, select') ? el : el.querySelector('input, textarea, select');
+            if (focusTarget) mfEnsureFieldVisibleAboveKeyboard(focusTarget);
+            else mfEnsureFieldVisibleAboveKeyboard(el);
         }
 
         function mfGetOpenOverlaySheetEl() {
@@ -2853,6 +2894,10 @@
             if (!scroller || !mfSheetHasFocusedField(sheet)) return;
             const gap = Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop);
             if (gap > 0) scroller.style.paddingBottom = `${gap + 16}px`;
+            const focused = document.activeElement;
+            if (mfIsFocusableField(focused) && sheet.contains(focused)) {
+                mfEnsureFieldVisibleAboveKeyboard(focused);
+            }
         }
 
         function mfRemoveSlotDropdowns(group) {
@@ -2883,7 +2928,13 @@
 
         function mfBindVisualViewportForSheets() {
             if (!window.visualViewport) return;
-            const onViewportChange = () => mfSyncAllSheetKeyboardPadding();
+            const onViewportChange = () => {
+                mfSyncAllSheetKeyboardPadding();
+                const focused = document.activeElement;
+                if (mfIsFocusableField(focused) && focused.closest('.mf-mobile-sheet')) {
+                    mfEnsureFieldVisibleAboveKeyboard(focused);
+                }
+            };
             visualViewport.addEventListener('resize', onViewportChange);
             visualViewport.addEventListener('scroll', onViewportChange);
         }
@@ -6518,6 +6569,15 @@
         };
 
         document.addEventListener('focusin', function(e) {
+            if (e.target && mfIsFocusableField(e.target)) {
+                const inSheet = e.target.closest('.mf-mobile-sheet');
+                if (inSheet && mfIsSheetOpen(inSheet)) {
+                    mfSyncAllSheetKeyboardPadding();
+                    mfEnsureFieldVisibleAboveKeyboard(e.target);
+                } else if (e.target.closest('#dashboard-view, #landing-page, #view-group-modal, #feedback-modal')) {
+                    mfEnsureFieldVisibleAboveKeyboard(e.target);
+                }
+            }
             if (e.target && e.target.classList.contains('local-player-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
             if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, window.appData.commanders, true); }
             if (e.target && e.target.classList.contains('local-owner-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
