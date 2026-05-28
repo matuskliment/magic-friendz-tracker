@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.7.2">
+    <meta name="mf-app-version" content="1.7.3">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -2867,6 +2867,25 @@
             });
         }
 
+        /** Height the on-screen keyboard currently covers (0 when closed). */
+        function mfKeyboardInset() {
+            const vv = window.visualViewport;
+            if (!vv) return 0;
+            return Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        }
+
+        /**
+         * Give the open sheet's scroller enough bottom room that even the LAST field
+         * (e.g. game notes) can scroll above the keyboard. Cleared when keyboard closes.
+         */
+        function mfSyncSheetKeyboardPadding() {
+            const inset = mfKeyboardInset();
+            document.querySelectorAll('.mf-mobile-sheet:not(.hidden) .mf-sheet-scroll').forEach((scroller) => {
+                if (inset > 80) scroller.style.paddingBottom = `calc(${inset}px + env(safe-area-inset-bottom, 0px))`;
+                else scroller.style.removeProperty('padding-bottom');
+            });
+        }
+
         function mfDebounce(fn, wait) {
             let timer;
             return function debounced(...args) {
@@ -2995,9 +3014,19 @@
                 }
             }, 50);
 
+            const onViewportResize = () => {
+                mfSyncSheetKeyboardPadding();
+                mfRepositionFloatingDropdowns();
+                // Keyboard just opened/closed: keep the focused field visible.
+                const ae = document.activeElement;
+                if (ae && mfIsFocusableField(ae) && ae.closest('.mf-mobile-sheet')) {
+                    mfScrollFieldIntoView(ae);
+                }
+            };
+
             const vv = window.visualViewport;
             if (vv) {
-                vv.addEventListener('resize', mfRepositionFloatingDropdowns);
+                vv.addEventListener('resize', onViewportResize);
                 vv.addEventListener('scroll', resetIosViewportOffset);
                 vv.addEventListener('scroll', mfRepositionFloatingDropdowns);
             }
@@ -7055,7 +7084,7 @@
             if (e.target && mfIsFocusableField(e.target)) {
                 const inSheet = e.target.closest('.mf-mobile-sheet');
                 if (inSheet && mfIsSheetOpen(inSheet)) {
-                    mfScheduleFocusTimer(() => mfScrollFieldIntoView(e.target), 0);
+                    mfScheduleFocusTimer(() => { mfSyncSheetKeyboardPadding(); mfScrollFieldIntoView(e.target); }, 0);
                 } else if (e.target.closest('#dashboard-view, #landing-page, #view-group-modal, #feedback-modal')) {
                     mfScheduleFocusTimer(() => mfScrollFieldIntoView(e.target), 0);
                 }
