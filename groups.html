@@ -176,32 +176,36 @@
             fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H1',location:'groups.html:fetchAccessibleGroupsForCurrentUser:entry',message:'group discovery started',data:{hasEmail:!!email,hasUid:!!uid},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
             if (!email || !uid) return [];
+            try {
+                const groupsById = new Map();
+                const addGroup = (groupId, roleHint) => {
+                    if (!groupId) return;
+                    const existing = groupsById.get(groupId) || { id: groupId, role: 'editor' };
+                    if (roleHint === 'owner' || existing.role !== 'owner') existing.role = roleHint || existing.role;
+                    groupsById.set(groupId, existing);
+                };
 
-            const groupsById = new Map();
-            const addGroup = (groupId, roleHint) => {
-                if (!groupId) return;
-                const existing = groupsById.get(groupId) || { id: groupId, role: 'editor' };
-                if (roleHint === 'owner' || existing.role !== 'owner') existing.role = roleHint || existing.role;
-                groupsById.set(groupId, existing);
-            };
+                const safeGetDocs = async (q, label) => {
+                    try {
+                        const result = await getDocs(q);
+                        // #region agent log
+                        fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:safeGetDocsSuccess',message:'group query succeeded',data:{label,count:result.size},timestamp:Date.now()})}).catch(()=>{});
+                        // #endregion
+                        return result;
+                    } catch (error) {
+                        // #region agent log
+                        fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:safeGetDocsCatch',message:'group query failed',data:{label,errorCode:error?.code||'',errorName:error?.name||''},timestamp:Date.now()})}).catch(()=>{});
+                        // #endregion
+                        return null;
+                    }
+                };
 
-            const safeGetDocs = async (q) => {
-                try {
-                    return await getDocs(q);
-                } catch (error) {
-                    // #region agent log
-                    fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:safeGetDocsCatch',message:'group query failed',data:{errorCode:error?.code||'',errorName:error?.name||''},timestamp:Date.now()})}).catch(()=>{});
-                    // #endregion
-                    return null;
-                }
-            };
-
-            const [ownerByUid, ownerByEmail, memberByEmail, memberByUid] = await Promise.all([
-                safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid))),
-                safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email))),
-                safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email))),
-                safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)))
-            ]);
+                const [ownerByUid, ownerByEmail, memberByEmail, memberByUid] = await Promise.all([
+                    safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid)), 'ownerByUid'),
+                    safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerByEmail'),
+                    safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'memberByEmail'),
+                    safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)), 'memberByUid')
+                ]);
             // #region agent log
             fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:queryResults',message:'raw query results',data:{ownerByUidCount:ownerByUid?.size??null,ownerByEmailCount:ownerByEmail?.size??null,memberByEmailCount:memberByEmail?.size??null,memberByUidCount:memberByUid?.size??null},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
@@ -219,21 +223,30 @@
                 addGroup(groupId, role);
             });
 
-            const groups = Array.from(groupsById.values());
+                const groups = Array.from(groupsById.values());
             // #region agent log
             fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H3',location:'groups.html:fetchAccessibleGroupsForCurrentUser:mergedGroups',message:'merged group candidates',data:{groupCount:groups.length,groupIds:groups.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
-            const withNames = await Promise.all(groups.map(async (g) => {
-                try {
-                    const snap = await getDoc(doc(db, 'groups', g.id));
-                    if (snap.exists()) {
-                        const data = snap.data() || {};
-                        return { ...g, name: data.name || g.id };
-                    }
-                } catch (_) {}
-                return { ...g, name: g.id };
-            }));
-            return withNames.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
+                const withNames = await Promise.all(groups.map(async (g) => {
+                    try {
+                        const snap = await getDoc(doc(db, 'groups', g.id));
+                        if (snap.exists()) {
+                            const data = snap.data() || {};
+                            return { ...g, name: data.name || g.id };
+                        }
+                    } catch (_) {}
+                    return { ...g, name: g.id };
+                }));
+                // #region agent log
+                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H3',location:'groups.html:fetchAccessibleGroupsForCurrentUser:return',message:'returning discovered groups',data:{groupCount:withNames.length,groupIds:withNames.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
+                return withNames.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
+            } catch (error) {
+                // #region agent log
+                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H6',location:'groups.html:fetchAccessibleGroupsForCurrentUser:outerCatch',message:'unexpected discovery failure',data:{errorName:error?.name||'',errorCode:error?.code||''},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
+                return [];
+            }
         }
 
         function renderGroups(groups) {
