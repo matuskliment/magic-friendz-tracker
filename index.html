@@ -2525,8 +2525,9 @@
         }
 
         async function startApp() {
+            let completedEmailLinkSignIn = false;
             try {
-                await tryCompleteEmailSignIn();
+                completedEmailLinkSignIn = await tryCompleteEmailSignIn();
             } catch (e) {
                 console.error('Email link sign-in failed:', e);
                 stripAuthParamsFromUrl();
@@ -2537,6 +2538,10 @@
                 if (e?.code !== 'auth/invalid-action-code' && e?.code !== 'auth/invalid-email') {
                     window.showAppAlert('Sign-in link failed: ' + friendly, 'Sign in', '❌');
                 }
+            }
+            if (completedEmailLinkSignIn && !resolveSignInGroupId()) {
+                window.location.replace(getGroupsHubUrl());
+                return;
             }
             // Avoid a landing-page flash while Firebase restores auth persistence.
             await Promise.race([
