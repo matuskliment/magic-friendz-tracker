@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="mf-app-version" content="1.4.3">
+    <meta name="mf-app-version" content="1.4.4">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -240,6 +240,13 @@
             left: 0;
             right: 0;
             overflow: hidden;
+        }
+        #view-log-match .mf-touch-input,
+        #view-log-match textarea,
+        #view-log-match select,
+        #view-log-match .static-dropdown-header {
+            scroll-margin-top: 72px;
+            scroll-margin-bottom: max(24px, env(safe-area-inset-bottom, 0px));
         }
     </style>
     <!-- After Tailwind: 16px form text beats text-sm and stops iOS focus-zoom -->
@@ -1162,11 +1169,11 @@
                     <div class="grid grid-cols-2 gap-4 max-w-xs">
                         <div>
                             <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Hours</span>
-                            <input type="text" id="form-duration-hours" inputmode="numeric" autocomplete="off" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                            <input type="text" id="form-duration-hours" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();event.target.blur();}">
                         </div>
                         <div>
                             <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Minutes</span>
-                            <input type="text" id="form-duration-minutes" inputmode="numeric" autocomplete="off" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                            <input type="text" id="form-duration-minutes" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();event.target.blur();}">
                         </div>
                     </div>
                     <p class="text-[10px] text-slate-500 mt-2 ml-1">Each player in the pod gets this time credited toward their hours played.</p>
@@ -2694,6 +2701,7 @@
         ];
         let mfBodyLockScrollY = 0;
         let mfTouchMoveBlocker = null;
+        const MF_KEYBOARD_INSET_MIN = 80;
 
         function mfIsOverlaySheetOpen() {
             return MF_OVERLAY_SHEETS.some(({ id, closedClass }) => {
@@ -2857,6 +2865,15 @@
             return sheet.querySelector('.mf-sheet-scroll');
         }
 
+        function mfGetKeyboardInset() {
+            if (!window.visualViewport) return 0;
+            return Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop);
+        }
+
+        function mfIsKeyboardLikelyOpen() {
+            return mfGetKeyboardInset() >= MF_KEYBOARD_INSET_MIN;
+        }
+
         function mfClearAllSheetKeyboardPadding() {
             document.querySelectorAll('.mf-sheet-scroll').forEach((scroller) => {
                 scroller.style.paddingBottom = '';
@@ -2902,13 +2919,43 @@
             const sheet = mfGetOpenOverlaySheetEl();
             if (!sheet || !window.visualViewport) return;
             const scroller = mfGetSheetScroller(sheet);
-            if (!scroller || !mfSheetHasFocusedField(sheet)) return;
-            const gap = Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop);
-            if (gap > 0) scroller.style.paddingBottom = `${gap + 16}px`;
+            if (!scroller) return;
+
+            const inset = mfGetKeyboardInset();
+            const keyboardOpen = inset >= MF_KEYBOARD_INSET_MIN;
             const focused = document.activeElement;
+            const hasFocus = mfSheetHasFocusedField(sheet);
+
+            if (!hasFocus || !keyboardOpen) return;
+
+            scroller.style.paddingBottom = `${inset + 16}px`;
             if (mfIsFocusableField(focused) && sheet.contains(focused)) {
                 mfEnsureFieldVisibleAboveKeyboard(focused);
             }
+        }
+
+        function mfAfterSheetKeyboardChange() {
+            requestAnimationFrame(() => {
+                if (!mfIsKeyboardLikelyOpen()) mfClearAllSheetKeyboardPadding();
+                else mfSyncAllSheetKeyboardPadding();
+            });
+        }
+
+        function mfBindLogMatchKeyboardUX() {
+            const logMatch = document.getElementById('view-log-match');
+            const scroller = document.getElementById('log-match-scroll');
+            if (!logMatch || !scroller || scroller.dataset.mfKeyboardBound === '1') return;
+            scroller.dataset.mfKeyboardBound = '1';
+
+            scroller.addEventListener('pointerdown', (e) => {
+                if (!mfIsSheetOpen(logMatch)) return;
+                if (e.target.closest('input, textarea, select, button, a, label, [role="button"], .static-dropdown-option')) return;
+                const active = document.activeElement;
+                if (active && logMatch.contains(active) && mfIsFocusableField(active)) {
+                    active.blur();
+                }
+                mfClearAllSheetKeyboardPadding();
+            }, { passive: true });
         }
 
         function mfRemoveSlotDropdowns(group) {
@@ -2940,9 +2987,10 @@
         function mfBindVisualViewportForSheets() {
             if (!window.visualViewport) return;
             const onViewportChange = () => {
+                if (!mfIsKeyboardLikelyOpen()) mfClearAllSheetKeyboardPadding();
                 mfSyncAllSheetKeyboardPadding();
                 const focused = document.activeElement;
-                if (mfIsFocusableField(focused) && focused.closest('.mf-mobile-sheet')) {
+                if (mfIsFocusableField(focused) && focused.closest('.mf-mobile-sheet') && mfIsKeyboardLikelyOpen()) {
                     mfEnsureFieldVisibleAboveKeyboard(focused);
                 }
             };
@@ -6606,8 +6654,9 @@
         });
 
         document.addEventListener('focusout', function(e) {
-            if (e.target && e.target.closest('.mf-mobile-sheet')) {
-                setTimeout(() => mfSyncAllSheetKeyboardPadding(), 120);
+            if (e.target && e.target.closest('.mf-mobile-sheet') && mfIsFocusableField(e.target)) {
+                setTimeout(mfAfterSheetKeyboardChange, 120);
+                setTimeout(mfAfterSheetKeyboardChange, 400);
             }
             if (e.target && e.target.closest('.mf-mobile-sheet') && e.target.matches(
                 '.scryfall-input, .local-player-input, .local-deck-input, .local-owner-input, .new-player-input, .new-deck-input, .new-deck-variant-input'
@@ -6622,11 +6671,12 @@
                     if (slotGroup && !slotGroup.querySelector('.custom-dropdown')) {
                         slotGroup.classList.remove('mf-slot-active');
                     }
-                    mfSyncAllSheetKeyboardPadding();
+                    mfAfterSheetKeyboardChange();
                 }, 150);
             }
         });
 
+        mfBindLogMatchKeyboardUX();
         mfBindVisualViewportForSheets();
         window.mfSyncPageScroll();
         document.addEventListener('visibilitychange', function() {
