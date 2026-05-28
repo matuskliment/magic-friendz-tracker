@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="mf-app-version" content="1.4.4">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="mf-app-version" content="1.5.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -66,10 +66,15 @@
         /* Prevent landing flash when URL already targets a group. */
         html.mf-route-group #landing-page { display: none !important; }
 
+        .min-h-screen {
+            min-height: 100dvh;
+        }
         #mf-app-boot-loader {
             display: none;
             position: fixed;
             inset: 0;
+            height: 100dvh;
+            max-height: 100dvh;
             z-index: 9999;
             flex-direction: column;
             align-items: center;
@@ -148,6 +153,15 @@
             pointer-events: none;
             color: #cbd5e1;
         }
+        .mf-floating-dropdown {
+            touch-action: pan-y;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        #view-log-match .input-slot-group.mf-slot-active,
+        #view-log-match .mf-search-wrap.mf-slot-active {
+            z-index: 20;
+        }
         .dropdown-mini-spinner {
             width: 1rem;
             height: 1rem;
@@ -160,16 +174,15 @@
         /* Full-screen mobile sheets (modals / profiles) */
         .mf-mobile-sheet {
             position: fixed;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
+            inset: 0;
+            height: 100dvh;
+            max-height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             min-height: 0;
             box-sizing: border-box;
-            touch-action: manipulation;
+            touch-action: auto;
         }
         .mf-sheet-header {
             position: relative;
@@ -234,19 +247,21 @@
             visibility: hidden !important;
             pointer-events: none !important;
         }
-        body.mf-body-locked {
-            position: fixed;
-            width: 100%;
-            left: 0;
-            right: 0;
+        html.mf-scroll-lock {
             overflow: hidden;
+            height: 100%;
+            overscroll-behavior: none;
+        }
+        html.mf-scroll-lock body {
+            overflow: hidden;
+            overscroll-behavior: none;
         }
         #view-log-match .mf-touch-input,
         #view-log-match textarea,
         #view-log-match select,
         #view-log-match .static-dropdown-header {
             scroll-margin-top: 72px;
-            scroll-margin-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+            scroll-margin-bottom: max(16px, env(safe-area-inset-bottom, 0px));
         }
     </style>
     <!-- After Tailwind: 16px form text beats text-sm and stops iOS focus-zoom -->
@@ -2701,7 +2716,7 @@
         ];
         let mfBodyLockScrollY = 0;
         let mfTouchMoveBlocker = null;
-        const MF_KEYBOARD_INSET_MIN = 80;
+        const mfFocusTimerIds = [];
 
         function mfIsOverlaySheetOpen() {
             return MF_OVERLAY_SHEETS.some(({ id, closedClass }) => {
@@ -2735,26 +2750,21 @@
 
         function mfLockBodyForOverlay() {
             mfBodyLockScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-            document.body.classList.add('mf-body-locked');
-            document.body.style.top = `-${mfBodyLockScrollY}px`;
-            document.body.style.left = '0';
-            document.body.style.right = '0';
-            document.body.style.width = '100%';
+            document.documentElement.classList.add('mf-scroll-lock');
             mfSetBackgroundInert(true);
             mfAttachTouchMoveBlocker();
         }
 
         function mfUnlockBodyFromOverlay() {
-            const top = document.body.style.top;
-            const restoreY = top ? Math.abs(parseInt(top, 10)) || mfBodyLockScrollY : mfBodyLockScrollY;
+            document.documentElement.classList.remove('mf-scroll-lock');
             document.body.classList.remove('mf-body-locked');
-            document.body.style.top = '';
-            document.body.style.left = '';
-            document.body.style.right = '';
-            document.body.style.width = '';
+            document.body.style.removeProperty('top');
+            document.body.style.removeProperty('left');
+            document.body.style.removeProperty('right');
+            document.body.style.removeProperty('width');
             mfSetBackgroundInert(false);
             mfDetachTouchMoveBlocker();
-            window.scrollTo(0, restoreY);
+            window.scrollTo(0, mfBodyLockScrollY);
         }
 
         /** Idempotent: lock/unlock from actual overlay DOM state (self-heals stuck scroll). */
@@ -2783,66 +2793,71 @@
         window.mfSyncPageScroll = function() {
             const open = mfIsOverlaySheetOpen();
             document.documentElement.classList.toggle('mf-overlay-open', open);
-            const locked = document.body.classList.contains('mf-body-locked');
+            const locked = document.documentElement.classList.contains('mf-scroll-lock');
             if (open && !locked) mfLockBodyForOverlay();
             else if (!open && locked) mfUnlockBodyFromOverlay();
             else if (!open) {
-                document.body.classList.remove('mf-body-locked', 'mf-scroll-locked');
+                document.documentElement.classList.remove('mf-scroll-lock');
+                document.body.classList.remove('mf-body-locked');
                 document.body.style.removeProperty('top');
+                document.body.style.removeProperty('left');
+                document.body.style.removeProperty('right');
+                document.body.style.removeProperty('width');
                 mfSetBackgroundInert(false);
                 mfDetachTouchMoveBlocker();
             }
         };
 
+        function mfCancelFocusTimers() {
+            mfFocusTimerIds.forEach((id) => clearTimeout(id));
+            mfFocusTimerIds.length = 0;
+        }
+
+        function mfScheduleFocusTimer(fn, ms) {
+            const id = setTimeout(fn, ms);
+            mfFocusTimerIds.push(id);
+            return id;
+        }
+
+        /** Reverse any focus-time DOM tweaks (padding, overflow hacks). */
+        function mfCleanupFocusSideEffects() {
+            mfCancelFocusTimers();
+            document.querySelectorAll('.mf-sheet-scroll').forEach((scroller) => {
+                scroller.style.removeProperty('padding-bottom');
+                scroller.style.removeProperty('overflow-y');
+            });
+        }
+
+        function mfDebounce(fn, wait) {
+            let timer;
+            return function debounced(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), wait);
+            };
+        }
+
         function mfIsFocusableField(el) {
             return el && el.matches('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea, select');
         }
 
-        /** Keep the focused field in the visible area above the on-screen keyboard (iOS Safari). */
-        function mfEnsureFieldVisibleAboveKeyboard(field) {
+        /** Native scroll-into-view; browser + dvh handle keyboard resize. */
+        function mfScrollFieldIntoView(field) {
             if (!mfIsFocusableField(field)) return;
-
-            const sheet = field.closest('.mf-mobile-sheet');
-            const scroller = sheet && mfIsSheetOpen(sheet) ? mfGetSheetScroller(sheet) : null;
-
-            const adjust = () => {
-                const vv = window.visualViewport;
-                const pad = 24;
-                let safeTop = pad;
-                let safeBottom = window.innerHeight - pad;
-
-                if (vv) {
-                    const header = sheet?.querySelector('.mf-sheet-header');
-                    const headerBottom = header ? header.getBoundingClientRect().bottom : vv.offsetTop;
-                    safeTop = Math.max(vv.offsetTop + pad, headerBottom + 8);
-                    safeBottom = vv.offsetTop + vv.height - pad;
-                }
-
-                const rect = field.getBoundingClientRect();
-                let delta = 0;
-                if (rect.bottom > safeBottom) delta = rect.bottom - safeBottom;
-                else if (rect.top < safeTop) delta = rect.top - safeTop;
-
-                if (!delta) return;
-
-                if (scroller) {
-                    scroller.scrollTop += delta;
-                } else if (!document.body.classList.contains('mf-body-locked')) {
-                    window.scrollBy({ top: delta, left: 0, behavior: 'smooth' });
-                }
-            };
-
-            requestAnimationFrame(adjust);
-            setTimeout(adjust, 80);
-            setTimeout(adjust, 200);
-            setTimeout(adjust, 450);
+            try {
+                field.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+            } catch (_) {}
+            const anchorId = field.dataset.mfInputAnchorId;
+            if (anchorId) {
+                const dd = document.querySelector(`#view-log-match .mf-floating-dropdown[data-mf-anchor="${anchorId}"]`);
+                if (dd) mfPositionFloatingDropdown(field, dd);
+            }
         }
 
         function mfScrollWithinSheet(el) {
             if (!el) return;
             const focusTarget = el.matches('input, textarea, select') ? el : el.querySelector('input, textarea, select');
-            if (focusTarget) mfEnsureFieldVisibleAboveKeyboard(focusTarget);
-            else mfEnsureFieldVisibleAboveKeyboard(el);
+            if (focusTarget) mfScheduleFocusTimer(() => mfScrollFieldIntoView(focusTarget), 0);
+            else mfScheduleFocusTimer(() => mfScrollFieldIntoView(el), 0);
         }
 
         function mfGetOpenOverlaySheetEl() {
@@ -2865,40 +2880,12 @@
             return sheet.querySelector('.mf-sheet-scroll');
         }
 
-        function mfGetKeyboardInset() {
-            if (!window.visualViewport) return 0;
-            return Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop);
-        }
-
-        function mfIsKeyboardLikelyOpen() {
-            return mfGetKeyboardInset() >= MF_KEYBOARD_INSET_MIN;
-        }
-
-        function mfClearAllSheetKeyboardPadding() {
-            document.querySelectorAll('.mf-sheet-scroll').forEach((scroller) => {
-                scroller.style.paddingBottom = '';
-            });
-        }
-
-        function mfSheetHasFocusedField(sheet) {
-            const focused = document.activeElement;
-            if (!focused || !sheet || !sheet.contains(focused)) return false;
-            if (!focused.matches('input:not([type="hidden"]), textarea, select')) return false;
-            const hiddenNewPanel = focused.closest('.new-mode.hidden, .new-mode[hidden]');
-            if (hiddenNewPanel) return false;
-            const inertPanel = focused.closest('.new-mode[inert]');
-            if (inertPanel) return false;
-            return true;
-        }
-
-        /** Clear stuck focus, dropdowns, and keyboard padding for any open mobile sheet. */
+        /** Clear stuck focus and dropdowns for any open mobile sheet. */
         function mfReleaseSheetTouchState(sheet) {
             const targetSheet = sheet || mfGetOpenOverlaySheetEl();
-            if (!targetSheet) {
-                mfClearAllSheetKeyboardPadding();
-                return;
-            }
-            targetSheet.querySelectorAll('.custom-dropdown').forEach((d) => d.remove());
+            mfCleanupFocusSideEffects();
+            if (!targetSheet) return;
+            targetSheet.querySelectorAll('.custom-dropdown, .mf-floating-dropdown').forEach((d) => d.remove());
             targetSheet.querySelectorAll('.input-slot-group, .mf-search-wrap').forEach((g) => {
                 g.classList.remove('mf-slot-active');
             });
@@ -2906,61 +2893,16 @@
             if (active && targetSheet.contains(active)) {
                 active.blur();
             }
-            mfClearAllSheetKeyboardPadding();
-            requestAnimationFrame(() => mfSyncAllSheetKeyboardPadding());
         }
 
         function mfReleaseLogMatchTouchState() {
             mfReleaseSheetTouchState(document.getElementById('view-log-match'));
         }
 
-        function mfSyncAllSheetKeyboardPadding() {
-            mfClearAllSheetKeyboardPadding();
-            const sheet = mfGetOpenOverlaySheetEl();
-            if (!sheet || !window.visualViewport) return;
-            const scroller = mfGetSheetScroller(sheet);
-            if (!scroller) return;
-
-            const inset = mfGetKeyboardInset();
-            const keyboardOpen = inset >= MF_KEYBOARD_INSET_MIN;
-            const focused = document.activeElement;
-            const hasFocus = mfSheetHasFocusedField(sheet);
-
-            if (!hasFocus || !keyboardOpen) return;
-
-            scroller.style.paddingBottom = `${inset + 16}px`;
-            if (mfIsFocusableField(focused) && sheet.contains(focused)) {
-                mfEnsureFieldVisibleAboveKeyboard(focused);
-            }
-        }
-
-        function mfAfterSheetKeyboardChange() {
-            requestAnimationFrame(() => {
-                if (!mfIsKeyboardLikelyOpen()) mfClearAllSheetKeyboardPadding();
-                else mfSyncAllSheetKeyboardPadding();
-            });
-        }
-
-        function mfBindLogMatchKeyboardUX() {
-            const logMatch = document.getElementById('view-log-match');
-            const scroller = document.getElementById('log-match-scroll');
-            if (!logMatch || !scroller || scroller.dataset.mfKeyboardBound === '1') return;
-            scroller.dataset.mfKeyboardBound = '1';
-
-            scroller.addEventListener('pointerdown', (e) => {
-                if (!mfIsSheetOpen(logMatch)) return;
-                if (e.target.closest('input, textarea, select, button, a, label, [role="button"], .static-dropdown-option')) return;
-                const active = document.activeElement;
-                if (active && logMatch.contains(active) && mfIsFocusableField(active)) {
-                    active.blur();
-                }
-                mfClearAllSheetKeyboardPadding();
-            }, { passive: true });
-        }
-
         function mfRemoveSlotDropdowns(group) {
             if (!group) return;
             group.querySelectorAll('.custom-dropdown').forEach((d) => d.remove());
+            group.querySelectorAll('[data-mf-input-anchor-id]').forEach((input) => mfDismissFloatingDropdown(input));
             group.classList.remove('mf-slot-active');
         }
 
@@ -2984,18 +2926,33 @@
             }
         }
 
-        function mfBindVisualViewportForSheets() {
-            if (!window.visualViewport) return;
-            const onViewportChange = () => {
-                if (!mfIsKeyboardLikelyOpen()) mfClearAllSheetKeyboardPadding();
-                mfSyncAllSheetKeyboardPadding();
-                const focused = document.activeElement;
-                if (mfIsFocusableField(focused) && focused.closest('.mf-mobile-sheet') && mfIsKeyboardLikelyOpen()) {
-                    mfEnsureFieldVisibleAboveKeyboard(focused);
+        function mfRepositionFloatingDropdowns() {
+            document.querySelectorAll('#view-log-match .mf-floating-dropdown').forEach((dd) => {
+                const anchorId = dd.dataset.mfAnchor;
+                if (!anchorId) return;
+                const input = document.querySelector(`#view-log-match [data-mf-input-anchor-id="${anchorId}"]`);
+                if (input) mfPositionFloatingDropdown(input, dd);
+            });
+        }
+
+        function mfBindMobileViewportFixes() {
+            if (window.__mfViewportFixesBound) return;
+            window.__mfViewportFixesBound = true;
+
+            const resetIosViewportOffset = mfDebounce(() => {
+                const vv = window.visualViewport;
+                if (vv && vv.offsetTop > 0) {
+                    document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'auto' });
                 }
-            };
-            visualViewport.addEventListener('resize', onViewportChange);
-            visualViewport.addEventListener('scroll', onViewportChange);
+            }, 50);
+
+            const vv = window.visualViewport;
+            if (vv) {
+                vv.addEventListener('resize', mfRepositionFloatingDropdowns);
+                vv.addEventListener('scroll', resetIosViewportOffset);
+                vv.addEventListener('scroll', mfRepositionFloatingDropdowns);
+            }
+            document.getElementById('log-match-scroll')?.addEventListener('scroll', mfRepositionFloatingDropdowns, { passive: true });
         }
 
         function mfGetDropdownHost(input) {
@@ -3003,9 +2960,100 @@
         }
 
         function mfClearLogMatchFieldDropdowns() {
+            mfDismissAllLogMatchFloatingDropdowns();
+        }
+
+        let mfDropdownPickPending = false;
+
+        function mfIsLogMatchAutocompleteInput(input) {
+            return !!(input && input.closest('#view-log-match') && input.matches(
+                '.local-player-input, .local-deck-input, .local-owner-input, .scryfall-input'
+            ));
+        }
+
+        function mfEnsureInputDropdownId(input) {
+            if (!input.dataset.mfInputAnchorId) {
+                input.dataset.mfInputAnchorId = 'mf-inp-' + Math.random().toString(36).slice(2, 10);
+            }
+            return input.dataset.mfInputAnchorId;
+        }
+
+        function mfSlotHasOpenDropdown(slotGroup) {
+            if (!slotGroup) return false;
+            if (slotGroup.querySelector('.custom-dropdown:not(.mf-floating-dropdown)')) return true;
+            const anchors = slotGroup.querySelectorAll('[data-mf-input-anchor-id]');
+            for (const inp of anchors) {
+                const id = inp.dataset.mfInputAnchorId;
+                if (id && document.querySelector(`#view-log-match .mf-floating-dropdown[data-mf-anchor="${id}"]`)) return true;
+            }
+            return false;
+        }
+
+        function mfDismissFloatingDropdown(input) {
+            if (!input) return;
+            const anchorId = input.dataset.mfInputAnchorId;
+            if (anchorId) {
+                document.querySelectorAll(`#view-log-match .mf-floating-dropdown[data-mf-anchor="${anchorId}"]`).forEach((d) => d.remove());
+            }
+            input.parentElement?.querySelector('.custom-dropdown')?.remove();
+            const slotGroup = mfGetDropdownHost(input);
+            if (slotGroup && !mfSlotHasOpenDropdown(slotGroup)) {
+                slotGroup.classList.remove('mf-slot-active');
+            }
+        }
+
+        function mfDismissAllLogMatchFloatingDropdowns() {
+            document.querySelectorAll('#view-log-match .mf-floating-dropdown').forEach((d) => d.remove());
             document.querySelectorAll('#view-log-match .custom-dropdown').forEach((d) => d.remove());
             document.querySelectorAll('#view-log-match .input-slot-group, #view-log-match .mf-search-wrap').forEach((g) => {
                 g.classList.remove('mf-slot-active');
+            });
+        }
+
+        function mfPositionFloatingDropdown(input, dropdown) {
+            const rect = input.getBoundingClientRect();
+            const vv = window.visualViewport;
+            const viewTop = vv ? vv.offsetTop : 0;
+            const viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+            const gap = 8;
+            let top = rect.bottom + gap;
+            let maxH = Math.min(240, viewBottom - top - 12);
+            if (maxH < 88 && rect.top - viewTop > 140) {
+                maxH = Math.min(240, rect.top - viewTop - 12);
+                top = Math.max(viewTop + 8, rect.top - maxH - gap);
+            }
+            maxH = Math.max(88, maxH);
+            const width = Math.min(Math.max(rect.width, 200), window.innerWidth - 16);
+            let left = rect.left;
+            if (left + width > window.innerWidth - 8) left = window.innerWidth - 8 - width;
+            if (left < 8) left = 8;
+            dropdown.style.left = `${left}px`;
+            dropdown.style.top = `${top}px`;
+            dropdown.style.width = `${width}px`;
+            dropdown.style.maxHeight = `${maxH}px`;
+        }
+
+        function mfMountFloatingDropdown(input, dropdown) {
+            mfDismissFloatingDropdown(input);
+            const anchorId = mfEnsureInputDropdownId(input);
+            dropdown.classList.add('mf-floating-dropdown', 'fixed', 'z-[300]');
+            dropdown.dataset.mfAnchor = anchorId;
+            dropdown.dataset.mfFloatingDropdown = '1';
+            document.getElementById('view-log-match')?.appendChild(dropdown);
+            mfPositionFloatingDropdown(input, dropdown);
+            const slotGroup = mfGetDropdownHost(input);
+            if (slotGroup) slotGroup.classList.add('mf-slot-active');
+            mfBindMobileViewportFixes();
+        }
+
+        function mfBindDropdownPick(li, input, onPick) {
+            li.addEventListener('pointerdown', (evt) => {
+                evt.preventDefault();
+                evt.stopPropagation();
+                mfDropdownPickPending = true;
+                onPick();
+                mfDismissFloatingDropdown(input);
+                requestAnimationFrame(() => { mfDropdownPickPending = false; });
             });
         }
 
@@ -6225,8 +6273,7 @@
                 const firstInput = newMode.querySelector('input');
                 if (firstInput) {
                     firstInput.focus({ preventScroll: true });
-                    mfScrollWithinSheet(newMode);
-                    requestAnimationFrame(() => mfSyncAllSheetKeyboardPadding());
+                    mfScrollWithinSheet(firstInput);
                 }
             } else {
                 delete group.dataset.confirmedNew;
@@ -6468,9 +6515,8 @@
         
         window.renderLocalDropdown = function(input, dataArray, isDeck) {
             const slotGroup = mfGetDropdownHost(input);
-            let dropdown = input.parentNode.querySelector('.custom-dropdown');
-            if (dropdown) dropdown.remove();
-            if (slotGroup) slotGroup.classList.remove('mf-slot-active');
+            const useFloating = mfIsLogMatchAutocompleteInput(input);
+            mfDismissFloatingDropdown(input);
 
             const query = String(input.value || '').trim().toLowerCase();
             let filtered = dataArray || [];
@@ -6478,21 +6524,28 @@
                 filtered = filtered.filter(item => item.name.toLowerCase().includes(query));
             }
 
+            const dropdownClass = 'custom-dropdown w-full bg-slate-800 border border-slate-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden';
+            const mountDropdown = (dropdown) => {
+                if (useFloating) mfMountFloatingDropdown(input, dropdown);
+                else input.parentNode.appendChild(dropdown);
+                if (slotGroup) slotGroup.classList.add('mf-slot-active');
+            };
+
             if (!query && filtered.length === 0) {
                 if ((dataArray || []).length === 0) {
-                    dropdown = document.createElement('ul');
-                    dropdown.className = 'custom-dropdown absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 shadow-2xl';
+                    const dropdown = document.createElement('ul');
+                    dropdown.className = useFloating ? dropdownClass : dropdownClass + ' absolute z-[200] mt-2';
                     const li = document.createElement('li');
                     li.className = 'dropdown-empty px-4 py-3 text-sm';
                     li.textContent = isDeck ? 'No decks logged yet — tap + New to add one' : 'No players in roster yet — tap + New to add one';
                     dropdown.appendChild(li);
-                    input.parentNode.appendChild(dropdown);
+                    mountDropdown(dropdown);
                 }
                 return;
             }
 
-            dropdown = document.createElement('ul');
-            dropdown.className = 'custom-dropdown absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto overflow-x-hidden shadow-2xl';
+            const dropdown = document.createElement('ul');
+            dropdown.className = useFloating ? dropdownClass : dropdownClass + ' absolute z-[200] mt-2';
 
             if (filtered.length === 0) {
                 const li = document.createElement('li');
@@ -6502,7 +6555,7 @@
             } else {
                 filtered.forEach(item => {
                     const li = document.createElement('li');
-                    li.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 last:border-0 flex items-center justify-between';
+                    li.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 last:border-0 flex items-center justify-between touch-manipulation';
 
                     if (isDeck) {
                         const ownerTag = item.owner ? `<span class="text-[10px] text-slate-400 flex-shrink-0 ml-2 border border-slate-600 bg-slate-900 px-1.5 py-0.5 rounded opacity-70">${escapeHtml(item.owner)}</span>` : '';
@@ -6511,33 +6564,22 @@
                         li.innerHTML = `<span class="truncate font-medium">${escapeHtml(item.name)}</span>`;
                     }
 
-                    li.onmousedown = (evt) => {
-                        evt.preventDefault();
+                    mfBindDropdownPick(li, input, () => {
                         input.value = item.name;
                         const group = mfGetDropdownHost(input);
                         if (group?.classList.contains('input-slot-group')) delete group.dataset.confirmedNew;
-                        dropdown.remove();
-                        if (group) group.classList.remove('mf-slot-active');
-                    };
+                    });
                     dropdown.appendChild(li);
                 });
             }
 
-            input.parentNode.appendChild(dropdown);
-            if (slotGroup) slotGroup.classList.add('mf-slot-active');
+            mountDropdown(dropdown);
         }
 
         const SCRYFALL_DROPDOWN_CLASS = 'custom-dropdown absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto overflow-x-hidden shadow-2xl';
 
         function removeScryfallDropdown(input) {
-            const container = input?.parentElement;
-            if (!container) return;
-            const existing = container.querySelector('.custom-dropdown');
-            if (existing) existing.remove();
-            const slotGroup = mfGetDropdownHost(input);
-            if (slotGroup && !slotGroup.querySelector('.custom-dropdown')) {
-                slotGroup.classList.remove('mf-slot-active');
-            }
+            mfDismissFloatingDropdown(input);
         }
 
         function showScryfallDropdown(input, buildItems) {
@@ -6545,9 +6587,15 @@
             if (!container) return;
             removeScryfallDropdown(input);
             const ul = document.createElement('ul');
-            ul.className = SCRYFALL_DROPDOWN_CLASS;
+            ul.className = mfIsLogMatchAutocompleteInput(input)
+                ? 'custom-dropdown w-full bg-slate-800 border border-slate-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden'
+                : SCRYFALL_DROPDOWN_CLASS;
             buildItems(ul, input);
-            container.appendChild(ul);
+            if (mfIsLogMatchAutocompleteInput(input)) {
+                mfMountFloatingDropdown(input, ul);
+            } else {
+                container.appendChild(ul);
+            }
             const slotGroup = mfGetDropdownHost(input);
             if (slotGroup) slotGroup.classList.add('mf-slot-active');
         }
@@ -6603,13 +6651,10 @@
                                 const li = document.createElement('li');
                                 li.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 last:border-0 truncate';
                                 li.innerText = name;
-                                li.onmousedown = (evt) => {
-                                    evt.preventDefault();
+                                li.classList.add('touch-manipulation');
+                                mfBindDropdownPick(li, activeInput, () => {
                                     activeInput.value = name;
-                                    removeScryfallDropdown(activeInput);
-                                    const slotGroup = mfGetDropdownHost(activeInput);
-                                    if (slotGroup) slotGroup.classList.remove('mf-slot-active');
-                                };
+                                });
                                 ul.appendChild(li);
                             });
                         } else {
@@ -6631,10 +6676,9 @@
             if (e.target && mfIsFocusableField(e.target)) {
                 const inSheet = e.target.closest('.mf-mobile-sheet');
                 if (inSheet && mfIsSheetOpen(inSheet)) {
-                    mfSyncAllSheetKeyboardPadding();
-                    mfEnsureFieldVisibleAboveKeyboard(e.target);
+                    mfScheduleFocusTimer(() => mfScrollFieldIntoView(e.target), 0);
                 } else if (e.target.closest('#dashboard-view, #landing-page, #view-group-modal, #feedback-modal')) {
-                    mfEnsureFieldVisibleAboveKeyboard(e.target);
+                    mfScheduleFocusTimer(() => mfScrollFieldIntoView(e.target), 0);
                 }
             }
             if (e.target && e.target.classList.contains('local-player-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
@@ -6654,30 +6698,25 @@
         });
 
         document.addEventListener('focusout', function(e) {
-            if (e.target && e.target.closest('.mf-mobile-sheet') && mfIsFocusableField(e.target)) {
-                setTimeout(mfAfterSheetKeyboardChange, 120);
-                setTimeout(mfAfterSheetKeyboardChange, 400);
+            if (e.target && mfIsFocusableField(e.target)) {
+                mfScheduleFocusTimer(mfCleanupFocusSideEffects, 0);
             }
             if (e.target && e.target.closest('.mf-mobile-sheet') && e.target.matches(
                 '.scryfall-input, .local-player-input, .local-deck-input, .local-owner-input, .new-player-input, .new-deck-input, .new-deck-variant-input'
             )) {
-                setTimeout(() => {
-                    const container = e.target.parentElement;
+                mfScheduleFocusTimer(() => {
+                    if (mfDropdownPickPending) return;
                     const slotGroup = mfGetDropdownHost(e.target);
-                    if (container) {
-                        const dropdown = container.querySelector('.custom-dropdown');
-                        if (dropdown) dropdown.remove();
-                    }
-                    if (slotGroup && !slotGroup.querySelector('.custom-dropdown')) {
-                        slotGroup.classList.remove('mf-slot-active');
-                    }
-                    mfAfterSheetKeyboardChange();
-                }, 150);
+                    const active = document.activeElement;
+                    if (slotGroup && active && slotGroup.contains(active)) return;
+                    if (e.relatedTarget && slotGroup?.contains(e.relatedTarget)) return;
+                    if (e.relatedTarget?.closest('.mf-floating-dropdown, .custom-dropdown')) return;
+                    mfDismissFloatingDropdown(e.target);
+                }, 200);
             }
         });
 
-        mfBindLogMatchKeyboardUX();
-        mfBindVisualViewportForSheets();
+        mfBindMobileViewportFixes();
         window.mfSyncPageScroll();
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible') window.mfSyncPageScroll();
