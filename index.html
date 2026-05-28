@@ -88,7 +88,7 @@
                     </div>
                     <div id="landing-signed-in" class="hidden mt-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 max-w-md mx-auto lg:mx-0">
                         <p class="text-sm text-emerald-300/90 mb-3">Signed in as <span id="landing-signed-in-email" class="font-semibold text-white"></span></p>
-                        <button type="button" onclick="window.openBestGroupEntry()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Enter a group →</button>
+                        <button type="button" onclick="window.openBestGroupEntry()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Enter Group →</button>
                     </div>
                     <div id="landing-my-groups" class="hidden mt-6 p-4 rounded-xl border border-purple-500/30 bg-purple-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
                         <p class="text-sm text-purple-200">Signed in as <span id="landing-my-groups-email" class="font-semibold text-white"></span></p>
@@ -1429,25 +1429,38 @@
                 groupsById.set(groupId, existing);
             };
             try {
+                const safeGetDocs = async (q, label) => {
+                    try {
+                        return await getDocs(q);
+                    } catch (err) {
+                        console.warn(`Group lookup failed (${label}):`, err);
+                        return null;
+                    }
+                };
+
                 const [ownerByUid, ownerByEmail, memberByUid, memberByEmail] = await Promise.all([
-                    getDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid))),
-                    getDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email))),
-                    getDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid))),
-                    getDocs(query(collectionGroup(db, 'members'), where('email', '==', email)))
+                    safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid)), 'ownerUid'),
+                    safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerEmail'),
+                    safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)), 'member uid'),
+                    safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'member email')
                 ]);
-                ownerByUid.docs.forEach(d => addGroup(d.id, 'owner'));
-                ownerByEmail.docs.forEach(d => addGroup(d.id, 'owner'));
-                memberByUid.docs.forEach(d => {
+
+                if (ownerByUid) ownerByUid.docs.forEach(d => addGroup(d.id, 'owner'));
+                if (ownerByEmail) ownerByEmail.docs.forEach(d => addGroup(d.id, 'owner'));
+                if (memberByUid) memberByUid.docs.forEach(d => {
                     const groupId = d.ref.parent?.parent?.id;
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
-                memberByEmail.docs.forEach(d => {
+                if (memberByEmail) memberByEmail.docs.forEach(d => {
                     const groupId = d.ref.parent?.parent?.id;
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
                 const entries = Array.from(groupsById.values());
+                if (!entries.length && ownerByUid === null && ownerByEmail === null && memberByUid === null && memberByEmail === null) {
+                    return null;
+                }
                 const names = await Promise.all(entries.map(async g => {
                     try {
                         const snap = await getDoc(doc(db, 'groups', g.id));
@@ -1498,7 +1511,7 @@
                 return;
             }
             window.showAppAlert(
-                'Could not load your groups yet. Please refresh and try again.',
+                'Could not load your groups yet. Please refresh, or open one from your shared group link.',
                 'Groups not loaded',
                 '⚠️'
             );
