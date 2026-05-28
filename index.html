@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.5.8">
+    <meta name="mf-app-version" content="1.5.9">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -260,7 +260,7 @@
         #view-log-match textarea,
         #view-log-match select,
         #view-log-match .static-dropdown-header {
-            scroll-margin-top: 72px;
+            scroll-margin-top: 96px;
             scroll-margin-bottom: max(16px, env(safe-area-inset-bottom, 0px));
         }
     </style>
@@ -2882,8 +2882,16 @@
         /** Native scroll-into-view; browser + dvh handle keyboard resize. */
         function mfScrollFieldIntoView(field) {
             if (!mfIsFocusableField(field)) return;
+            // Inside a Log Match sheet, bring the field to the upper part of the
+            // visible area (block:'start' + scroll-margin-top). Elsewhere, just
+            // nudge it into view to avoid unnecessary jumps.
+            const inLogMatch = !!field.closest('#view-log-match');
             try {
-                field.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+                field.scrollIntoView({
+                    block: inLogMatch ? 'start' : 'nearest',
+                    inline: 'nearest',
+                    behavior: 'auto'
+                });
             } catch (_) {}
             const anchorId = field.dataset.mfInputAnchorId;
             if (anchorId) {
