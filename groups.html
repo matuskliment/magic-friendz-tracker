@@ -172,6 +172,9 @@
         async function fetchAccessibleGroupsForCurrentUser(user) {
             const email = normalizeEmail(user?.email);
             const uid = user?.uid;
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H1',location:'groups.html:fetchAccessibleGroupsForCurrentUser:entry',message:'group discovery started',data:{hasEmail:!!email,hasUid:!!uid},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (!email || !uid) return [];
 
             const groupsById = new Map();
@@ -185,7 +188,10 @@
             const safeGetDocs = async (q) => {
                 try {
                     return await getDocs(q);
-                } catch (_) {
+                } catch (error) {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:safeGetDocsCatch',message:'group query failed',data:{errorCode:error?.code||'',errorName:error?.name||''},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
                     return null;
                 }
             };
@@ -196,6 +202,9 @@
                 safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email))),
                 safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)))
             ]);
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:queryResults',message:'raw query results',data:{ownerByUidCount:ownerByUid?.size??null,ownerByEmailCount:ownerByEmail?.size??null,memberByEmailCount:memberByEmail?.size??null,memberByUidCount:memberByUid?.size??null},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
 
             ownerByUid?.docs.forEach((d) => addGroup(d.id, 'owner'));
             ownerByEmail?.docs.forEach((d) => addGroup(d.id, 'owner'));
@@ -211,6 +220,9 @@
             });
 
             const groups = Array.from(groupsById.values());
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H3',location:'groups.html:fetchAccessibleGroupsForCurrentUser:mergedGroups',message:'merged group candidates',data:{groupCount:groups.length,groupIds:groups.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             const withNames = await Promise.all(groups.map(async (g) => {
                 try {
                     const snap = await getDoc(doc(db, 'groups', g.id));
@@ -302,6 +314,9 @@
                 await tryCompleteEmailSignInOnGroups();
             } catch (_) {}
             onAuthStateChanged(auth, async (user) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H4',location:'groups.html:onAuthStateChanged:entry',message:'auth state on groups',data:{hasUser:!!user,hasUid:!!user?.uid},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (!user) {
                 window.location.replace(indexBasePath());
                 return;
@@ -314,8 +329,14 @@
             noGroupsView.classList.add('hidden');
 
             const groups = await fetchAccessibleGroupsForCurrentUser(user);
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H5',location:'groups.html:onAuthStateChanged:postDiscovery',message:'routing decision input',data:{resolvedGroupCount:groups.length,resolvedGroupIds:groups.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (groups.length === 1) {
                 setLoadingState(`Opening ${groups[0].name || groups[0].id}...`, 'Taking you to your group now.');
+                // #region agent log
+                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H5',location:'groups.html:onAuthStateChanged:autoRedirect',message:'auto redirecting to single group',data:{targetGroupId:groups[0].id},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
                 await sleep(420);
                 window.location.replace(appGroupUrl(groups[0].id));
                 return;
