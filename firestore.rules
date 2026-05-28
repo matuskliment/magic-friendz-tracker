@@ -85,7 +85,11 @@ service cloud.firestore {
 
     match /groups/{groupId} {
       allow get: if true;
-      allow list: if isGlobalAdmin();
+      allow list: if isGlobalAdmin()
+        || (isSignedIn() && (
+          resource.data.ownerUid == request.auth.uid
+          || (authEmailLower() != '' && resource.data.ownerEmail == authEmailLower())
+        ));
       allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid;
       allow update: if canManageGroup(groupId);
