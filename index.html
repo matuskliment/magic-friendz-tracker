@@ -88,24 +88,57 @@
         .mf-404-card { animation: mf404Float 5s ease-in-out infinite; }
         .mf-404-card-alt { animation: mf404FloatAlt 6s ease-in-out infinite; }
         .mf-404-glow { animation: mf404Pulse 3s ease-in-out infinite; }
+
+        #dashboard-view { width: 100%; max-width: 100%; min-width: 0; }
+        .dashboard-main { width: 100%; max-width: 48rem; min-width: 0; box-sizing: border-box; }
+        #tab-analytics,
+        #tab-analytics .space-y-8,
+        #analytics-synergy,
+        #analytics-meta,
+        #analytics-upset,
+        #analytics-rivalry { width: 100%; max-width: 100%; min-width: 0; }
+        #analytics-synergy > *,
+        #analytics-meta > *,
+        #analytics-upset > *,
+        #analytics-rivalry > * { max-width: 100%; min-width: 0; }
+        @media (max-width: 639px) {
+            .group\/tooltip > div.absolute,
+            .group\/tooltip [role="tooltip"] {
+                left: auto !important;
+                right: 0;
+                width: min(17rem, calc(100vw - 2.5rem));
+            }
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans antialiased overflow-x-hidden">
 
     <!-- LANDING PAGE VIEW -->
     <div id="landing-page" class="min-h-screen flex flex-col transition-opacity duration-500 relative">
-        <nav class="w-full p-4 md:p-6 flex justify-between items-center fixed top-0 z-50 glass border-b border-slate-800/50">
-            <button type="button" onclick="window.goAppHome()" class="text-xl md:text-2xl font-bold tracking-tighter flex items-center gap-2 text-left hover:opacity-90 active:opacity-80 transition cursor-pointer touch-manipulation" aria-label="Magic Friendz home">
+        <nav class="w-full p-3 md:p-6 flex justify-between items-center gap-2 fixed top-0 z-50 glass border-b border-slate-800/50">
+            <button type="button" onclick="window.goAppHome()" class="text-lg md:text-2xl font-bold tracking-tighter flex items-center gap-2 text-left hover:opacity-90 active:opacity-80 transition cursor-pointer touch-manipulation min-w-0" aria-label="Magic Friendz home">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500 shrink-0" aria-hidden="true"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                Magic<span class="text-purple-500">Friendz</span>
+                <span class="truncate">Magic<span class="text-purple-500">Friendz</span></span>
             </button>
-            <div class="flex items-center gap-2">
-                <a href="#landing-how-it-works" class="hidden md:inline text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">How it works</a>
-                <button type="button" onclick="window.openFeedbackModal()" class="text-xs sm:text-sm font-semibold text-slate-400 hover:text-white px-2.5 sm:px-3 py-2 rounded-full border border-slate-700 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Feedback</button>
-                <button type="button" id="landing-login-btn" onclick="window.toggleLandingSignIn()" class="text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Log in</button>
-                <button type="button" onclick="window.openGroupModal()" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation">Enter App</button>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" id="landing-login-btn" onclick="window.toggleLandingSignIn()" class="text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 transition min-h-[44px] touch-manipulation whitespace-nowrap">Log in</button>
+                <div class="hidden sm:flex items-center gap-2">
+                    <a href="#landing-how-it-works" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">How it works</a>
+                    <button type="button" onclick="window.openFeedbackModal()" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full border border-slate-700 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Feedback</button>
+                    <button type="button" onclick="window.openGroupModal()" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation whitespace-nowrap">Enter App</button>
+                </div>
+                <button type="button" id="landing-menu-btn" onclick="window.toggleLandingNavMenu()" class="sm:hidden flex items-center justify-center w-11 h-11 rounded-full border border-slate-600 bg-slate-800/80 text-slate-200 hover:text-white hover:border-slate-500 transition touch-manipulation" aria-label="Open menu" aria-expanded="false" aria-controls="landing-nav-menu">
+                    <svg id="landing-menu-icon-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    <svg id="landing-menu-icon-close" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
             </div>
         </nav>
+        <div id="landing-nav-menu" class="hidden sm:hidden fixed top-[4.25rem] left-3 right-3 z-[60] glass rounded-2xl border border-slate-700/80 shadow-2xl p-2" role="menu">
+            <a href="#landing-how-it-works" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">How it works</a>
+            <button type="button" onclick="window.closeLandingNavMenu(); window.openFeedbackModal();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Feedback</button>
+            <button type="button" onclick="window.closeLandingNavMenu(); window.openGroupModal();" class="w-full mt-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-xl text-sm font-bold transition min-h-[48px] touch-manipulation" role="menuitem">Enter App</button>
+        </div>
 
         <main class="flex-grow flex items-center justify-center hero-bg px-4 md:px-6 pt-24 md:pt-32 pb-12 md:pb-16 relative">
             <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center z-10 mt-10 md:mt-0">
@@ -289,28 +322,27 @@
 
     <!-- APP DASHBOARD VIEW -->
     <div id="dashboard-view" class="hidden min-h-screen bg-slate-950 pb-24 transition-opacity duration-500 opacity-0 relative">
-        <div class="glass sticky top-0 z-40 px-4 py-4 flex justify-between items-center border-b border-slate-800">
-            <div class="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                <button type="button" onclick="window.goAppHome()" class="flex items-center gap-2 shrink-0 text-left hover:opacity-90 active:opacity-80 transition cursor-pointer touch-manipulation" aria-label="Magic Friendz home">
+        <div class="glass sticky top-0 z-40 px-3 sm:px-4 py-2.5 sm:py-4 flex justify-between items-center gap-2 border-b border-slate-800 min-w-0 w-full">
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <button type="button" onclick="window.goAppHome()" class="flex items-center justify-center w-10 h-10 shrink-0 rounded-xl hover:bg-slate-800/80 active:bg-slate-800 transition touch-manipulation" aria-label="Magic Friendz home">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400 shrink-0" aria-hidden="true"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                    <span class="hidden sm:inline text-base md:text-lg font-bold tracking-tight text-white">Magic<span class="text-purple-400">Friendz</span></span>
                 </button>
-                <div class="min-w-0 border-l border-slate-700/80 pl-3">
-                    <p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold leading-none">Group</p>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold leading-none hidden sm:block">Group</p>
                     <p id="group-name-display" class="text-sm md:text-base font-bold text-purple-400 truncate leading-tight">Loading...</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2 md:gap-3 shrink-0">
-                <button type="button" onclick="window.openFeedbackModal()" class="text-[10px] sm:text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1.5 rounded-lg transition min-h-[32px] touch-manipulation whitespace-nowrap">Feedback</button>
-                <span id="group-header-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80">View only</span>
-                <button id="group-list-btn" onclick="window.openGroupsHubForCurrentUser()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg items-center gap-1 transition touch-manipulation cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    My Groups
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <button type="button" onclick="window.openFeedbackModal()" class="hidden sm:inline-flex text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1.5 rounded-lg transition min-h-[32px] touch-manipulation whitespace-nowrap items-center">Feedback</button>
+                <span id="group-header-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80 whitespace-nowrap">View only</span>
+                <button id="group-list-btn" onclick="window.openGroupsHubForCurrentUser()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-2.5 sm:px-3 py-2 rounded-lg items-center gap-1 transition touch-manipulation cursor-pointer whitespace-nowrap" aria-label="My groups">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                    <span class="hidden sm:inline">My Groups</span>
                 </button>
             </div>
         </div>
 
-        <div class="p-4 max-w-3xl mx-auto mt-2 pb-20">
+        <div class="dashboard-main p-4 mx-auto mt-2 pb-20">
             <!-- TAB 1: HOME (DASHBOARD) -->
             <div id="tab-home" class="tab-content block space-y-6">
 
@@ -385,7 +417,7 @@
             </div>
 
             <!-- NEW TAB: INSIGHTS & ANALYTICS -->
-            <div id="tab-analytics" class="tab-content hidden space-y-6">
+            <div id="tab-analytics" class="tab-content hidden space-y-6 w-full min-w-0 max-w-full overflow-x-hidden">
                 <div class="mt-4 mb-6">
                     <h1 class="text-2xl md:text-3xl font-bold">Global Insights</h1>
                     <p class="text-xs text-slate-400">Deep analytics from across the multiverse</p>
@@ -1179,6 +1211,7 @@
         };
 
         window.goAppHome = function() {
+            window.closeLandingNavMenu();
             if (window.currentUser) {
                 window.openGroupsHubForCurrentUser();
                 return;
@@ -1186,6 +1219,30 @@
             window.showLanding();
             const landing = document.getElementById('landing-page');
             if (landing) landing.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        window.toggleLandingNavMenu = function() {
+            const menu = document.getElementById('landing-nav-menu');
+            const btn = document.getElementById('landing-menu-btn');
+            const iconOpen = document.getElementById('landing-menu-icon-open');
+            const iconClose = document.getElementById('landing-menu-icon-close');
+            if (!menu) return;
+            const willOpen = menu.classList.contains('hidden');
+            menu.classList.toggle('hidden', !willOpen);
+            if (btn) btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            if (iconOpen) iconOpen.classList.toggle('hidden', willOpen);
+            if (iconClose) iconClose.classList.toggle('hidden', !willOpen);
+        };
+
+        window.closeLandingNavMenu = function() {
+            const menu = document.getElementById('landing-nav-menu');
+            const btn = document.getElementById('landing-menu-btn');
+            const iconOpen = document.getElementById('landing-menu-icon-open');
+            const iconClose = document.getElementById('landing-menu-icon-close');
+            if (menu) menu.classList.add('hidden');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            if (iconOpen) iconOpen.classList.remove('hidden');
+            if (iconClose) iconClose.classList.add('hidden');
         };
 
         function getAuthContinueUrl(groupId, signInEmail = '', debugLinkId = '') {
@@ -4037,7 +4094,7 @@
                     const playerIndex = window.appData.players.findIndex(p => p.name === threatPlayerName);
 
                     safeSetHTML('analytics-synergy', `
-                        <div onclick="window.openPlayerProfile(${playerIndex > -1 ? playerIndex : 0})" class="glass p-4 rounded-2xl border border-purple-500/30 bg-gradient-to-r from-slate-900 to-purple-900/20 hover:border-purple-500/50 transition cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] flex flex-col sm:flex-row items-center gap-4">
+                        <div onclick="window.openPlayerProfile(${playerIndex > -1 ? playerIndex : 0})" class="glass p-4 rounded-2xl border border-purple-500/30 bg-gradient-to-r from-slate-900 to-purple-900/20 hover:border-purple-500/50 transition cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full max-w-full min-w-0">
                             <div data-card="${threatDeck.name}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-20 transition duration-500 mix-blend-luminosity"></div>
                             
                             <div class="relative z-10 flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
@@ -4066,7 +4123,7 @@
                 metaDecks.forEach((cmd, i) => {
                     const winBadgeColor = parseFloat(cmd.winRate) >= 50 ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-slate-700/80 text-slate-300 border-slate-600/50';
                     metaHTML += `
-                        <div class="glass flex items-center p-3 rounded-xl border border-slate-700/50 relative overflow-hidden group">
+                        <div class="glass flex items-center p-3 rounded-xl border border-slate-700/50 relative overflow-hidden group w-full max-w-full min-w-0">
                             <div data-card="${cmd.name}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 mix-blend-luminosity"></div>
                             <div class="w-6 text-center font-black text-xl text-blue-500/50 z-10">#${i+1}</div>
                             <div data-card="${cmd.name}" data-version="art_crop" class="set-bg w-12 h-12 rounded-full art-fallback ml-3 bg-cover bg-center border border-slate-600 shadow-md z-10 flex-shrink-0"></div>
@@ -4136,20 +4193,20 @@
                             <div class="absolute right-0 top-1/2 -translate-y-1/2 opacity-[0.03] text-9xl pointer-events-none">⚔️</div>
                             <p class="text-[10px] uppercase font-bold tracking-widest text-red-400 mb-4 text-center">Most Head-to-Head Wins</p>
                             
-                            <div class="flex items-center justify-center gap-2 md:gap-4 relative z-10">
-                                <div class="flex flex-col items-center flex-1 text-center">
+                            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-2 md:gap-4 relative z-10 w-full max-w-full min-w-0">
+                                <div class="flex flex-col items-center w-full sm:flex-1 text-center min-w-0">
                                     ${renderPlayerAvatar(pBully, 'w-14 h-14 md:w-16 md:h-16', 'text-sm md:text-base', 'mb-2 border-2 border-red-500 shadow-md')}
-                                    <h4 class="font-bold text-white text-sm md:text-base">${rivalBully}</h4>
+                                    <h4 class="font-bold text-white text-sm md:text-base truncate max-w-full px-1">${rivalBully}</h4>
                                 </div>
                                 
-                                <div class="flex flex-col items-center flex-shrink-0 pb-4">
+                                <div class="flex flex-col items-center flex-shrink-0 py-1 sm:pb-4">
                                     <span class="text-2xl md:text-3xl font-black text-red-500 leading-none">WINS</span>
                                     <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">Net +${maxDifferential}</span>
                                 </div>
 
-                                <div class="flex flex-col items-center flex-1 text-center opacity-60">
+                                <div class="flex flex-col items-center w-full sm:flex-1 text-center opacity-60 min-w-0">
                                     ${renderPlayerAvatar(pVictim, 'w-12 h-12 md:w-14 md:h-14', 'text-xs md:text-sm', 'mb-2 border border-slate-700 shadow-inner grayscale')}
-                                    <h4 class="font-bold text-slate-300 text-xs md:text-sm">${rivalVictim}</h4>
+                                    <h4 class="font-bold text-slate-300 text-xs md:text-sm truncate max-w-full px-1">${rivalVictim}</h4>
                                 </div>
                             </div>
                         </div>
@@ -5562,6 +5619,13 @@
         // ==========================================
 
         document.addEventListener('click', function(e) {
+            const landingMenu = document.getElementById('landing-nav-menu');
+            if (landingMenu && !landingMenu.classList.contains('hidden')) {
+                if (!e.target.closest('#landing-nav-menu') && !e.target.closest('#landing-menu-btn')) {
+                    window.closeLandingNavMenu();
+                }
+            }
+
             const dropdownHeader = e.target.closest('.static-dropdown-header');
             if (dropdownHeader) {
                 const container = dropdownHeader.closest('.custom-static-dropdown');
