@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="mf-app-version" content="1.2.1">
+    <meta name="mf-app-version" content="1.2.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -143,6 +143,27 @@
             color: #94a3b8;
             font-style: italic;
         }
+        .custom-dropdown .dropdown-loading {
+            cursor: default;
+            pointer-events: none;
+            color: #cbd5e1;
+        }
+        .dropdown-mini-spinner {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(168, 85, 247, 0.25);
+            border-top-color: #a855f7;
+            border-radius: 50%;
+            animation: mfBootSpin 0.75s linear infinite;
+            flex-shrink: 0;
+        }
+        body.mf-scroll-locked {
+            position: fixed;
+            width: 100%;
+            left: 0;
+            right: 0;
+            overflow: hidden;
+        }
     </style>
     <!-- After Tailwind: 16px form text beats text-sm and stops iOS focus-zoom -->
     <style>
@@ -186,9 +207,12 @@
             overflow: hidden;
         }
         .date-input-shell {
+            display: flex;
+            align-items: center;
             width: 100%;
             max-width: 100%;
             min-width: 0;
+            min-height: 48px;
             overflow: hidden;
             border-radius: 0.75rem;
             border: 1px solid rgb(51 65 85);
@@ -196,16 +220,25 @@
         }
         #form-date.mf-date-input {
             display: block;
+            flex: 1 1 auto;
             width: 100%;
             max-width: 100%;
             min-width: 0;
             box-sizing: border-box;
             font-size: 16px !important;
-            min-height: 48px;
+            height: 48px;
+            line-height: 48px;
             border: 0;
             background: transparent;
             color: #fff;
-            padding: 0.75rem 0.75rem;
+            padding: 0 2.5rem 0 0.75rem;
+            margin: 0;
+        }
+        #form-date.mf-date-input::-webkit-datetime-edit,
+        #form-date.mf-date-input::-webkit-datetime-edit-fields-wrapper {
+            padding: 0;
+            margin: 0;
+            line-height: 48px;
         }
         #form-date.mf-date-input::-webkit-datetime-edit {
             overflow: hidden;
@@ -215,8 +248,6 @@
         }
         #view-log-match {
             -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
-            overscroll-behavior: contain;
         }
     </style>
 </head>
@@ -2550,6 +2581,26 @@
             if (el && message) el.textContent = message;
         }
 
+        let mfScrollLockCount = 0;
+        let mfScrollLockY = 0;
+        window.mfLockPageScroll = function() {
+            if (mfScrollLockCount === 0) {
+                mfScrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+                document.body.classList.add('mf-scroll-locked');
+                document.body.style.top = `-${mfScrollLockY}px`;
+            }
+            mfScrollLockCount++;
+        };
+        window.mfUnlockPageScroll = function() {
+            if (mfScrollLockCount <= 0) return;
+            mfScrollLockCount--;
+            if (mfScrollLockCount === 0) {
+                document.body.classList.remove('mf-scroll-locked');
+                document.body.style.top = '';
+                window.scrollTo(0, mfScrollLockY);
+            }
+        };
+
         function formatDurationLabel(totalMinutes) {
             if (!totalMinutes || totalMinutes <= 0) return '';
             const h = Math.floor(totalMinutes / 60);
@@ -4630,7 +4681,10 @@
         window.openCommanderProfile = function(index) {
             const cmd = window.appData.commanders[index];
             const view = document.getElementById('view-commander-detail');
-            if (view) view.classList.remove('hidden');
+            if (view) {
+                window.mfLockPageScroll();
+                view.classList.remove('hidden');
+            }
             
             const titleEl = document.getElementById('cmd-view-title');
             const nameEl = document.getElementById('cmd-view-name');
@@ -4765,14 +4819,20 @@
             const view = document.getElementById('view-commander-detail');
             if (view) {
                 view.classList.add('translate-x-full');
-                setTimeout(() => { view.classList.add('hidden'); }, 300);
+                setTimeout(() => {
+                    view.classList.add('hidden');
+                    window.mfUnlockPageScroll();
+                }, 300);
             }
         }
 
         window.openPlayerProfile = function(index) {
             const player = window.appData.players[index];
             const view = document.getElementById('view-player-detail');
-            if (view) view.classList.remove('hidden');
+            if (view) {
+                window.mfLockPageScroll();
+                view.classList.remove('hidden');
+            }
             
             const iconEl = document.getElementById('plr-view-icon');
             const nameEl = document.getElementById('plr-view-name');
@@ -4841,7 +4901,10 @@
             const view = document.getElementById('view-player-detail');
             if (view) {
                 view.classList.add('translate-x-full');
-                setTimeout(() => { view.classList.add('hidden'); }, 300);
+                setTimeout(() => {
+                    view.classList.add('hidden');
+                    window.mfUnlockPageScroll();
+                }, 300);
             }
         }
 
@@ -4887,6 +4950,7 @@
             }
 
             const modal = document.getElementById('view-admin-modal');
+            window.mfLockPageScroll();
             modal.classList.remove('hidden');
             setTimeout(() => modal.classList.remove('translate-x-full'), 10);
         }
@@ -4894,7 +4958,10 @@
         window.closeAdminModal = function() {
             const modal = document.getElementById('view-admin-modal');
             modal.classList.add('translate-x-full');
-            setTimeout(() => modal.classList.add('hidden'), 300);
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                window.mfUnlockPageScroll();
+            }, 300);
         }
 
         window.toggleAdminMigration = function(btn) {
@@ -5113,6 +5180,7 @@
             container.innerHTML = html || '<p class="text-slate-500 text-center text-sm p-4">No commanders found.</p>';
             
             const modal = document.getElementById('view-art-diagnostics');
+            window.mfLockPageScroll();
             modal.classList.remove('hidden');
             setTimeout(() => modal.classList.remove('translate-x-full'), 10);
         }
@@ -5120,7 +5188,10 @@
         window.closeArtDiagnostics = function() {
             const modal = document.getElementById('view-art-diagnostics');
             modal.classList.add('translate-x-full');
-            setTimeout(() => modal.classList.add('hidden'), 300);
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                window.mfUnlockPageScroll();
+            }, 300);
         }
 
         window.toggleAddPlayer = function() {
@@ -5542,6 +5613,7 @@
             });
             
             if (modal) {
+                window.mfLockPageScroll();
                 modal.classList.remove('hidden'); 
                 setTimeout(() => { modal.classList.remove('translate-y-full'); }, 10);
             }
@@ -5551,7 +5623,10 @@
             const modal = document.getElementById('view-log-match');
             if (modal) {
                 modal.classList.add('translate-y-full'); 
-                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    window.mfUnlockPageScroll();
+                }, 300);
             }
         }
 
@@ -6024,12 +6099,103 @@
             input.parentNode.appendChild(dropdown);
         }
 
+        const SCRYFALL_DROPDOWN_CLASS = 'custom-dropdown absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto overflow-x-hidden shadow-2xl';
+
+        function removeScryfallDropdown(input) {
+            const container = input?.parentElement;
+            if (!container) return;
+            const existing = container.querySelector('.custom-dropdown');
+            if (existing) existing.remove();
+        }
+
+        function showScryfallDropdown(input, buildItems) {
+            const container = input.parentElement;
+            if (!container) return;
+            removeScryfallDropdown(input);
+            const ul = document.createElement('ul');
+            ul.className = SCRYFALL_DROPDOWN_CLASS;
+            buildItems(ul, input);
+            container.appendChild(ul);
+        }
+
+        function appendScryfallDropdownMessage(ul, message, className = 'dropdown-empty') {
+            const li = document.createElement('li');
+            li.className = `${className} px-4 py-3 text-sm border-b border-slate-700/50 last:border-0`;
+            li.textContent = message;
+            ul.appendChild(li);
+        }
+
+        function appendScryfallDropdownLoading(ul, message = 'Searching cards…') {
+            const li = document.createElement('li');
+            li.className = 'dropdown-loading px-4 py-3 text-sm flex items-center gap-2 border-b border-slate-700/50 last:border-0';
+            li.setAttribute('aria-live', 'polite');
+            li.innerHTML = `<span class="dropdown-mini-spinner" aria-hidden="true"></span><span>${message}</span>`;
+            ul.appendChild(li);
+        }
+
         let scryfallTimeout;
+        let scryfallRequestId = 0;
+
+        window.queueScryfallAutocomplete = function(input) {
+            if (!input) return;
+            clearTimeout(scryfallTimeout);
+            const query = String(input.value || '').trim();
+
+            if (query.length < 3) {
+                showScryfallDropdown(input, (ul) => {
+                    appendScryfallDropdownMessage(ul, 'Type at least 3 characters to search');
+                });
+                return;
+            }
+
+            const requestId = ++scryfallRequestId;
+            showScryfallDropdown(input, (ul) => {
+                appendScryfallDropdownLoading(ul);
+            });
+
+            scryfallTimeout = setTimeout(async () => {
+                if (requestId !== scryfallRequestId) return;
+                if (String(input.value || '').trim() !== query) return;
+
+                try {
+                    const res = await fetch('https://api.scryfall.com/cards/autocomplete?q=' + encodeURIComponent(query), { headers: SCRYFALL_FETCH_HEADERS });
+                    if (requestId !== scryfallRequestId) return;
+                    if (String(input.value || '').trim() !== query) return;
+
+                    const data = await res.json();
+                    showScryfallDropdown(input, (ul, activeInput) => {
+                        if (data.data && data.data.length > 0) {
+                            data.data.forEach(name => {
+                                const li = document.createElement('li');
+                                li.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 last:border-0 truncate';
+                                li.innerText = name;
+                                li.onmousedown = (evt) => {
+                                    evt.preventDefault();
+                                    activeInput.value = name;
+                                    removeScryfallDropdown(activeInput);
+                                };
+                                ul.appendChild(li);
+                            });
+                        } else {
+                            appendScryfallDropdownMessage(ul, 'No cards match your search');
+                        }
+                    });
+                } catch (err) {
+                    console.error('Scryfall autocomplete failed:', err);
+                    if (requestId !== scryfallRequestId) return;
+                    if (String(input.value || '').trim() !== query) return;
+                    showScryfallDropdown(input, (ul) => {
+                        appendScryfallDropdownMessage(ul, 'Could not reach Scryfall — try again', 'dropdown-empty text-amber-300/90');
+                    });
+                }
+            }, 300);
+        };
 
         document.addEventListener('focusin', function(e) {
             if (e.target && e.target.classList.contains('local-player-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
             if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, window.appData.commanders, true); }
             if (e.target && e.target.classList.contains('local-owner-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
+            if (e.target && e.target.classList.contains('scryfall-input')) { window.queueScryfallAutocomplete(e.target); }
         });
 
         document.addEventListener('input', function(e) {
@@ -6038,54 +6204,7 @@
             if (e.target && e.target.classList.contains('local-owner-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
             
             if (e.target && e.target.classList.contains('scryfall-input')) {
-                clearTimeout(scryfallTimeout);
-                const query = e.target.value;
-                const container = e.target.parentElement;
-
-                let existingDropdown = container.querySelector('.custom-dropdown');
-                if (existingDropdown) existingDropdown.remove();
-
-                if (query.length < 3) {
-                    const ul = document.createElement('ul');
-                    ul.className = 'custom-dropdown absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 shadow-2xl';
-                    const li = document.createElement('li');
-                    li.className = 'dropdown-empty px-4 py-3 text-sm';
-                    li.textContent = 'Type at least 3 characters to search';
-                    ul.appendChild(li);
-                    container.appendChild(ul);
-                    return;
-                }
-
-                scryfallTimeout = setTimeout(async () => {
-                    try {
-                        const res = await fetch('https://api.scryfall.com/cards/autocomplete?q=' + encodeURIComponent(query), { headers: SCRYFALL_FETCH_HEADERS });
-                        const data = await res.json();
-                        
-                        const ul = document.createElement('ul');
-                        ul.className = 'custom-dropdown absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto overflow-x-hidden shadow-2xl';
-
-                        if (data.data && data.data.length > 0) {
-                            data.data.forEach(name => {
-                                const li = document.createElement('li');
-                                li.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 last:border-0 truncate';
-                                li.innerText = name;
-                                
-                                li.onmousedown = (evt) => {
-                                    evt.preventDefault(); 
-                                    e.target.value = name;
-                                    ul.remove();
-                                };
-                                ul.appendChild(li);
-                            });
-                        } else {
-                            const li = document.createElement('li');
-                            li.className = 'dropdown-empty px-4 py-3 text-sm border-b border-slate-700/50 last:border-0';
-                            li.textContent = 'No cards match your search';
-                            ul.appendChild(li);
-                        }
-                        container.appendChild(ul);
-                    } catch(err) { console.error("Scryfall autocomplete failed:", err); }
-                }, 300); 
+                window.queueScryfallAutocomplete(e.target);
             }
         });
 
