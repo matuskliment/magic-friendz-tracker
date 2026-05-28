@@ -90,6 +90,15 @@
                         <p class="text-sm text-emerald-300/90 mb-3">Signed in as <span id="landing-signed-in-email" class="font-semibold text-white"></span></p>
                         <button type="button" onclick="window.openGroupModal()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Enter a group →</button>
                     </div>
+                    <div id="landing-no-access" class="hidden mt-6 p-4 rounded-xl border border-amber-500/35 bg-amber-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
+                        <p class="text-sm text-amber-200">Signed in as <span id="landing-no-access-email" class="font-semibold text-white"></span></p>
+                        <p class="text-sm text-slate-300">This email is not linked to any group yet.</p>
+                        <p class="text-xs text-slate-400">Ask a group owner to invite this email, or create a new group now.</p>
+                        <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                            <button type="button" onclick="window.startCreateGroupFromNoAccess()" class="flex-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-100 px-4 py-2.5 rounded-lg text-sm font-bold transition min-h-[42px] touch-manipulation">Create a group</button>
+                            <button type="button" onclick="window.authSignOut()" class="flex-1 bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-slate-200 px-4 py-2.5 rounded-lg text-sm font-bold transition min-h-[42px] touch-manipulation">Use different email</button>
+                        </div>
+                    </div>
                     <div id="landing-sign-in-panel" class="hidden mt-6 p-4 rounded-xl border border-purple-500/25 bg-purple-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
                         <p id="landing-sign-in-intro" class="text-sm text-slate-400">Use the email from your invite, or the one you used to create a group. We’ll send a magic link — no password.</p>
                         <div id="landing-sign-in-form" class="space-y-3">
@@ -885,7 +894,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
@@ -923,7 +932,7 @@
         window.pendingEmailLinkUrl = '';
         window.rosterInviteOpen = new Set();
         window.rosterInviteFlash = {};
-        window.rosterInviteFlash = {};
+        window.userHasAnyGroupAccess = null;
         window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
 
         function normalizeEmail(email) {
@@ -1342,14 +1351,21 @@
             const panel = document.getElementById('landing-sign-in-panel');
             const signedIn = document.getElementById('landing-signed-in');
             const signedInEmail = document.getElementById('landing-signed-in-email');
+            const noAccess = document.getElementById('landing-no-access');
+            const noAccessEmail = document.getElementById('landing-no-access-email');
             const hasUser = !!window.currentUser;
+            const showNoAccess = hasUser && !window.groupIdRaw && window.userHasAnyGroupAccess === false;
 
             if (loginNav) loginNav.classList.toggle('hidden', hasUser);
             if (loginHero) loginHero.classList.toggle('hidden', hasUser);
             if (panel && hasUser) panel.classList.add('hidden');
             if (signedIn) {
-                signedIn.classList.toggle('hidden', !hasUser);
+                signedIn.classList.toggle('hidden', !hasUser || showNoAccess);
                 if (hasUser && signedInEmail) signedInEmail.textContent = window.currentUser.email || '';
+            }
+            if (noAccess) {
+                noAccess.classList.toggle('hidden', !showNoAccess);
+                if (showNoAccess && noAccessEmail) noAccessEmail.textContent = window.currentUser.email || '';
             }
             if (!hasUser && loginNav && panel) {
                 const panelOpen = !panel.classList.contains('hidden');
@@ -1357,6 +1373,29 @@
                 if (loginHero) loginHero.textContent = panelOpen ? 'Hide' : 'Log in';
             }
         }
+
+        async function checkAnyGroupAccessForCurrentUser() {
+            if (!auth.currentUser) return null;
+            const email = normalizeEmail(auth.currentUser.email);
+            const uid = auth.currentUser.uid;
+            if (!email || !uid) return false;
+            try {
+                const [ownerByUid, ownerByEmail, memberByEmail] = await Promise.all([
+                    getDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid), limit(1))),
+                    getDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email), limit(1))),
+                    getDocs(query(collectionGroup(db, 'members'), where('email', '==', email), limit(1)))
+                ]);
+                return !ownerByUid.empty || !ownerByEmail.empty || !memberByEmail.empty;
+            } catch (error) {
+                console.warn('Could not check global group access:', error);
+                return null;
+            }
+        }
+
+        window.startCreateGroupFromNoAccess = function() {
+            window.openGroupModal();
+            setTimeout(() => window.showCreateGroupPanel(), 50);
+        };
 
         window.toggleLandingSignIn = function() {
             const panel = document.getElementById('landing-sign-in-panel');
@@ -2369,11 +2408,15 @@
         onAuthStateChanged(auth, async (user) => {
             window.currentUser = user;
             authReady = true;
+            if (user) {
+                window.userHasAnyGroupAccess = await checkAnyGroupAccessForCurrentUser();
+            }
             if (user && window.isGroupValid) {
                 await claimMembershipForCurrentUser();
             } else if (!user) {
                 window.groupAccess = 'viewer';
                 window.linkedPlayerName = '';
+                window.userHasAnyGroupAccess = null;
             }
             updateAccessUI();
             if (user && window.isGroupValid && window.canWrite()) {
