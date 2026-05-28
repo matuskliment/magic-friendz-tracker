@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-    <meta name="mf-app-version" content="1.2.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="mf-app-version" content="1.2.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -65,6 +65,32 @@
 
         /* Prevent landing flash when URL already targets a group. */
         html.mf-route-group #landing-page { display: none !important; }
+
+        #mf-app-boot-loader {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+        }
+        html.mf-route-group:not(.boot-ready) #mf-app-boot-loader {
+            display: flex;
+        }
+        .mf-boot-spinner {
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 3px solid rgba(168, 85, 247, 0.25);
+            border-top-color: #a855f7;
+            border-radius: 50%;
+            animation: mfBootSpin 0.75s linear infinite;
+        }
+        @keyframes mfBootSpin { to { transform: rotate(360deg); } }
 
         /* MTG 404 — group not found */
         .mf-404-bg {
@@ -130,7 +156,6 @@
         #view-log-match input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         #view-log-match textarea,
         #view-log-match select,
-        #view-log-match .mf-date-part,
         #dashboard-view input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         #dashboard-view textarea,
         #dashboard-view select,
@@ -160,34 +185,47 @@
             max-width: 100%;
             overflow: hidden;
         }
-        #form-date-mobile {
+        .date-input-shell {
             width: 100%;
             max-width: 100%;
             min-width: 0;
-        }
-        .mf-date-part {
-            width: 100%;
-            min-width: 0;
-            max-width: 100%;
-            box-sizing: border-box;
-            background-color: rgb(15 23 42);
-            border: 1px solid rgb(51 65 85);
-            color: #fff;
+            overflow: hidden;
             border-radius: 0.75rem;
-            padding: 0.75rem 0.5rem;
-            font-size: 16px !important;
-            min-height: 48px;
+            border: 1px solid rgb(51 65 85);
+            background-color: rgb(15 23 42);
         }
         #form-date.mf-date-input {
             display: block;
             width: 100%;
+            max-width: 100%;
+            min-width: 0;
             box-sizing: border-box;
             font-size: 16px !important;
             min-height: 48px;
+            border: 0;
+            background: transparent;
+            color: #fff;
+            padding: 0.75rem 0.75rem;
+        }
+        #form-date.mf-date-input::-webkit-datetime-edit {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+        #view-log-match {
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            overscroll-behavior: contain;
         }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans antialiased overflow-x-hidden">
+
+    <div id="mf-app-boot-loader" role="status" aria-live="polite" aria-busy="true">
+        <div class="mf-boot-spinner" aria-hidden="true"></div>
+        <p id="mf-boot-loader-text" class="text-sm font-semibold text-slate-300 tracking-wide">Loading your playgroup…</p>
+    </div>
 
     <!-- LANDING PAGE VIEW -->
     <div id="landing-page" class="min-h-screen flex flex-col transition-opacity duration-500 relative">
@@ -959,12 +997,9 @@
                 <div class="match-settings-grid grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div class="match-settings-date-cell min-w-0 w-full">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Date Played</label>
-                        <div id="form-date-mobile" class="grid grid-cols-3 gap-2 md:hidden w-full min-w-0 max-w-full">
-                            <select id="form-date-month" class="mf-date-part mf-touch-input min-w-0" aria-label="Month"></select>
-                            <select id="form-date-day" class="mf-date-part mf-touch-input min-w-0" aria-label="Day"></select>
-                            <select id="form-date-year" class="mf-date-part mf-touch-input min-w-0" aria-label="Year"></select>
+                        <div class="date-input-shell focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-sm">
+                            <input type="date" id="form-date" class="mf-date-input mf-touch-input w-full min-w-0 outline-none">
                         </div>
-                        <input type="date" id="form-date" class="mf-date-input mf-touch-input hidden md:block w-full min-w-0 max-w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
                     <div class="min-w-0">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Pod Size</label>
@@ -2488,85 +2523,31 @@
             return total;
         }
 
-        function useMobileDatePickers() {
-            return window.matchMedia('(max-width: 767px)').matches;
-        }
-
-        function populateFormDateDayOptions() {
-            const monthEl = document.getElementById('form-date-month');
-            const dayEl = document.getElementById('form-date-day');
-            const yearEl = document.getElementById('form-date-year');
-            if (!monthEl || !dayEl || !yearEl) return;
-            const month = parseInt(monthEl.value, 10) || 1;
-            const year = parseInt(yearEl.value, 10) || new Date().getFullYear();
-            const daysInMonth = new Date(year, month, 0).getDate();
-            const prevDay = parseInt(dayEl.value, 10) || 1;
-            dayEl.innerHTML = '';
-            for (let d = 1; d <= daysInMonth; d++) {
-                const opt = document.createElement('option');
-                opt.value = String(d);
-                opt.textContent = String(d);
-                dayEl.appendChild(opt);
-            }
-            dayEl.value = String(Math.min(prevDay, daysInMonth));
-        }
-
         function initFormDatePickers(date = new Date()) {
             const native = document.getElementById('form-date');
             if (native) native.valueAsDate = date;
-
-            const monthEl = document.getElementById('form-date-month');
-            const dayEl = document.getElementById('form-date-day');
-            const yearEl = document.getElementById('form-date-year');
-            if (!monthEl || !dayEl || !yearEl) return;
-
-            if (!yearEl.dataset.ready) {
-                const y = date.getFullYear();
-                yearEl.innerHTML = '';
-                for (let yr = y + 1; yr >= y - 8; yr--) {
-                    const opt = document.createElement('option');
-                    opt.value = String(yr);
-                    opt.textContent = String(yr);
-                    yearEl.appendChild(opt);
-                }
-                yearEl.dataset.ready = '1';
-                monthEl.addEventListener('change', populateFormDateDayOptions);
-                yearEl.addEventListener('change', populateFormDateDayOptions);
-            }
-
-            if (!monthEl.dataset.ready) {
-                monthEl.innerHTML = '';
-                for (let m = 1; m <= 12; m++) {
-                    const opt = document.createElement('option');
-                    opt.value = String(m);
-                    opt.textContent = new Date(2000, m - 1, 1).toLocaleString('en-US', { month: 'short' });
-                    monthEl.appendChild(opt);
-                }
-                monthEl.dataset.ready = '1';
-            }
-
-            monthEl.value = String(date.getMonth() + 1);
-            yearEl.value = String(date.getFullYear());
-            populateFormDateDayOptions();
-            dayEl.value = String(date.getDate());
         }
 
         function readFormMatchDate() {
-            if (useMobileDatePickers()) {
-                const month = parseInt(document.getElementById('form-date-month')?.value, 10);
-                const day = parseInt(document.getElementById('form-date-day')?.value, 10);
-                const year = parseInt(document.getElementById('form-date-year')?.value, 10);
-                if (!month || !day || !year) throw new Error('Pick a valid date.');
-                const dObj = new Date(year, month - 1, day);
-                if (isNaN(dObj.getTime())) throw new Error('Pick a valid date.');
-                return dObj;
-            }
             const dateRaw = document.getElementById('form-date')?.value;
             if (!dateRaw) throw new Error('Pick a date.');
             const [year, month, day] = dateRaw.split('-').map(Number);
             const dObj = new Date(year, month - 1, day);
             if (isNaN(dObj.getTime())) throw new Error('Pick a valid date.');
             return dObj;
+        }
+
+        let bootLoaderDismissed = false;
+        function hideAppBootLoader() {
+            if (bootLoaderDismissed) return;
+            bootLoaderDismissed = true;
+            document.documentElement.classList.add('boot-ready');
+            const loader = document.getElementById('mf-app-boot-loader');
+            if (loader) loader.setAttribute('aria-busy', 'false');
+        }
+        function setBootLoaderMessage(message) {
+            const el = document.getElementById('mf-boot-loader-text');
+            if (el && message) el.textContent = message;
         }
 
         function formatDurationLabel(totalMinutes) {
@@ -3010,6 +2991,8 @@
                     window.groupDisplayName = groupData.name || null;
                     window.groupOwnerEmail = normalizeEmail(groupData.ownerEmail || '');
                     updateGroupContext();
+                    const bootLabel = window.groupDisplayName || window.groupIdRaw;
+                    setBootLoaderMessage(bootLabel ? `Loading ${bootLabel}…` : 'Loading your playgroup…');
                     window.isGroupValid = true;
                     rememberLastGroup(window.groupIdRaw);
                     startMatchListener();
@@ -3031,6 +3014,7 @@
         async function bootApplication() {
             updateGroupContext();
             if (!window.groupIdRaw) {
+                hideAppBootLoader();
                 window.processArtQueue();
                 const landingPage = document.getElementById('landing-page');
                 if (landingPage) {
@@ -3055,12 +3039,15 @@
                         setTimeout(() => window.showAppAlert("Database connection failed. If you own this database, check if your Firebase Security Rules have expired in Test Mode.\n\nError: " + firebaseErrorMsg, "Database Error", "❌"), 500);
                     } else {
                         window.show404();
+                        hideAppBootLoader();
                     }
                 }
             }
         }
 
         async function startApp() {
+            const isGroupRoute = document.documentElement.classList.contains('mf-route-group');
+            const bootLoaderSafety = isGroupRoute ? setTimeout(hideAppBootLoader, 12000) : null;
             let completedEmailLinkSignIn = false;
             try {
                 completedEmailLinkSignIn = await tryCompleteEmailSignIn();
@@ -3076,6 +3063,7 @@
                 }
             }
             if (completedEmailLinkSignIn && !resolveSignInGroupId()) {
+                hideAppBootLoader();
                 window.location.replace(getGroupsHubUrl());
                 return;
             }
@@ -3086,10 +3074,12 @@
             ]);
             if (auth.currentUser && window.localStorage.getItem(PENDING_CREATE_GROUP_KEY)) {
                 await runPendingGroupCreate();
+                hideAppBootLoader();
                 appBootComplete = true;
                 return;
             }
             if (await routeSignedInUserToWorkspace()) {
+                hideAppBootLoader();
                 appBootComplete = true;
                 return;
             }
@@ -3099,6 +3089,10 @@
                 updateAccessUI();
             }
             appBootComplete = true;
+            if (!isGroupRoute || !window.isGroupValid) {
+                hideAppBootLoader();
+            }
+            if (bootLoaderSafety) clearTimeout(bootLoaderSafety);
         }
 
         onAuthStateChanged(auth, async (user) => {
@@ -3331,6 +3325,7 @@
         }
 
         window.showLanding = function() {
+            hideAppBootLoader();
             const landing = document.getElementById('landing-page'); 
             const dashboard = document.getElementById('dashboard-view');
             resetGroupSession();
@@ -3353,6 +3348,7 @@
             if (eid) eid.innerText = window.groupIdRaw;
             if (v404) v404.classList.remove('hidden');
             window.closeGroupModal();
+            hideAppBootLoader();
         }
 
         window.returnToLobby = function() {
@@ -4502,6 +4498,8 @@
                 
             } catch (error) {
                 console.error("Error drawing app UI: ", error);
+            } finally {
+                hideAppBootLoader();
             }
         }
 
