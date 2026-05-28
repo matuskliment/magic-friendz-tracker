@@ -200,14 +200,14 @@
                     }
                 };
 
-                const [ownerByUid, ownerByEmail, memberByEmail, memberByUid] = await Promise.all([
+                const [ownerByUid, ownerByEmail, memberByEmail, inviteByEmail] = await Promise.all([
                     safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid)), 'ownerByUid'),
                     safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerByEmail'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'memberByEmail'),
-                    safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)), 'memberByUid')
+                    safeGetDocs(query(collectionGroup(db, 'memberEmails'), where(documentId(), '==', email)), 'inviteByEmail')
                 ]);
             // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:queryResults',message:'raw query results',data:{ownerByUidCount:ownerByUid?.size??null,ownerByEmailCount:ownerByEmail?.size??null,memberByEmailCount:memberByEmail?.size??null,memberByUidCount:memberByUid?.size??null},timestamp:Date.now()})}).catch(()=>{});
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H2',location:'groups.html:fetchAccessibleGroupsForCurrentUser:queryResults',message:'raw query results',data:{ownerByUidCount:ownerByUid?.size??null,ownerByEmailCount:ownerByEmail?.size??null,memberByEmailCount:memberByEmail?.size??null,inviteByEmailCount:inviteByEmail?.size??null},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
 
             ownerByUid?.docs.forEach((d) => addGroup(d.id, 'owner'));
@@ -217,11 +217,10 @@
                 const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                 addGroup(groupId, role);
             });
-            memberByUid?.docs.forEach((d) => {
-                const groupId = d.ref.parent?.parent?.id;
-                const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
-                addGroup(groupId, role);
-            });
+                inviteByEmail?.docs.forEach((d) => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    addGroup(groupId, 'editor');
+                });
 
                 const groups = Array.from(groupsById.values());
             // #region agent log
