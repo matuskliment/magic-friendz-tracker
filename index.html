@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="mf-app-version" content="1.4.2">
+    <meta name="mf-app-version" content="1.4.3">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1366,7 +1366,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit, orderBy, serverTimestamp, documentId } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
@@ -1915,7 +1915,7 @@
             const noAccess = document.getElementById('landing-no-access');
             const noAccessEmail = document.getElementById('landing-no-access-email');
             const hasUser = !!window.currentUser;
-            const showMyGroups = hasUser && !window.groupIdRaw && Array.isArray(window.accessibleGroups) && window.accessibleGroups.length > 1;
+            const showMyGroups = hasUser && !window.groupIdRaw && Array.isArray(window.accessibleGroups) && window.accessibleGroups.length >= 1;
             const showNoAccess = hasUser && !window.groupIdRaw && window.userHasAnyGroupAccess === false;
 
             if (loginNav) loginNav.classList.toggle('hidden', hasUser);
@@ -1973,21 +1973,32 @@
                     }
                 };
 
-                const [ownerByUid, ownerByEmail, memberByEmail] = await Promise.all([
+                const [ownerByUid, ownerByEmail, memberByUid, memberByEmail, rosterByEmail] = await Promise.all([
                     safeGetDocs(query(collection(db, 'groups'), where('ownerUid', '==', uid)), 'ownerUid'),
                     safeGetDocs(query(collection(db, 'groups'), where('ownerEmail', '==', email)), 'ownerEmail'),
-                    safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'member email')
+                    safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)), 'member uid'),
+                    safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'member email'),
+                    safeGetDocs(query(collectionGroup(db, 'roster'), where('email', '==', email)), 'roster email')
                 ]);
 
                 if (ownerByUid) ownerByUid.docs.forEach(d => addGroup(d.id, 'owner'));
                 if (ownerByEmail) ownerByEmail.docs.forEach(d => addGroup(d.id, 'owner'));
+                if (memberByUid) memberByUid.docs.forEach(d => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
+                    addGroup(groupId, role);
+                });
                 if (memberByEmail) memberByEmail.docs.forEach(d => {
                     const groupId = d.ref.parent?.parent?.id;
                     const role = d.data()?.role === 'owner' ? 'owner' : 'editor';
                     addGroup(groupId, role);
                 });
+                if (rosterByEmail) rosterByEmail.docs.forEach(d => {
+                    const groupId = d.ref.parent?.parent?.id;
+                    addGroup(groupId, 'editor');
+                });
                 const entries = Array.from(groupsById.values());
-                if (!entries.length && ownerByUid === null && ownerByEmail === null && memberByEmail === null) {
+                if (!entries.length && ownerByUid === null && ownerByEmail === null && memberByUid === null && memberByEmail === null && rosterByEmail === null) {
                     return null;
                 }
                 const names = await Promise.all(entries.map(async g => {
