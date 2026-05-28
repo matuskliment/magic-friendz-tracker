@@ -936,6 +936,10 @@
         let memberUnsubscribe = null;
         let firebaseErrorMsg = "";
         let authReady = false;
+        let resolveInitialAuthState = null;
+        const initialAuthStateReady = new Promise((resolve) => {
+            resolveInitialAuthState = resolve;
+        });
         let rosterSyncTimer = null;
         let rosterSyncInFlight = false;
         let autoRouteInFlight = false;
@@ -2534,6 +2538,11 @@
                     window.showAppAlert('Sign-in link failed: ' + friendly, 'Sign in', '❌');
                 }
             }
+            // Avoid a landing-page flash while Firebase restores auth persistence.
+            await Promise.race([
+                initialAuthStateReady,
+                new Promise((resolve) => setTimeout(resolve, 1200))
+            ]);
             if (auth.currentUser && window.localStorage.getItem(PENDING_CREATE_GROUP_KEY)) {
                 await runPendingGroupCreate();
                 appBootComplete = true;
@@ -2554,6 +2563,10 @@
         onAuthStateChanged(auth, async (user) => {
             window.currentUser = user;
             authReady = true;
+            if (resolveInitialAuthState) {
+                resolveInitialAuthState();
+                resolveInitialAuthState = null;
+            }
             // #region agent log
             fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H4',location:'index.html:onAuthStateChanged:entry',message:'auth state changed',data:{hasUser:!!user,userUid:user?.uid||'',groupIdRaw:window.groupIdRaw||'',appBootComplete},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
@@ -2586,8 +2599,8 @@
                 autoRouteInFlight = false;
                 return;
             }
-            if (user && window.isGroupValid && window.canWrite()) {
-                window.switchTab('group');
+            if (user && window.isGroupValid) {
+                window.switchTab('home');
             } else if (appBootComplete && user && !window.isGroupValid && window.groupIdRaw) {
                 window.openGroupModal();
             }
