@@ -1420,6 +1420,9 @@
             if (!auth.currentUser) return [];
             const email = normalizeEmail(auth.currentUser.email);
             const uid = auth.currentUser.uid;
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H1',location:'index.html:fetchAccessibleGroupsForCurrentUser:entry',message:'start group discovery',data:{hasUser:!!auth.currentUser,hasEmail:!!email,uidPresent:!!uid},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (!email || !uid) return [];
             const groupsById = new Map();
             const addGroup = (groupId, roleHint) => {
@@ -1444,6 +1447,9 @@
                     safeGetDocs(query(collectionGroup(db, 'members'), where(documentId(), '==', uid)), 'member uid'),
                     safeGetDocs(query(collectionGroup(db, 'members'), where('email', '==', email)), 'member email')
                 ]);
+                // #region agent log
+                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H1',location:'index.html:fetchAccessibleGroupsForCurrentUser:queryResults',message:'query completion snapshot',data:{ownerByUid:ownerByUid!==null?ownerByUid.size:null,ownerByEmail:ownerByEmail!==null?ownerByEmail.size:null,memberByUid:memberByUid!==null?memberByUid.size:null,memberByEmail:memberByEmail!==null?memberByEmail.size:null},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
 
                 if (ownerByUid) ownerByUid.docs.forEach(d => addGroup(d.id, 'owner'));
                 if (ownerByEmail) ownerByEmail.docs.forEach(d => addGroup(d.id, 'owner'));
@@ -1471,9 +1477,15 @@
                     } catch (_) {}
                     return { ...g, name: g.id };
                 }));
+                // #region agent log
+                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H2',location:'index.html:fetchAccessibleGroupsForCurrentUser:return',message:'returning resolved groups',data:{count:names.length,ids:names.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
                 return names.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
             } catch (error) {
                 console.warn('Could not check global group access:', error);
+                // #region agent log
+                fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H1',location:'index.html:fetchAccessibleGroupsForCurrentUser:catch',message:'group discovery failed',data:{name:error?.name||'',code:error?.code||'',message:error?.message||''},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
                 return null;
             }
         }
@@ -1484,6 +1496,9 @@
         };
 
         window.openBestGroupEntry = async function() {
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H3',location:'index.html:openBestGroupEntry:entry',message:'enter group CTA pressed',data:{hasUser:!!window.currentUser,groupsCount:Array.isArray(window.accessibleGroups)?window.accessibleGroups.length:-1,groupIdRaw:window.groupIdRaw||'',hasAnyAccess:window.userHasAnyGroupAccess},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (!window.currentUser) {
                 window.openGroupModal();
                 return;
@@ -2533,6 +2548,9 @@
         onAuthStateChanged(auth, async (user) => {
             window.currentUser = user;
             authReady = true;
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H4',location:'index.html:onAuthStateChanged:entry',message:'auth state changed',data:{hasUser:!!user,userUid:user?.uid||'',groupIdRaw:window.groupIdRaw||'',appBootComplete},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (user) {
                 const accessibleGroups = await fetchAccessibleGroupsForCurrentUser();
                 if (accessibleGroups === null) {
@@ -2552,6 +2570,9 @@
                 window.accessibleGroups = [];
             }
             updateAccessUI();
+            // #region agent log
+            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a4ecea'},body:JSON.stringify({sessionId:'a4ecea',runId:'run1',hypothesisId:'H4',location:'index.html:onAuthStateChanged:postUpdate',message:'post access/UI update state',data:{groupsCount:Array.isArray(window.accessibleGroups)?window.accessibleGroups.length:-1,hasAnyAccess:window.userHasAnyGroupAccess,isGroupValid:window.isGroupValid,groupAccess:window.groupAccess},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             const pendingCreateSlug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
             if (
                 appBootComplete &&
