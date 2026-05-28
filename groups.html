@@ -130,6 +130,14 @@
             return `${indexBasePath()}?group=${encodeURIComponent(groupId)}`;
         }
 
+        function isManageMode() {
+            try {
+                return new URLSearchParams(window.location.search).get('manage') === '1';
+            } catch (_) {
+                return false;
+            }
+        }
+
         function stripAuthParamsFromGroupsUrl() {
             try {
                 const params = new URLSearchParams(window.location.search);
@@ -342,7 +350,8 @@
             // #region agent log
             fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H5',location:'groups.html:onAuthStateChanged:postDiscovery',message:'routing decision input',data:{resolvedGroupCount:groups.length,resolvedGroupIds:groups.map(g=>g.id)},timestamp:Date.now()})}).catch(()=>{});
             // #endregion
-            if (groups.length === 1) {
+            const manageMode = isManageMode();
+            if (groups.length === 1 && !manageMode) {
                 setLoadingState(`Opening ${groups[0].name || groups[0].id}...`, 'Taking you to your group now.');
                 // #region agent log
                 fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9fd7f9'},body:JSON.stringify({sessionId:'9fd7f9',runId:'run1',hypothesisId:'H5',location:'groups.html:onAuthStateChanged:autoRedirect',message:'auto redirecting to single group',data:{targetGroupId:groups[0].id},timestamp:Date.now()})}).catch(()=>{});
@@ -374,7 +383,7 @@
             }
 
             loadingView.classList.add('hidden');
-            if (groups.length > 1) {
+            if (groups.length > 1 || (manageMode && groups.length >= 1)) {
                 renderGroups(groups);
                 groupsView.classList.remove('hidden');
                 return;

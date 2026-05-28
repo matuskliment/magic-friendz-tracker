@@ -297,9 +297,9 @@
             <div class="flex items-center gap-2 md:gap-3 shrink-0">
                 <button type="button" onclick="window.openFeedbackModal()" class="text-[10px] sm:text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1.5 rounded-lg transition min-h-[32px] touch-manipulation whitespace-nowrap">Feedback</button>
                 <span id="group-header-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80">View only</span>
-                <button id="group-list-btn" onclick="window.openGroupsHub()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg items-center gap-1 transition">
+                <button id="group-list-btn" onclick="window.openGroupsHubForCurrentUser()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg items-center gap-1 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    Group List
+                    My Groups
                 </button>
             </div>
         </div>
@@ -1157,8 +1157,19 @@
             return `${origin}${pathname}/groups.html`;
         }
 
-        window.openGroupsHub = function() {
-            window.location.assign(getGroupsHubUrl());
+        window.openGroupsHub = function(options = {}) {
+            const target = new URL(getGroupsHubUrl());
+            if (options.manage) target.searchParams.set('manage', '1');
+            window.location.assign(target.toString());
+        };
+
+        window.openGroupsHubForCurrentUser = function() {
+            const groupCount = Array.isArray(window.accessibleGroups) ? window.accessibleGroups.length : 0;
+            if (groupCount <= 1) {
+                window.openGroupsHub({ manage: true });
+                return;
+            }
+            window.openGroupsHub();
         };
 
         function getAuthContinueUrl(groupId, signInEmail = '', debugLinkId = '') {
@@ -1533,7 +1544,7 @@
                 else accessDenied.classList.add('hidden');
             }
             if (groupListBtn) {
-                const showGroupList = hasFirebaseUser && Array.isArray(window.accessibleGroups) && window.accessibleGroups.length > 1;
+                const showGroupList = hasFirebaseUser;
                 groupListBtn.classList.toggle('hidden', !showGroupList);
                 groupListBtn.classList.toggle('flex', showGroupList);
             }
