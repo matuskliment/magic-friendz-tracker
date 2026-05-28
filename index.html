@@ -18,6 +18,29 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a855f7'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function preventIosInputZoom() {
+            const meta = document.querySelector('meta[name="viewport"]');
+            if (!meta) return;
+            const defaultContent = meta.getAttribute('content') || 'width=device-width, initial-scale=1.0';
+            const lockedContent = 'width=device-width, initial-scale=1.0, maximum-scale=1';
+            let lockTimer = null;
+            const isFormField = (el) => el && el.matches && el.matches('input, textarea, select') && el.type !== 'hidden' && el.type !== 'checkbox' && el.type !== 'radio';
+            document.addEventListener('focusin', (e) => {
+                if (!isFormField(e.target)) return;
+                if (lockTimer) clearTimeout(lockTimer);
+                meta.setAttribute('content', lockedContent);
+            });
+            document.addEventListener('focusout', (e) => {
+                if (!isFormField(e.target)) return;
+                lockTimer = setTimeout(() => {
+                    const active = document.activeElement;
+                    if (isFormField(active)) return;
+                    meta.setAttribute('content', defaultContent);
+                }, 120);
+            });
+        })();
+    </script>
     <style>
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .hero-bg { background-image: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 1)), url('https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070&auto=format&fit=crop'); background-size: cover; background-position: center; }
@@ -111,27 +134,80 @@
         }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-        /* 16px+ on form controls prevents iOS Safari focus zoom */
-        input, select, textarea, .static-dropdown-header {
-            font-size: 16px;
-        }
-        input[type="date"] {
-            min-width: 0;
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-        input[type="date"]::-webkit-date-and-time-value {
-            text-align: left;
-            min-width: 0;
-        }
-        .match-settings-grid > div {
-            min-width: 0;
-        }
         .custom-dropdown .dropdown-empty {
             cursor: default;
             pointer-events: none;
             color: #94a3b8;
             font-style: italic;
+        }
+    </style>
+    <!-- After Tailwind: 16px form text beats text-sm and stops iOS focus-zoom -->
+    <style>
+        #view-log-match,
+        #dashboard-view,
+        #view-group-modal,
+        #view-feedback-modal,
+        #landing-page {
+            overflow-x: clip;
+        }
+        #view-log-match input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+        #view-log-match textarea,
+        #view-log-match select,
+        #dashboard-view input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+        #dashboard-view textarea,
+        #dashboard-view select,
+        #view-group-modal input:not([type="hidden"]),
+        #view-group-modal textarea,
+        #view-feedback-modal input:not([type="hidden"]),
+        #view-feedback-modal textarea,
+        #view-feedback-modal select,
+        #landing-page input:not([type="hidden"]),
+        #landing-page textarea,
+        .static-dropdown-header,
+        .mf-touch-input {
+            font-size: 16px !important;
+            line-height: 1.5;
+        }
+        .match-settings-grid {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+        .match-settings-grid > div {
+            min-width: 0;
+            max-width: 100%;
+        }
+        .match-settings-date-cell {
+            min-width: 0;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        #form-date.mf-date-input,
+        input[type="date"].mf-date-input {
+            display: block;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+            font-size: 16px !important;
+            padding-left: 0.75rem;
+            padding-right: 0.5rem;
+            overflow: hidden;
+        }
+        input[type="date"].mf-date-input::-webkit-date-and-time-value {
+            text-align: left;
+            min-width: 0;
+            overflow: hidden;
+        }
+        input[type="date"].mf-date-input::-webkit-datetime-edit,
+        input[type="date"].mf-date-input::-webkit-datetime-edit-fields-wrapper {
+            overflow: hidden;
+            max-width: calc(100% - 2rem);
+            padding: 0;
+        }
+        input[type="date"].mf-date-input::-webkit-calendar-picker-indicator {
+            margin-left: 0.25rem;
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -888,7 +964,7 @@
     </div>
 
     <!-- FULL SCREEN VIEW: LOG MATCH MODAL -->
-    <div id="view-log-match" class="fixed inset-0 z-[120] bg-slate-950 transform translate-y-full transition-transform duration-300 overflow-y-auto flex flex-col hidden">
+    <div id="view-log-match" class="fixed inset-0 z-[120] bg-slate-950 transform translate-y-full transition-transform duration-300 overflow-y-auto overflow-x-hidden flex flex-col hidden">
         <div class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
             <button onclick="window.closeLogMatchModal()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -898,22 +974,22 @@
             <button onclick="window.submitMatchForm(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30">Save Match</button>
         </div>
 
-        <div class="p-4 md:p-6 space-y-6 max-w-xl mx-auto w-full pb-24">
-            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm">
+        <div class="p-4 md:p-6 space-y-6 max-w-xl mx-auto w-full min-w-0 pb-24 overflow-x-hidden">
+            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm min-w-0 overflow-hidden">
                 <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     Match Settings
                 </h3>
                 <div class="match-settings-grid grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="min-w-0">
+                    <div class="match-settings-date-cell min-w-0 sm:col-span-1">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Date Played</label>
-                        <input type="date" id="form-date" class="w-full min-w-0 max-w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                        <input type="date" id="form-date" class="mf-date-input mf-touch-input w-full min-w-0 max-w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Pod Size</label>
-                        <div class="relative custom-static-dropdown" tabindex="0">
+                        <div class="relative custom-static-dropdown min-w-0" tabindex="0">
                             <input type="hidden" id="form-pod-size" value="4">
-                            <div class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center">
+                            <div class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px]">
                                 <span class="static-dropdown-display">4 Players</span>
                                 <svg class="text-slate-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                             </div>
@@ -925,11 +1001,11 @@
                             </ul>
                         </div>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Winners (Tie)</label>
-                        <div class="relative custom-static-dropdown" tabindex="0">
+                        <div class="relative custom-static-dropdown min-w-0" tabindex="0">
                             <input type="hidden" id="form-winner-count" value="1">
-                            <div class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center">
+                            <div class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px]">
                                 <span class="static-dropdown-display">1 (Solo Win)</span>
                                 <svg class="text-slate-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                             </div>
@@ -947,11 +1023,11 @@
                     <div class="grid grid-cols-2 gap-4 max-w-xs">
                         <div>
                             <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Hours</span>
-                            <input type="number" id="form-duration-hours" min="0" max="12" step="1" inputmode="numeric" placeholder="—" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                            <input type="number" id="form-duration-hours" min="0" max="12" step="1" inputmode="numeric" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                         </div>
                         <div>
                             <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Minutes</span>
-                            <input type="number" id="form-duration-minutes" min="0" max="59" step="5" inputmode="numeric" placeholder="—" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                            <input type="number" id="form-duration-minutes" min="0" max="59" step="5" inputmode="numeric" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                         </div>
                     </div>
                     <p class="text-[10px] text-slate-500 mt-2 ml-1">Each player in the pod gets this time credited toward their hours played.</p>
@@ -971,19 +1047,19 @@
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
-                        <input type="text" id="form-card-1" placeholder="Card 1 (type 3+ chars to search...)" class="scryfall-input w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                        <input type="text" id="form-card-1" placeholder="Card 1 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
                     <div class="relative focus-within:z-50">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
-                        <input type="text" id="form-card-2" placeholder="Card 2 (type 3+ chars to search...)" class="scryfall-input w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                        <input type="text" id="form-card-2" placeholder="Card 2 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
                     <div class="relative focus-within:z-50">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
-                        <input type="text" id="form-card-3" placeholder="Card 3 (type 3+ chars to search...)" class="scryfall-input w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                        <input type="text" id="form-card-3" placeholder="Card 3 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
                 </div>
                 
@@ -991,7 +1067,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                     Game Notes / Strategy
                 </h3>
-                <textarea id="form-notes" rows="2" placeholder="How did they pull it off? E.g., 'Overwhelming goblins...'" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none shadow-sm"></textarea>
+                <textarea id="form-notes" rows="2" placeholder="How did they pull it off? E.g., 'Overwhelming goblins...'" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none shadow-sm"></textarea>
             </div>
         </div>
     </div>
@@ -1110,7 +1186,7 @@
             <div class="space-y-3">
                 <div>
                     <label for="feedback-type" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-1">Type</label>
-                    <select id="feedback-type" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation">
+                    <select id="feedback-type" class="w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation">
                         <option value="idea">Feature idea</option>
                         <option value="bug">Bug report</option>
                         <option value="other">Other</option>
@@ -1118,11 +1194,11 @@
                 </div>
                 <div class="field-wrap">
                     <label for="feedback-message" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-1">Message</label>
-                    <textarea id="feedback-message" rows="4" placeholder="What happened? What would you like to see?" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition resize-none min-h-[100px] touch-manipulation" oninput="window.clearFieldError(this)"></textarea>
+                    <textarea id="feedback-message" rows="4" placeholder="What happened? What would you like to see?" class="w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition resize-none min-h-[100px] touch-manipulation" oninput="window.clearFieldError(this)"></textarea>
                 </div>
                 <div id="feedback-email-wrap" class="field-wrap">
                     <label for="feedback-email" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-1">Your email (optional)</label>
-                    <input type="email" id="feedback-email" placeholder="So Mat can reply" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
+                    <input type="email" id="feedback-email" placeholder="So Mat can reply" autocomplete="email" class="w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
                 </div>
                 <p id="feedback-form-error" class="hidden text-xs text-red-400/90"></p>
                 <div class="flex flex-col sm:flex-row gap-2 pt-1">
@@ -5456,7 +5532,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="local-player-input w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-3 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search players..." autocomplete="off">
+                                    <input type="text" class="local-player-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search players..." autocomplete="off">
                                 </div>
                                 <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm">+ New</button>
                             </div>
@@ -5476,7 +5552,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="local-deck-input w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-3 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search existing decks..." autocomplete="off">
+                                    <input type="text" class="local-deck-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search existing decks..." autocomplete="off">
                                 </div>
                                 <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm">+ New</button>
                             </div>
@@ -5489,10 +5565,10 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-3 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off">
+                                    <input type="text" class="new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off">
                                 </div>
                                 <div class="relative mt-2">
-                                    <input type="text" class="new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Variant / Tag (e.g. 'Tokens' or 'v2') [Optional]" autocomplete="off">
+                                    <input type="text" class="new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Variant / Tag (e.g. 'Tokens' or 'v2') [Optional]" autocomplete="off">
                                 </div>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
@@ -5524,7 +5600,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="local-player-input w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search players..." autocomplete="off">
+                                    <input type="text" class="local-player-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search players..." autocomplete="off">
                                 </div>
                                 <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm">+ New</button>
                             </div>
@@ -5544,7 +5620,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="local-deck-input w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search existing decks..." autocomplete="off">
+                                    <input type="text" class="local-deck-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search existing decks..." autocomplete="off">
                                 </div>
                                 <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm">+ New</button>
                             </div>
@@ -5557,10 +5633,10 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off">
+                                    <input type="text" class="new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off">
                                 </div>
                                 <div class="relative mt-2">
-                                    <input type="text" class="new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Variant / Tag (e.g. 'Tokens' or 'v2') [Optional]" autocomplete="off">
+                                    <input type="text" class="new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500 shadow-sm" placeholder="Variant / Tag (e.g. 'Tokens' or 'v2') [Optional]" autocomplete="off">
                                 </div>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
