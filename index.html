@@ -100,13 +100,14 @@
                 Magic<span class="text-purple-500">Friendz</span>
             </div>
             <div class="flex items-center gap-2">
+                <a href="#landing-how-it-works" class="hidden md:inline text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">How it works</a>
                 <button type="button" onclick="window.openFeedbackModal()" class="text-xs sm:text-sm font-semibold text-slate-400 hover:text-white px-2.5 sm:px-3 py-2 rounded-full border border-slate-700 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Feedback</button>
                 <button type="button" id="landing-login-btn" onclick="window.toggleLandingSignIn()" class="text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Log in</button>
                 <button type="button" onclick="window.openGroupModal()" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation">Enter App</button>
             </div>
         </nav>
 
-        <main class="flex-grow flex items-center justify-center hero-bg px-4 md:px-6 pt-24 md:pt-32 pb-20 overflow-hidden relative">
+        <main class="flex-grow flex items-center justify-center hero-bg px-4 md:px-6 pt-24 md:pt-32 pb-12 md:pb-16 relative">
             <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center z-10 mt-10 md:mt-0">
                 <div class="text-center lg:text-left">
                     <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold mb-6 tracking-tight leading-tight drop-shadow-lg">
@@ -214,30 +215,76 @@
                     </div>
                 </div>
             </div>
+        </main>
 
-            <div class="absolute bottom-0 left-0 w-full overflow-hidden bg-slate-950/80 border-t border-slate-800/80 backdrop-blur-md py-3 z-30">
-                <div class="flex w-[200%] animate-marquee">
-                    <div id="landing-marquee-1" class="flex-1 flex justify-around items-center text-[10px] sm:text-xs text-slate-400 font-mono tracking-wider whitespace-nowrap px-4">
-                        <span class="flex items-center gap-2 mx-4"><span class="text-yellow-500">👑</span> Matus leads with 1236 Elo</span>
-                        <span class="opacity-30 mx-2">•</span>
-                        <span class="flex items-center gap-2 mx-4"><span class="text-green-400">▲</span> Alela jumped 51 ranks</span>
-                        <span class="opacity-30 mx-2">•</span>
-                        <span class="flex items-center gap-2 mx-4"><span class="text-purple-400">⚔️</span> 20 plays tracked for Oliver</span>
-                        <span class="opacity-30 mx-2">•</span>
-                        <span class="flex items-center gap-2 mx-4"><span class="text-red-400">💀</span> Aragorn's nemesis: Ovika</span>
-                    </div>
-                    <div id="landing-marquee-2" class="flex-1 flex justify-around items-center text-[10px] sm:text-xs text-slate-400 font-mono tracking-wider whitespace-nowrap px-4">
-                        <span class="flex items-center gap-2 mx-4"><span class="text-yellow-500">👑</span> Matus leads with 1236 Elo</span>
-                        <span class="opacity-30 mx-2">•</span>
-                        <span class="flex items-center gap-2 mx-4"><span class="text-green-400">▲</span> Alela jumped 51 ranks</span>
-                        <span class="opacity-30 mx-2">•</span>
-                        <span class="flex items-center gap-2 mx-4"><span class="text-purple-400">⚔️</span> 20 plays tracked for Oliver</span>
-                        <span class="opacity-30 mx-2">•</span>
-                        <span class="flex items-center gap-2 mx-4"><span class="text-red-400">💀</span> Aragorn's nemesis: Ovika</span>
-                    </div>
+        <section id="landing-how-it-works" class="relative z-10 bg-slate-950 border-t border-slate-800/80 px-4 md:px-6 py-14 md:py-20">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-10 md:mb-12">
+                    <p class="text-xs uppercase tracking-widest text-purple-400 font-bold mb-2">Playgroup workflow</p>
+                    <h2 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">How it works</h2>
+                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Built for kitchen-table Commander nights — fast to log, easy to share, and fun to revisit after the league.</p>
+                </div>
+
+                <ol class="space-y-4 md:space-y-5">
+                    <li class="glass rounded-2xl border border-purple-500/25 bg-purple-950/10 p-5 md:p-6 flex gap-4 md:gap-5">
+                        <div class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-sm md:text-base font-black text-purple-300" aria-hidden="true">1</div>
+                        <div class="min-w-0 text-left">
+                            <h3 class="text-base md:text-lg font-bold text-white mb-1.5">Open your group link</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed">Enter the group name your host shared — anyone with the link can <span class="text-slate-300">view stats</span> right away. Sign in with a magic link (no password) when you want to log games or manage the roster.</p>
+                        </div>
+                    </li>
+                    <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6 flex gap-4 md:gap-5">
+                        <div class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-xl bg-slate-800 border border-slate-600 flex items-center justify-center text-sm md:text-base font-black text-slate-300" aria-hidden="true">2</div>
+                        <div class="min-w-0 text-left">
+                            <h3 class="text-base md:text-lg font-bold text-white mb-1.5">Set up your playgroup</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed">Create a new group in seconds, or join one you were invited to. Add players to the roster, send email invites for editors, or let new names appear automatically when someone logs a match. Your friends don’t all need accounts — only people who log or invite do.</p>
+                        </div>
+                    </li>
+                    <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6 flex gap-4 md:gap-5">
+                        <div class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-sm md:text-base font-black text-emerald-300" aria-hidden="true">3</div>
+                        <div class="min-w-0 text-left">
+                            <h3 class="text-base md:text-lg font-bold text-white mb-1.5">Log a match</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed">Record winners, pilots, commanders, and optional notes after the game. Elo shifts update automatically. Designed to stay out of your way so you spend more time playing and less time on your phone — Commander pods, ties, and multi-player formats supported.</p>
+                        </div>
+                    </li>
+                    <li class="glass rounded-2xl border border-amber-500/25 bg-amber-950/10 p-5 md:p-6 flex gap-4 md:gap-5">
+                        <div class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-sm md:text-base font-black text-amber-300" aria-hidden="true">4</div>
+                        <div class="min-w-0 text-left">
+                            <h3 class="text-base md:text-lg font-bold text-white mb-1.5">View and share your stats</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed">Leaderboards for commanders and players, match history, session recaps, and insights like rivalries and top decks. Export your group as JSON or CSV. Whether you’re tuning decks or settling table talk for the night, the numbers are right there.</p>
+                        </div>
+                    </li>
+                </ol>
+
+                <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button type="button" onclick="window.openGroupModal()" class="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-3.5 rounded-full text-sm font-bold transition shadow-lg shadow-purple-500/25 min-h-[48px] touch-manipulation">View group stats</button>
+                    <button type="button" onclick="window.toggleLandingSignIn()" class="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-700 text-white border border-slate-600 px-8 py-3.5 rounded-full text-sm font-bold transition min-h-[48px] touch-manipulation">Log in</button>
                 </div>
             </div>
-        </main>
+        </section>
+
+        <div class="w-full overflow-hidden bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md py-3 z-30 shrink-0">
+            <div class="flex w-[200%] animate-marquee">
+                <div id="landing-marquee-1" class="flex-1 flex justify-around items-center text-[10px] sm:text-xs text-slate-400 font-mono tracking-wider whitespace-nowrap px-4">
+                    <span class="flex items-center gap-2 mx-4"><span class="text-yellow-500">👑</span> Matus leads with 1236 Elo</span>
+                    <span class="opacity-30 mx-2">•</span>
+                    <span class="flex items-center gap-2 mx-4"><span class="text-green-400">▲</span> Alela jumped 51 ranks</span>
+                    <span class="opacity-30 mx-2">•</span>
+                    <span class="flex items-center gap-2 mx-4"><span class="text-purple-400">⚔️</span> 20 plays tracked for Oliver</span>
+                    <span class="opacity-30 mx-2">•</span>
+                    <span class="flex items-center gap-2 mx-4"><span class="text-red-400">💀</span> Aragorn's nemesis: Ovika</span>
+                </div>
+                <div id="landing-marquee-2" class="flex-1 flex justify-around items-center text-[10px] sm:text-xs text-slate-400 font-mono tracking-wider whitespace-nowrap px-4">
+                    <span class="flex items-center gap-2 mx-4"><span class="text-yellow-500">👑</span> Matus leads with 1236 Elo</span>
+                    <span class="opacity-30 mx-2">•</span>
+                    <span class="flex items-center gap-2 mx-4"><span class="text-green-400">▲</span> Alela jumped 51 ranks</span>
+                    <span class="opacity-30 mx-2">•</span>
+                    <span class="flex items-center gap-2 mx-4"><span class="text-purple-400">⚔️</span> 20 plays tracked for Oliver</span>
+                    <span class="opacity-30 mx-2">•</span>
+                    <span class="flex items-center gap-2 mx-4"><span class="text-red-400">💀</span> Aragorn's nemesis: Ovika</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- APP DASHBOARD VIEW -->
