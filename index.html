@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.8.1">
+    <meta name="mf-app-version" content="1.8.3">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -215,6 +215,11 @@
             overscroll-behavior: contain;
             padding-bottom: env(safe-area-inset-bottom, 0px);
             touch-action: pan-y;
+        }
+        .mf-sheet-bottom-spacer {
+            height: 55vh;
+            flex-shrink: 0;
+            pointer-events: none;
         }
         .mf-mobile-sheet .static-dropdown-list,
         .mf-mobile-sheet .custom-dropdown {
@@ -1240,6 +1245,9 @@
                 </h3>
                 <textarea id="form-notes" rows="2" placeholder="How did they pull it off? E.g., 'Overwhelming goblins...'" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none shadow-sm"></textarea>
             </div>
+            <!-- Bottom breathing room so the last fields (e.g. Game Notes) can always
+                 scroll well clear of the on-screen keyboard. -->
+            <div class="mf-sheet-bottom-spacer" aria-hidden="true"></div>
         </div>
         </div>
     </div>
