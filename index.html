@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.2.2">
+    <meta name="mf-app-version" content="2.2.4">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -5081,6 +5081,13 @@
             if(rank === 3) return 'text-amber-600';
             return 'text-slate-500';
         }
+
+        function getRankEloChipStyle(rank) {
+            if (rank === 1) return { value: 'text-yellow-500', label: 'text-yellow-600/70', border: 'border-yellow-500/30', bg: 'bg-yellow-500/10' };
+            if (rank === 2) return { value: 'text-slate-300', label: 'text-slate-400', border: 'border-slate-400/30', bg: 'bg-slate-500/10' };
+            if (rank === 3) return { value: 'text-amber-600', label: 'text-amber-700/70', border: 'border-amber-600/30', bg: 'bg-amber-600/10' };
+            return { value: 'text-white', label: 'text-slate-300', border: 'border-slate-700/50', bg: 'bg-slate-900/70' };
+        }
         
         function getDeltaColorText(delta) {
             if (delta > 0) return 'text-green-400';
@@ -5533,10 +5540,11 @@
             const ownerName = cmd.owner || (cmd.pilots && cmd.pilots[0]) || '—';
             const topThree = cmd.rank <= 3;
             const winStrong = parseFloat(cmd.winRate) >= 50;
+            const eloStyle = getRankEloChipStyle(cmd.rank);
             const eloChip = `
-                <div class="shrink-0 ml-0.5 md:ml-1 text-center bg-slate-900/70 border border-slate-700/50 rounded-lg px-2.5 py-2 md:px-3 md:py-2">
-                    <div class="font-black text-lg md:text-2xl tracking-tight text-white leading-none">${cmd.elo}</div>
-                    <div class="text-[8px] md:text-[9px] uppercase tracking-widest font-bold text-slate-300 mt-1">Elo</div>
+                <div class="shrink-0 ml-0.5 md:ml-1 text-center ${eloStyle.bg} border ${eloStyle.border} rounded-lg px-2.5 py-2 md:px-3 md:py-2">
+                    <div class="font-black text-lg md:text-2xl tracking-tight ${eloStyle.value} leading-none">${cmd.elo}</div>
+                    <div class="text-[8px] md:text-[9px] uppercase tracking-widest font-bold ${eloStyle.label} mt-1">Elo</div>
                 </div>`;
             return `
                 <div onclick="window.openCommanderProfile(${index})" class="glass relative overflow-hidden rounded-xl cursor-pointer transition hover:bg-slate-800/70 group border ${topThree ? 'border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.12)]' : 'border-slate-700/50'}">
@@ -5551,9 +5559,9 @@
                             <h4 class="font-bold text-base md:text-lg text-white group-hover:text-purple-400 transition drop-shadow leading-snug md:truncate">${cmd.name}</h4>
                             <span class="mf-card-mana flex items-center gap-0.5 mt-1 empty:hidden" data-card="${cmd.name}"></span>
                             <p class="mf-card-type text-[10px] sm:text-xs text-slate-300/90 italic mt-1 line-clamp-2 md:truncate empty:hidden" data-card="${cmd.name}"></p>
-                            <div class="flex items-center gap-2 mt-1.5 flex-nowrap min-w-0">
+                            <div class="flex max-[429px]:flex-col min-[430px]:flex-row min-[430px]:items-center max-[429px]:items-start gap-1 min-[430px]:gap-2 mt-1.5 min-w-0">
                                 <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded shrink-0 whitespace-nowrap ${winStrong ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700/80 text-slate-300 border border-slate-600/50'}">${cmd.winRate} Win</span>
-                                <span class="text-[10px] text-slate-400 truncate min-w-0"><span class="uppercase tracking-wider font-bold text-slate-500">Owner</span> <span class="text-slate-300 font-semibold">${ownerName}</span></span>
+                                <span class="text-[10px] text-slate-400 min-[430px]:truncate min-[430px]:min-w-0 max-[429px]:w-full leading-snug"><span class="uppercase tracking-wider font-bold text-slate-500">Owner</span> <span class="text-slate-300 font-semibold">${escapeHtml(ownerName)}</span></span>
                             </div>
                         </div>
                         ${eloChip}
