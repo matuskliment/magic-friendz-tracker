@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.0.0">
+    <meta name="mf-app-version" content="2.0.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -2962,6 +2962,11 @@
             return el && el.matches('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea, select');
         }
 
+        /** Touch/mobile devices (coarse pointer). Desktop pointers are "fine". */
+        function mfIsTouchDevice() {
+            try { return window.matchMedia('(pointer: coarse)').matches; } catch (_) { return false; }
+        }
+
         /** Native scroll-into-view; browser + dvh handle keyboard resize. */
         function mfScrollFieldIntoView(field) {
             if (!mfIsFocusableField(field)) return;
@@ -3856,6 +3861,7 @@
                     startMatchListener();
                     if (auth.currentUser) await claimMembershipForCurrentUser();
                     updateAccessUI();
+                    backfillPublicAvatars();
                     return true;
                 } else {
                     window.isGroupValid = false;
@@ -5253,6 +5259,7 @@
         }
 
         function initApp() {
+            backfillPublicAvatars();
             try {
                 if(window.appData.matches.length === 0) {
                     setHomeLeaderboardBlocksVisible(false);
@@ -6426,11 +6433,14 @@
 
         let publicAvatarBackfillDone = false;
         // One-time migration: copy avatars already stored on roster docs into the public store.
+        // Safe to call repeatedly: it no-ops until an editor/owner AND the roster are both ready.
         async function backfillPublicAvatars() {
             if (publicAvatarBackfillDone) return;
             if (!window.canWrite() || !window.groupIdRaw) return;
+            const roster = window.appData.explicitRoster || [];
+            if (!roster.length) return; // roster not loaded yet — retry on a later trigger
             const updates = {};
-            (window.appData.explicitRoster || []).forEach(r => {
+            roster.forEach(r => {
                 if (r && r.avatarDataUrl) {
                     const key = avatarLookupKey(r.name);
                     if (key && !(window.publicAvatarMap || {})[key]) updates[key] = r.avatarDataUrl;
@@ -6445,6 +6455,7 @@
                 publicAvatarBackfillDone = false;
             }
         }
+        window.backfillPublicAvatars = backfillPublicAvatars;
 
         window.addPlayerToRoster = async function(event, sendInvite = false) {
             if (!window.canWrite()) {
@@ -6908,13 +6919,16 @@
 
             // Return focus to the field we just filled (without auto-opening its list).
             // Focus synchronously to stay within the tap gesture so iOS reopens the keyboard.
+            // Mobile only: on desktop the refocus + scroll is a jarring jump with no keyboard upside.
             if (fieldToRefocus) {
                 mfClearFieldError(fieldToRefocus);
                 fieldToRefocus.classList.add('mf-field-valid');
-                mfSuppressAutoDropdown = true;
-                try { fieldToRefocus.focus({ preventScroll: true }); } catch (_) {}
-                mfScrollFieldIntoView(fieldToRefocus);
-                setTimeout(() => { mfSuppressAutoDropdown = false; }, 0);
+                if (mfIsTouchDevice()) {
+                    mfSuppressAutoDropdown = true;
+                    try { fieldToRefocus.focus({ preventScroll: true }); } catch (_) {}
+                    mfScrollFieldIntoView(fieldToRefocus);
+                    setTimeout(() => { mfSuppressAutoDropdown = false; }, 0);
+                }
             }
         };
 
