@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.9.8">
+    <meta name="mf-app-version" content="1.9.9">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -4772,19 +4772,6 @@
                 }
             });
             window.playerAvatarUrlMap = playerAvatarUrlMap;
-            window.mfAvatarDebug = function() {
-                const roster = (window.appData.explicitRoster || []).map(r => ({ name: r.name, key: avatarLookupKey(r.name), hasPhoto: !!r.avatarDataUrl }));
-                const players = (window.appData.players || []).map(p => ({
-                    name: p.name,
-                    key: avatarLookupKey(p.name),
-                    onObject: !!p.avatarDataUrl,
-                    viaMap: !!(window.playerAvatarUrlMap || {})[avatarLookupKey(p.name)]
-                }));
-                console.table(roster);
-                console.table(players);
-                console.log('map keys:', Object.keys(window.playerAvatarUrlMap || {}));
-                return { roster, players };
-            };
             window.appData.players = Object.keys(playerStats).map(name => {
                 const s = playerStats[name];
                 let topDeck = "", maxPlays = 0;
