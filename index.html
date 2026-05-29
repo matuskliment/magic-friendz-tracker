@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.9.4">
+    <meta name="mf-app-version" content="1.9.6">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -135,9 +135,16 @@
         @media (max-width: 639px) {
             .group\/tooltip > div.absolute,
             .group\/tooltip [role="tooltip"] {
-                left: auto !important;
-                right: 0;
-                width: min(17rem, calc(100vw - 2.5rem));
+                position: fixed !important;
+                left: 1rem !important;
+                right: 1rem !important;
+                bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
+                top: auto !important;
+                width: auto !important;
+                max-width: none !important;
+                margin: 0 !important;
+                font-size: 0.75rem;
+                line-height: 1.4;
             }
         }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -4482,6 +4489,7 @@
             '#831843', '#9d174d', '#be185d', '#db2777', '#ec4899', '#f472b6'
         ];
         window.playerAvatarColorMap = {};
+        window.playerAvatarUrlMap = {};
 
         function getAvatarColorFromName(name) {
             let hash = 0;
@@ -4521,7 +4529,9 @@
         }
 
         function renderPlayerAvatar(player, sizeClass = 'w-12 h-12', textClass = 'text-base', extraClass = '') {
-            const avatarUrl = player?.avatarDataUrl || '';
+            const avatarUrl = player?.avatarDataUrl
+                || (window.playerAvatarUrlMap && window.playerAvatarUrlMap[normalizeName(player?.name || '')])
+                || '';
             const label = player?.avatarInitials || getPlayerInitials(player?.name);
             const color = player?.avatarColor || getResolvedAvatarColor(player?.name);
             const safeName = String(player?.name || 'Player').replace(/"/g, '&quot;');
@@ -4743,6 +4753,21 @@
                 ...(window.appData.explicitRoster || []).map(p => p.name)
             ]);
             window.playerAvatarColorMap = playerAvatarColorMap;
+
+            const playerAvatarUrlMap = {};
+            (window.appData.explicitRoster || []).forEach(r => {
+                if (r && r.avatarDataUrl) {
+                    const key = normalizeName(r.name || '');
+                    if (key) playerAvatarUrlMap[key] = r.avatarDataUrl;
+                }
+            });
+            Object.entries(playerStats).forEach(([name, s]) => {
+                if (s && s.avatarDataUrl) {
+                    const key = normalizeName(name || '');
+                    if (key && !playerAvatarUrlMap[key]) playerAvatarUrlMap[key] = s.avatarDataUrl;
+                }
+            });
+            window.playerAvatarUrlMap = playerAvatarUrlMap;
             window.appData.players = Object.keys(playerStats).map(name => {
                 const s = playerStats[name];
                 let topDeck = "", maxPlays = 0;
