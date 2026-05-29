@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.7.8">
+    <meta name="mf-app-version" content="1.7.9">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -4770,9 +4770,14 @@
         }
 
         function generatePlayerRow(p, index) {
-            const playsWord = p.plays === 1 ? 'play' : 'plays';
-            const hours = p.minutesPlayed > 0 ? ` · ${p.hoursPlayedLabel}` : '';
+            const playsWord = p.plays === 1 ? 'Play' : 'Plays';
             const winColor = parseFloat(p.winRate) >= 30 ? 'text-green-400' : 'text-white';
+            const statBadge = (label) => `<span class="text-[10px] font-bold text-slate-300 bg-slate-700/50 border border-slate-600/50 px-2 py-0.5 rounded-full whitespace-nowrap">${label}</span>`;
+            const stats = [
+                statBadge(`${p.wins} ${p.wins === 1 ? 'Win' : 'Wins'}`),
+                statBadge(`${p.plays} ${playsWord}`),
+                p.minutesPlayed > 0 ? statBadge(p.hoursPlayedLabel) : ''
+            ].join('');
             return `
                 <div onclick="window.openPlayerProfile(${index})" class="glass flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-slate-800/80 transition cursor-pointer relative overflow-hidden border border-slate-700/50 group">
                     <div class="w-5 md:w-8 text-center font-black text-lg md:text-2xl ${getRankColor(p.rank)} z-10 shrink-0">${p.rank}</div>
@@ -4780,7 +4785,7 @@
                     <div class="flex-grow z-10 min-w-0">
                         <h4 class="font-bold text-base md:text-lg text-white truncate group-hover:text-purple-400 transition">${p.name}</h4>
                         <span class="inline-block max-w-full text-[11px] text-slate-400 bg-slate-800/80 px-2 py-0.5 mt-1 rounded border border-slate-700/50 truncate align-bottom">${p.topDeck}</span>
-                        <p class="text-[10px] text-slate-500 font-semibold mt-1 truncate">${p.wins} ${p.wins === 1 ? 'win' : 'wins'} · ${p.plays} ${playsWord}${hours}</p>
+                        <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">${stats}</div>
                     </div>
                     <div class="text-right z-10 shrink-0">
                         <div class="font-black text-lg md:text-2xl tracking-tight ${winColor}">${p.winRate}</div>
