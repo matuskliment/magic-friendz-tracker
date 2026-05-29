@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.9.7">
+    <meta name="mf-app-version" content="1.9.8">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -4528,9 +4528,13 @@
             return colorMap;
         }
 
+        function avatarLookupKey(name) {
+            return normalizeName(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
         function renderPlayerAvatar(player, sizeClass = 'w-12 h-12', textClass = 'text-base', extraClass = '') {
             const avatarUrl = player?.avatarDataUrl
-                || (window.playerAvatarUrlMap && window.playerAvatarUrlMap[normalizeName(player?.name || '').toLowerCase()])
+                || (window.playerAvatarUrlMap && window.playerAvatarUrlMap[avatarLookupKey(player?.name)])
                 || '';
             const label = player?.avatarInitials || getPlayerInitials(player?.name);
             const color = player?.avatarColor || getResolvedAvatarColor(player?.name);
@@ -4757,24 +4761,38 @@
             const playerAvatarUrlMap = {};
             (window.appData.explicitRoster || []).forEach(r => {
                 if (r && r.avatarDataUrl) {
-                    const key = normalizeName(r.name || '').toLowerCase();
+                    const key = avatarLookupKey(r.name);
                     if (key) playerAvatarUrlMap[key] = r.avatarDataUrl;
                 }
             });
             Object.entries(playerStats).forEach(([name, s]) => {
                 if (s && s.avatarDataUrl) {
-                    const key = normalizeName(name || '').toLowerCase();
+                    const key = avatarLookupKey(name);
                     if (key && !playerAvatarUrlMap[key]) playerAvatarUrlMap[key] = s.avatarDataUrl;
                 }
             });
             window.playerAvatarUrlMap = playerAvatarUrlMap;
+            window.mfAvatarDebug = function() {
+                const roster = (window.appData.explicitRoster || []).map(r => ({ name: r.name, key: avatarLookupKey(r.name), hasPhoto: !!r.avatarDataUrl }));
+                const players = (window.appData.players || []).map(p => ({
+                    name: p.name,
+                    key: avatarLookupKey(p.name),
+                    onObject: !!p.avatarDataUrl,
+                    viaMap: !!(window.playerAvatarUrlMap || {})[avatarLookupKey(p.name)]
+                }));
+                console.table(roster);
+                console.table(players);
+                console.log('map keys:', Object.keys(window.playerAvatarUrlMap || {}));
+                return { roster, players };
+            };
             window.appData.players = Object.keys(playerStats).map(name => {
                 const s = playerStats[name];
                 let topDeck = "", maxPlays = 0;
                 Object.keys(s.decks).forEach(d => { if(s.decks[d] > maxPlays) { maxPlays = s.decks[d]; topDeck = d; } });
                 const winRateVal = s.plays > 0 ? ((s.wins / s.plays) * 100) : 0;
-                const rosterEntry = (window.appData.explicitRoster || []).find(r => r.name === name);
                 const cleanName = normalizeName(name);
+                const cleanNameLower = cleanName.toLowerCase();
+                const rosterEntry = (window.appData.explicitRoster || []).find(r => normalizeName(r.name || '').toLowerCase() === cleanNameLower);
                 return {
                     name: name,
                     wins: s.wins,
