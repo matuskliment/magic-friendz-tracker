@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.8.3">
+    <meta name="mf-app-version" content="1.8.4">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -2636,6 +2636,7 @@
                                 ${inviteStatus}
                                 <span class="text-[10px] font-bold text-slate-400 bg-slate-700/50 border border-slate-600/50 px-2 py-0.5 rounded-full">${playsLabel}</span>
                             </div>
+                            ${emailVal ? `<p class="text-[11px] text-slate-400 mt-1 truncate" title="${escapeHtml(emailVal)}">${escapeHtml(emailVal)}</p>` : ''}
                         </div>
                         ${inviteBtn}
                     </div>
@@ -4675,6 +4676,7 @@
                     hoursPlayedLabel: formatPlayerHoursPlayed(s.minutesPlayed || 0),
                     winRate: winRateVal.toFixed(1) + "%",
                     topDeck: topDeck,
+                    deckCount: Object.keys(s.decks).length,
                     avatarInitials: getPlayerInitials(name),
                     avatarColor: playerAvatarColorMap[cleanName] || getAvatarColorFromName(cleanName),
                     avatarDataUrl: rosterEntry?.avatarDataUrl || ''
@@ -4794,11 +4796,13 @@
         function generatePlayerRow(p, index) {
             const playsWord = p.plays === 1 ? 'Play' : 'Plays';
             const winColor = parseFloat(p.winRate) >= 30 ? 'text-green-400' : 'text-white';
-            const statBadge = (label) => `<span class="text-[10px] font-bold text-slate-300 bg-slate-700/50 border border-slate-600/50 px-2 py-0.5 rounded-full whitespace-nowrap">${label}</span>`;
+            const statBadge = (label, cls) => `<span class="text-[11px] md:text-xs font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${cls}">${label}</span>`;
+            const deckCount = p.deckCount || 0;
             const stats = [
-                statBadge(`${p.wins} ${p.wins === 1 ? 'Win' : 'Wins'}`),
-                statBadge(`${p.plays} ${playsWord}`),
-                p.minutesPlayed > 0 ? statBadge(p.hoursPlayedLabel) : ''
+                statBadge(`${p.wins} ${p.wins === 1 ? 'Win' : 'Wins'}`, 'text-green-300 bg-green-500/15 border-green-500/30'),
+                statBadge(`${p.plays} ${playsWord}`, 'text-sky-300 bg-sky-500/15 border-sky-500/30'),
+                p.minutesPlayed > 0 ? statBadge(p.hoursPlayedLabel, 'text-amber-300 bg-amber-500/15 border-amber-500/30') : '',
+                deckCount > 0 ? statBadge(`${deckCount} ${deckCount === 1 ? 'Deck' : 'Decks'}`, 'text-purple-300 bg-purple-500/15 border-purple-500/30') : ''
             ].join('');
             return `
                 <div onclick="window.openPlayerProfile(${index})" class="glass flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-slate-800/80 transition cursor-pointer relative overflow-hidden border border-slate-700/50 group">
@@ -4806,8 +4810,7 @@
                     ${renderPlayerAvatar(p, 'w-12 h-12 md:w-14 md:h-14', 'text-sm md:text-base', 'z-10 flex-shrink-0 group-hover:border-purple-500/50 transition')}
                     <div class="flex-grow z-10 min-w-0">
                         <h4 class="font-bold text-base md:text-lg text-white truncate group-hover:text-purple-400 transition">${p.name}</h4>
-                        <span class="inline-block max-w-full text-[11px] text-slate-400 bg-slate-800/80 px-2 py-0.5 mt-1 rounded border border-slate-700/50 truncate align-bottom">${p.topDeck}</span>
-                        <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">${stats}</div>
+                        <div class="flex items-center gap-1.5 mt-2 flex-wrap">${stats}</div>
                     </div>
                     <div class="text-right z-10 shrink-0">
                         <div class="font-black text-lg md:text-2xl tracking-tight ${winColor}">${p.winRate}</div>
