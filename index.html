@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.7.6">
+    <meta name="mf-app-version" content="1.7.7">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3024,7 +3024,9 @@
                 // Keyboard just opened/closed: keep the focused field visible.
                 const ae = document.activeElement;
                 if (ae && mfIsFocusableField(ae) && ae.closest('.mf-mobile-sheet')) {
-                    mfScrollFieldIntoView(ae);
+                    // Defer to next frame so the just-applied bottom padding reflows first;
+                    // otherwise the last field (game notes) can't scroll above the keyboard.
+                    requestAnimationFrame(() => mfScrollFieldIntoView(ae));
                 }
             };
 
@@ -7088,7 +7090,11 @@
             if (e.target && mfIsFocusableField(e.target)) {
                 const inSheet = e.target.closest('.mf-mobile-sheet');
                 if (inSheet && mfIsSheetOpen(inSheet)) {
-                    mfScheduleFocusTimer(() => { mfSyncSheetKeyboardPadding(); mfScrollFieldIntoView(e.target); }, 0);
+                    const target = e.target;
+                    mfScheduleFocusTimer(() => {
+                        mfSyncSheetKeyboardPadding();
+                        requestAnimationFrame(() => mfScrollFieldIntoView(target));
+                    }, 0);
                 } else if (e.target.closest('#dashboard-view, #landing-page, #view-group-modal, #feedback-modal')) {
                     mfScheduleFocusTimer(() => mfScrollFieldIntoView(e.target), 0);
                 }
