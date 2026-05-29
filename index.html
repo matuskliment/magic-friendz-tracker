@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.9.3">
+    <meta name="mf-app-version" content="1.9.4">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -733,6 +733,22 @@
                             <span class="text-red-500">⚔️</span> Fiercest Rivalry
                         </h2>
                         <div id="analytics-rivalry">
+                            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
+                        </div>
+                    </div>
+
+                    <!-- Top Deck Builders -->
+                    <div>
+                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <span class="text-emerald-400">🛠️</span> Top Deck Builders
+                            <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <div class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100">
+                                    Ranks the people who BUILT the decks (the owner), not who piloted them. Score is the play-weighted average Elo of every deck they own, across all pilots. Requires at least one owned deck with 3+ games.
+                                </div>
+                            </div>
+                        </h2>
+                        <div id="analytics-builders" class="space-y-2">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
                     </div>
@@ -3505,7 +3521,7 @@
             const front = String(manaCost).split('//')[0];
             const symbols = front.match(/\{[^}]+\}/g);
             if (!symbols) return '';
-            const cls = sizeCls || 'w-3.5 h-3.5';
+            const cls = sizeCls || 'w-3 h-3';
             return symbols.map(sym => {
                 const code = sym.slice(1, -1).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
                 if (!code) return '';
@@ -4836,6 +4852,70 @@
             return 'text-slate-400';
         }
 
+        const DECK_BUILDER_MIN_PLAYS = 3;
+        /** Rank deck OWNERS (builders) by the play-weighted Elo of every deck they built. */
+        function computeDeckBuilders() {
+            const byOwner = {};
+            (window.appData.commanders || []).forEach(c => {
+                const owner = (c.owner || '').trim();
+                if (!owner) return; // owner-required: can't attribute a builder
+                if (!byOwner[owner]) {
+                    byOwner[owner] = { owner, decks: 0, plays: 0, wins: 0, eloWeighted: 0, eloPlays: 0, maxDeckPlays: 0, best: null };
+                }
+                const b = byOwner[owner];
+                const plays = c.plays || 0;
+                const elo = c.elo || (typeof SETTINGS !== 'undefined' ? SETTINGS.STARTING_ELO : 1000);
+                b.decks += 1;
+                b.plays += plays;
+                b.wins += c.wins || 0;
+                if (plays > 0) { b.eloWeighted += elo * plays; b.eloPlays += plays; }
+                if (plays > b.maxDeckPlays) b.maxDeckPlays = plays;
+                if (!b.best || elo > b.best.elo) b.best = { name: c.name, elo };
+            });
+            const baseElo = (typeof SETTINGS !== 'undefined' ? SETTINGS.STARTING_ELO : 1000);
+            return Object.values(byOwner)
+                .filter(b => b.maxDeckPlays >= DECK_BUILDER_MIN_PLAYS)
+                .map(b => ({
+                    ...b,
+                    avgElo: b.eloPlays > 0 ? Math.round(b.eloWeighted / b.eloPlays) : baseElo,
+                    winRate: b.plays > 0 ? (b.wins / b.plays) * 100 : 0
+                }))
+                .sort((a, b) => b.avgElo - a.avgElo || b.wins - a.wins || b.decks - a.decks);
+        }
+
+        function renderDeckBuilders() {
+            const builders = computeDeckBuilders();
+            if (!builders.length) {
+                safeSetHTML('analytics-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Assign deck owners (via <span class="text-slate-300 font-semibold">+ New deck</span>) and log a few games to rank your best builders.</p></div>`);
+                return;
+            }
+            const medal = (i) => i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-200' : i === 2 ? 'text-orange-400' : 'text-slate-500';
+            const html = builders.slice(0, 5).map((b, i) => {
+                const player = (window.appData.players || []).find(p => p.name === b.owner);
+                const avatar = player
+                    ? renderPlayerAvatar(player, 'w-10 h-10', 'text-xs', 'shrink-0')
+                    : `<div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 shrink-0"></div>`;
+                return `
+                    <div class="glass flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-emerald-500/30' : 'border-slate-700/50'}">
+                        <div class="w-5 text-center font-black text-lg ${medal(i)} shrink-0">${i + 1}</div>
+                        ${avatar}
+                        <div class="flex-grow min-w-0">
+                            <p class="font-bold text-white truncate">${escapeHtml(b.owner)}</p>
+                            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span class="text-[10px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.decks} ${b.decks === 1 ? 'deck' : 'decks'}</span>
+                                <span class="text-[10px] font-bold text-green-300 bg-green-500/15 border border-green-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.winRate.toFixed(0)}% win</span>
+                                <span class="text-[10px] text-slate-400 truncate min-w-0" title="${escapeHtml(b.best?.name || '')}">Best: ${escapeHtml(b.best?.name || '—')}</span>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0 bg-slate-900/70 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
+                            <div class="font-black text-lg text-white leading-none">${b.avgElo}</div>
+                            <div class="text-[8px] uppercase tracking-widest font-bold text-slate-300 mt-1">Avg Elo</div>
+                        </div>
+                    </div>`;
+            }).join('');
+            safeSetHTML('analytics-builders', html);
+        }
+
         function generateCommanderRow(cmd, index) {
             const ownerName = cmd.owner || (cmd.pilots && cmd.pilots[0]) || '—';
             const topThree = cmd.rank <= 3;
@@ -4844,15 +4924,13 @@
                 <div onclick="window.openCommanderProfile(${index})" class="glass relative overflow-hidden rounded-xl cursor-pointer transition hover:bg-slate-800/70 group border ${topThree ? 'border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.12)]' : 'border-slate-700/50'}">
                     <div class="mf-card-tint absolute inset-0 opacity-0 transition-opacity duration-500" data-card="${cmd.name}"></div>
                     <div class="mf-card-accent absolute left-0 top-0 bottom-0 w-1.5 opacity-0 transition-opacity duration-500" data-card="${cmd.name}"></div>
-                    <div class="relative z-10 flex items-center p-3 md:p-4 gap-3">
+                    <div class="relative z-10 flex items-center p-4 gap-3">
                         <div class="w-6 md:w-8 text-center font-black text-xl md:text-2xl ${getRankColor(cmd.rank)} shrink-0">${cmd.rank}</div>
                         <div data-card="${cmd.name}" data-version="art_crop" class="set-bg w-12 h-12 md:w-14 md:h-14 rounded-full art-fallback bg-cover bg-center border-2 ${topThree ? 'border-purple-500/40' : 'border-slate-700'} shadow-md shrink-0"></div>
                         <div class="flex-grow min-w-0">
                             <h4 class="font-bold text-base md:text-lg text-white group-hover:text-purple-400 transition truncate drop-shadow">${cmd.name}</h4>
-                            <div class="flex items-center gap-1.5 mt-0.5 min-w-0">
-                                <p class="mf-card-type text-[10px] sm:text-xs text-slate-300/90 italic truncate min-w-0" data-card="${cmd.name}"></p>
-                                <span class="mf-card-mana flex items-center gap-0.5 shrink-0" data-card="${cmd.name}"></span>
-                            </div>
+                            <span class="mf-card-mana flex items-center gap-0.5 mt-1 empty:hidden" data-card="${cmd.name}"></span>
+                            <p class="mf-card-type text-[10px] sm:text-xs text-slate-300/90 italic mt-1 truncate empty:hidden" data-card="${cmd.name}"></p>
                             <div class="flex items-center gap-2 mt-1.5">
                                 <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded ${winStrong ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700/80 text-slate-300 border border-slate-600/50'}">${cmd.winRate} Win</span>
                                 <span class="text-[10px] text-slate-400 truncate min-w-0"><span class="uppercase tracking-wider font-bold text-slate-500">Owner</span> <span class="text-slate-300 font-semibold">${ownerName}</span></span>
@@ -5136,6 +5214,7 @@
                     safeSetHTML('analytics-meta', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">The meta appears after you log games.</p></div>`);
                     safeSetHTML('analytics-upset', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Biggest upsets show up once you have match history.</p></div>`);
                     safeSetHTML('analytics-rivalry', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Rivalries need a few logged games first.</p></div>`);
+                    safeSetHTML('analytics-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Deck builder rankings appear once games are logged.</p></div>`);
                     safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet — log a match to track decks.</div>`);
                     safeSetHTML('home-top-commanders', '');
                     safeSetHTML('roster-list', renderPlayerListHtml());
@@ -5391,6 +5470,8 @@
                 } else {
                     safeSetHTML('analytics-rivalry', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Not enough data to establish a rivalry.</p></div>`);
                 }
+
+                renderDeckBuilders();
 
                 safeSetHTML('commander-view', window.appData.commanders.map((cmd, i) => generateCommanderRow(cmd, i)).join(''));
                 safeSetHTML('player-view', window.appData.players.map((p, i) => generatePlayerRow(p, i)).join(''));
