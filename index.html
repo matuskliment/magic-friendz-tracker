@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.8.0">
+    <meta name="mf-app-version" content="1.8.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -6001,9 +6001,16 @@
             if(form) {
                 if(form.classList.contains('hidden')) {
                     form.classList.remove('hidden');
-                    setTimeout(() => form.classList.remove('opacity-0'), 10);
+                    requestAnimationFrame(() => form.classList.remove('opacity-0'));
                     const input = document.getElementById('new-player-input');
-                    if (input) input.focus();
+                    if (input) {
+                        // Focus synchronously (inside the tap gesture) so iOS opens the
+                        // keyboard, then bring the field above the keyboard like Log Match.
+                        input.focus({ preventScroll: true });
+                        const reveal = () => { try { input.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) {} };
+                        reveal();
+                        setTimeout(reveal, 300);
+                    }
                 } else {
                     form.classList.add('opacity-0');
                     setTimeout(() => {
