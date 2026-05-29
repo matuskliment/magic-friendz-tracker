@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.9.9">
+    <meta name="mf-app-version" content="2.0.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1462,7 +1462,9 @@
         let matchUnsubscribe = null;
         let rosterUnsubscribe = null;
         let settingsUnsubscribe = null;
+        let avatarsUnsubscribe = null;
         let memberUnsubscribe = null;
+        window.publicAvatarMap = {};
         let firebaseErrorMsg = "";
         let authReady = false;
         let resolveInitialAuthState = null;
@@ -3819,7 +3821,10 @@
             if (matchUnsubscribe) { matchUnsubscribe(); matchUnsubscribe = null; }
             if (rosterUnsubscribe) { rosterUnsubscribe(); rosterUnsubscribe = null; }
             if (settingsUnsubscribe) { settingsUnsubscribe(); settingsUnsubscribe = null; }
+            if (avatarsUnsubscribe) { avatarsUnsubscribe(); avatarsUnsubscribe = null; }
             if (memberUnsubscribe) { memberUnsubscribe(); memberUnsubscribe = null; }
+            window.publicAvatarMap = {};
+            publicAvatarBackfillDone = false;
             if (rosterSyncTimer) { clearTimeout(rosterSyncTimer); rosterSyncTimer = null; }
             rosterSyncInFlight = false;
             updateGroupContext();
@@ -4771,6 +4776,10 @@
                     if (key && !playerAvatarUrlMap[key]) playerAvatarUrlMap[key] = s.avatarDataUrl;
                 }
             });
+            // Public store is the source of truth for view-only users (who cannot read the roster).
+            Object.entries(window.publicAvatarMap || {}).forEach(([key, url]) => {
+                if (key && url && !playerAvatarUrlMap[key]) playerAvatarUrlMap[key] = url;
+            });
             window.playerAvatarUrlMap = playerAvatarUrlMap;
             window.appData.players = Object.keys(playerStats).map(name => {
                 const s = playerStats[name];
@@ -4838,6 +4847,14 @@
                     initApp();
                 }
             });
+
+            // Public, PII-free avatar store so view-only (signed-out) users can see profile photos.
+            publicAvatarBackfillDone = false;
+            if (avatarsUnsubscribe) { avatarsUnsubscribe(); }
+            avatarsUnsubscribe = onSnapshot(doc(db, "groups", window.groupIdRaw, "settings", "avatars"), (docSnap) => {
+                window.publicAvatarMap = docSnap.exists() ? (docSnap.data() || {}) : {};
+                if (window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
+            });
             
             rosterUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "roster"), (snapshot) => {
                 window.appData.explicitRoster = [];
@@ -4854,6 +4871,7 @@
                     });
                 });
                 if(window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
+                backfillPublicAvatars();
             });
 
             matchUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "matches"), (snapshot) => {
@@ -6358,6 +6376,7 @@
                         addedAt: Date.now()
                     });
                 }
+                await writePublicAvatar(playerName, avatarDataUrl);
             } catch (error) {
                 console.error('Avatar upload failed:', error);
                 window.showAppAlert('Could not upload avatar.\n\n' + error.message, 'Upload Failed', '❌');
@@ -6386,9 +6405,44 @@
                 await setDoc(doc(db, "groups", window.groupIdRaw, "roster", rosterEntry.id), {
                     avatarDataUrl: ''
                 }, { merge: true });
+                await writePublicAvatar(playerName, '');
             } catch (error) {
                 console.error('Avatar removal failed:', error);
                 window.showAppAlert('Could not remove avatar.\n\n' + error.message, 'Remove Failed', '❌');
+            }
+        }
+
+        // Mirror an avatar into the public, PII-free settings/avatars doc (readable by view-only users).
+        async function writePublicAvatar(playerName, avatarDataUrl) {
+            if (!window.groupIdRaw) return;
+            const key = avatarLookupKey(playerName);
+            if (!key) return;
+            await setDoc(
+                doc(db, "groups", window.groupIdRaw, "settings", "avatars"),
+                { [key]: avatarDataUrl || '' },
+                { merge: true }
+            );
+        }
+
+        let publicAvatarBackfillDone = false;
+        // One-time migration: copy avatars already stored on roster docs into the public store.
+        async function backfillPublicAvatars() {
+            if (publicAvatarBackfillDone) return;
+            if (!window.canWrite() || !window.groupIdRaw) return;
+            const updates = {};
+            (window.appData.explicitRoster || []).forEach(r => {
+                if (r && r.avatarDataUrl) {
+                    const key = avatarLookupKey(r.name);
+                    if (key && !(window.publicAvatarMap || {})[key]) updates[key] = r.avatarDataUrl;
+                }
+            });
+            if (!Object.keys(updates).length) { publicAvatarBackfillDone = true; return; }
+            publicAvatarBackfillDone = true;
+            try {
+                await setDoc(doc(db, "groups", window.groupIdRaw, "settings", "avatars"), updates, { merge: true });
+            } catch (error) {
+                console.error('Public avatar backfill failed:', error);
+                publicAvatarBackfillDone = false;
             }
         }
 
