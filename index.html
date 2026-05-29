@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.1.1">
+    <meta name="mf-app-version" content="2.1.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -127,11 +127,13 @@
         #analytics-synergy,
         #analytics-meta,
         #analytics-upset,
-        #analytics-rivalry { width: 100%; max-width: 100%; min-width: 0; }
+        #analytics-rivalry,
+        #analytics-synergy-rankings { width: 100%; max-width: 100%; min-width: 0; }
         #analytics-synergy > *,
         #analytics-meta > *,
         #analytics-upset > *,
-        #analytics-rivalry > * { max-width: 100%; min-width: 0; }
+        #analytics-rivalry > *,
+        #analytics-synergy-rankings > * { max-width: 100%; min-width: 0; }
         @media (max-width: 639px) {
             .group\/tooltip > div.absolute,
             .group\/tooltip [role="tooltip"] {
@@ -756,6 +758,16 @@
                             </div>
                         </h2>
                         <div id="analytics-builders" class="space-y-2">
+                            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
+                        </div>
+                    </div>
+
+                    <!-- Top Pilot & Deck Combos -->
+                    <div>
+                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <span class="text-purple-400">🎯</span> Top Pilot &amp; Deck Combos
+                        </h2>
+                        <div id="analytics-synergy-rankings" class="space-y-2">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
                     </div>
@@ -5006,6 +5018,119 @@
         }
 
         const DECK_BUILDER_MIN_PLAYS = 3;
+        const SYNERGY_MIN_PLAYS = 3;
+
+        /** Pilot+deck pairs (min games) ranked by win-rate lift vs that pilot's overall win rate. */
+        function computeSignatureSynergies() {
+            const combos = {};
+            const playerOverall = {};
+
+            (window.appData.matches || []).forEach(m => {
+                const winners = m.winners || [];
+                const losers = m.losers || [];
+                const all = [...winners, ...losers];
+                const winnerKeys = new Set(winners.map(w => `${w.player}\u0000${w.name}`));
+                const playersInMatch = new Set();
+
+                all.forEach(entry => {
+                    const player = entry.player;
+                    const deck = entry.name;
+                    if (!player || !deck) return;
+                    const key = `${player}\u0000${deck}`;
+                    if (!combos[key]) combos[key] = { player, deck, wins: 0, plays: 0 };
+                    combos[key].plays++;
+                    if (winnerKeys.has(key)) combos[key].wins++;
+                    playersInMatch.add(player);
+                });
+
+                playersInMatch.forEach(player => {
+                    if (!playerOverall[player]) playerOverall[player] = { wins: 0, plays: 0 };
+                    playerOverall[player].plays++;
+                    if (winners.some(w => w.player === player)) playerOverall[player].wins++;
+                });
+            });
+
+            return Object.values(combos)
+                .filter(c => c.plays >= SYNERGY_MIN_PLAYS)
+                .map(c => {
+                    const overall = playerOverall[c.player] || { wins: 0, plays: 0 };
+                    const overallWinRate = overall.plays > 0 ? (overall.wins / overall.plays) * 100 : 0;
+                    const comboWinRate = c.plays > 0 ? (c.wins / c.plays) * 100 : 0;
+                    return {
+                        ...c,
+                        overallWinRate,
+                        comboWinRate,
+                        lift: comboWinRate - overallWinRate
+                    };
+                })
+                .sort((a, b) => b.lift - a.lift || b.comboWinRate - a.comboWinRate || b.plays - a.plays);
+        }
+
+        function renderSignatureSynergyHero(combo) {
+            const player = (window.appData.players || []).find(p => p.name === combo.player) || {
+                name: combo.player,
+                avatarInitials: getPlayerInitials(combo.player),
+                avatarColor: getResolvedAvatarColor(combo.player)
+            };
+            const playerIndex = window.appData.players.findIndex(p => p.name === combo.player);
+            const liftLabel = combo.lift >= 0 ? `+${combo.lift.toFixed(0)}%` : `${combo.lift.toFixed(0)}%`;
+            const liftColor = combo.lift >= 0 ? 'text-green-400' : 'text-red-400';
+
+            safeSetHTML('analytics-synergy', `
+                <div onclick="window.openPlayerProfile(${playerIndex > -1 ? playerIndex : 0})" class="glass p-4 rounded-2xl border border-purple-500/30 bg-gradient-to-r from-slate-900 to-purple-900/20 hover:border-purple-500/50 transition cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] w-full max-w-full min-w-0">
+                    <div data-card="${escapeHtml(combo.deck)}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-20 transition duration-500 mix-blend-luminosity"></div>
+                    <p class="relative z-10 text-[10px] uppercase font-bold tracking-widest text-purple-400 mb-3 text-center sm:text-left">#1 Signature Synergy</p>
+                    <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-stretch gap-4 w-full min-w-0">
+                        <div class="flex items-center gap-3 shrink-0">
+                            ${renderPlayerAvatar(player, 'w-12 h-12', 'text-xs', 'border-2 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)] flex-shrink-0')}
+                            <span class="text-purple-400 font-black text-xl">+</span>
+                            <div data-card="${escapeHtml(combo.deck)}" data-version="art_crop" class="set-bg w-12 h-12 rounded-full art-fallback bg-cover bg-center border-2 border-slate-600 shadow-md flex-shrink-0 group-hover:border-purple-400 transition-colors"></div>
+                        </div>
+                        <div class="flex-grow text-center sm:text-left min-w-0">
+                            <h3 class="text-base md:text-lg font-black text-white group-hover:text-purple-400 transition leading-snug">${escapeHtml(combo.player)} &amp; ${escapeHtml(combo.deck)}</h3>
+                            <p class="text-[10px] sm:text-xs text-slate-400 leading-relaxed mt-1">With this deck they win <span class="font-bold text-white">${combo.comboWinRate.toFixed(0)}%</span> vs <span class="font-bold text-slate-300">${combo.overallWinRate.toFixed(0)}%</span> overall <span class="font-bold ${liftColor}">(${liftLabel} lift)</span></p>
+                            <p class="text-[10px] text-slate-500 mt-1">${combo.wins}W – ${combo.plays - combo.wins}L in ${combo.plays} games together</p>
+                        </div>
+                        <div class="text-center sm:text-right shrink-0 bg-slate-900/60 border border-purple-500/30 rounded-xl px-3 py-2">
+                            <p class="text-2xl font-black text-purple-300 leading-none">${combo.comboWinRate.toFixed(0)}%</p>
+                            <p class="text-[9px] uppercase font-bold text-slate-400 mt-1">Combo win</p>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        function renderSignatureSynergyRankings(synergies) {
+            if (!synergies.length) {
+                safeSetHTML('analytics-synergy-rankings', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log at least ${SYNERGY_MIN_PLAYS} games per pilot &amp; deck pair to rank synergies.</p></div>`);
+                return;
+            }
+            const medal = (i) => i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-200' : i === 2 ? 'text-orange-400' : 'text-slate-500';
+            const html = synergies.slice(0, 5).map((combo, i) => {
+                const player = (window.appData.players || []).find(p => p.name === combo.player);
+                const avatar = player
+                    ? renderPlayerAvatar(player, 'w-10 h-10', 'text-xs', 'shrink-0')
+                    : `<div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 shrink-0"></div>`;
+                const liftLabel = combo.lift >= 0 ? `+${combo.lift.toFixed(0)}%` : `${combo.lift.toFixed(0)}%`;
+                const liftCls = combo.lift >= 0 ? 'text-green-300 bg-green-500/15 border-green-500/30' : 'text-red-300 bg-red-500/15 border-red-500/30';
+                return `
+                    <div class="glass flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-purple-500/30' : 'border-slate-700/50'} w-full max-w-full min-w-0">
+                        <div class="w-5 text-center font-black text-lg ${medal(i)} shrink-0">${i + 1}</div>
+                        ${avatar}
+                        <div data-card="${escapeHtml(combo.deck)}" data-version="art_crop" class="set-bg w-10 h-10 rounded-full art-fallback bg-cover bg-center border border-slate-600 shrink-0"></div>
+                        <div class="flex-grow min-w-0">
+                            <p class="font-bold text-white truncate text-sm">${escapeHtml(combo.player)} <span class="text-slate-500 font-normal">·</span> <span class="text-purple-300">${escapeHtml(combo.deck)}</span></p>
+                            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span class="text-[10px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${combo.comboWinRate.toFixed(0)}% combo</span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${liftCls}">${liftLabel} lift</span>
+                                <span class="text-[10px] text-slate-400 whitespace-nowrap">${combo.plays} games</span>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            safeSetHTML('analytics-synergy-rankings', html);
+        }
+
         /** Rank deck OWNERS (builders) by the play-weighted Elo of every deck they built. */
         function computeDeckBuilders() {
             const byOwner = {};
@@ -5056,7 +5181,7 @@
                             <p class="font-bold text-white truncate">${escapeHtml(b.owner)}</p>
                             <div class="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <span class="text-[10px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.decks} ${b.decks === 1 ? 'deck' : 'decks'}</span>
-                                <span class="text-[10px] font-bold text-green-300 bg-green-500/15 border border-green-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.winRate.toFixed(0)}% win</span>
+                                <span class="text-[10px] font-bold text-green-300 bg-green-500/15 border border-green-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.wins} ${b.wins === 1 ? 'win' : 'wins'} built</span>
                                 <span class="text-[10px] text-slate-400 truncate min-w-0" title="${escapeHtml(b.best?.name || '')}">Best: ${escapeHtml(b.best?.name || '—')}</span>
                             </div>
                         </div>
@@ -5371,6 +5496,7 @@
                     safeSetHTML('home-last-session', renderEmptyGroupHomeOnboarding());
                     safeSetHTML('match-feed-container', renderEmptyMatchesOnboarding());
                     safeSetHTML('analytics-synergy', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log matches to unlock Signature Synergy and other insights.</p></div>`);
+                    safeSetHTML('analytics-synergy-rankings', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Combo rankings appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-meta', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">The meta appears after you log games.</p></div>`);
                     safeSetHTML('analytics-upset', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Biggest upsets show up once you have match history.</p></div>`);
                     safeSetHTML('analytics-rivalry', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Rivalries need a few logged games first.</p></div>`);
@@ -5501,38 +5627,13 @@
                 }
                 safeSetHTML('home-last-session', sessionContainerHTML);
 
-                const activeCommanders = window.appData.commanders.filter(c => c.plays >= 3);
-                const threatDeck = activeCommanders.sort((a, b) => parseFloat(b.winRate) - parseFloat(a.winRate))[0];
-                
-                if (threatDeck) {
-                    const threatPlayerName = threatDeck.pilots[0] || threatDeck.owner;
-                    const threatPlayer = window.appData.players.find(p => p.name === threatPlayerName) || { name: threatPlayerName, avatarInitials: getPlayerInitials(threatPlayerName), avatarColor: getResolvedAvatarColor(threatPlayerName), winRate: "0%", plays: 0, wins: 0 };
-                    const playerIndex = window.appData.players.findIndex(p => p.name === threatPlayerName);
-
-                    safeSetHTML('analytics-synergy', `
-                        <div onclick="window.openPlayerProfile(${playerIndex > -1 ? playerIndex : 0})" class="glass p-4 rounded-2xl border border-purple-500/30 bg-gradient-to-r from-slate-900 to-purple-900/20 hover:border-purple-500/50 transition cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full max-w-full min-w-0">
-                            <div data-card="${threatDeck.name}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-20 transition duration-500 mix-blend-luminosity"></div>
-                            
-                            <div class="relative z-10 flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
-                                ${renderPlayerAvatar(threatPlayer, 'w-12 h-12', 'text-xs', 'border-2 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)] flex-shrink-0')}
-                                <div class="text-purple-400 font-black text-xl">+</div>
-                                <div data-card="${threatDeck.name}" data-version="art_crop" class="set-bg w-12 h-12 rounded-full art-fallback bg-cover bg-center border-2 border-slate-600 shadow-md flex-shrink-0 group-hover:border-purple-400 transition-colors" title="${threatDeck.name}"></div>
-                            </div>
-                            
-                            <div class="relative z-10 flex-grow text-center sm:text-left min-w-0">
-                                <h3 class="text-base md:text-lg font-black text-white group-hover:text-purple-400 transition truncate">${threatPlayerName} & ${threatDeck.name}</h3>
-                                <p class="text-[10px] sm:text-xs text-slate-400 leading-tight mt-0.5">This duo dominates the table, elevating ${threatPlayerName}'s win rate to an impressive <span class="font-bold text-white">${threatDeck.winRate}</span>!</p>
-                            </div>
-
-                            <div class="relative z-10 text-center sm:text-right shrink-0">
-                                <p class="text-2xl font-black text-purple-400 drop-shadow-md leading-none">${threatDeck.winRate}</p>
-                                <p class="text-[10px] text-slate-400 font-bold mt-1">(${threatDeck.wins}W - ${threatDeck.plays - threatDeck.wins}L)</p>
-                            </div>
-                        </div>
-                    `);
+                const synergies = computeSignatureSynergies();
+                if (synergies.length) {
+                    renderSignatureSynergyHero(synergies[0]);
                 } else {
-                    safeSetHTML('analytics-synergy', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log at least 3 games with a deck to establish a Signature Synergy!</p></div>`);
+                    safeSetHTML('analytics-synergy', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log at least ${SYNERGY_MIN_PLAYS} games with a pilot &amp; deck pair to establish Signature Synergy!</p></div>`);
                 }
+                renderSignatureSynergyRankings(synergies);
                 
                 const metaDecks = [...window.appData.commanders].sort((a,b) => b.plays - a.plays).slice(0, 3);
                 let metaHTML = '';
@@ -5605,24 +5706,30 @@
                     const pVictim = window.appData.players.find(p => p.name === rivalVictim) || { name: rivalVictim, avatarInitials: getPlayerInitials(rivalVictim), avatarColor: getResolvedAvatarColor(rivalVictim) };
                     
                     safeSetHTML('analytics-rivalry', `
-                        <div class="glass p-5 rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-500/5 to-slate-900 shadow-[0_0_20px_rgba(239,68,68,0.05)] relative overflow-hidden">
-                            <div class="absolute right-0 top-1/2 -translate-y-1/2 opacity-[0.03] text-9xl pointer-events-none">⚔️</div>
+                        <div class="glass p-4 sm:p-5 rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-500/5 to-slate-900 shadow-[0_0_20px_rgba(239,68,68,0.05)] relative overflow-hidden w-full max-w-full min-w-0">
+                            <div class="absolute right-0 top-1/2 -translate-y-1/2 opacity-[0.03] text-9xl pointer-events-none hidden sm:block">⚔️</div>
                             <p class="text-[10px] uppercase font-bold tracking-widest text-red-400 mb-4 text-center">Most Head-to-Head Wins</p>
-                            
-                            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-2 md:gap-4 relative z-10 w-full max-w-full min-w-0">
-                                <div class="flex flex-col items-center w-full sm:flex-1 text-center min-w-0">
-                                    ${renderPlayerAvatar(pBully, 'w-14 h-14 md:w-16 md:h-16', 'text-sm md:text-base', 'mb-2 border-2 border-red-500 shadow-md')}
-                                    <h4 class="font-bold text-white text-sm md:text-base truncate max-w-full px-1">${rivalBully}</h4>
-                                </div>
-                                
-                                <div class="flex flex-col items-center flex-shrink-0 py-1 sm:pb-4">
-                                    <span class="text-2xl md:text-3xl font-black text-red-500 leading-none">WINS</span>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">Net +${maxDifferential}</span>
+
+                            <div class="relative z-10 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-4 w-full min-w-0">
+                                <div class="flex items-center gap-3 bg-slate-950/40 border border-red-500/20 rounded-xl p-3 sm:flex-1 sm:min-w-0">
+                                    ${renderPlayerAvatar(pBully, 'w-12 h-12 sm:w-14 sm:h-14', 'text-xs sm:text-sm', 'border-2 border-red-500 shadow-md shrink-0')}
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[9px] uppercase font-bold text-red-400 tracking-wider">Dominates</p>
+                                        <h4 class="font-bold text-white text-sm sm:text-base truncate">${escapeHtml(rivalBully)}</h4>
+                                    </div>
                                 </div>
 
-                                <div class="flex flex-col items-center w-full sm:flex-1 text-center opacity-60 min-w-0">
-                                    ${renderPlayerAvatar(pVictim, 'w-12 h-12 md:w-14 md:h-14', 'text-xs md:text-sm', 'mb-2 border border-slate-700 shadow-inner grayscale')}
-                                    <h4 class="font-bold text-slate-300 text-xs md:text-sm truncate max-w-full px-1">${rivalVictim}</h4>
+                                <div class="flex flex-col items-center shrink-0 py-1">
+                                    <span class="text-xl sm:text-2xl font-black text-red-500 leading-none">+${maxDifferential}</span>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">net wins</span>
+                                </div>
+
+                                <div class="flex items-center gap-3 bg-slate-950/30 border border-slate-700/50 rounded-xl p-3 sm:flex-1 sm:min-w-0 opacity-80">
+                                    ${renderPlayerAvatar(pVictim, 'w-12 h-12 sm:w-14 sm:h-14', 'text-xs sm:text-sm', 'border border-slate-600 shadow-inner grayscale shrink-0')}
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Struggles vs</p>
+                                        <h4 class="font-bold text-slate-300 text-sm sm:text-base truncate">${escapeHtml(rivalVictim)}</h4>
+                                    </div>
                                 </div>
                             </div>
                         </div>
