@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.0.6">
+    <meta name="mf-app-version" content="2.0.8">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -4975,23 +4975,25 @@
             const topThree = cmd.rank <= 3;
             const winStrong = parseFloat(cmd.winRate) >= 50;
             const eloChip = `
-                <div class="shrink-0 self-start md:self-center ml-0.5 md:ml-1 text-center bg-slate-900/70 border border-slate-700/50 rounded-lg px-2 py-1.5 md:px-2.5">
-                    <div class="font-black text-base md:text-xl tracking-tight text-white leading-none">${cmd.elo}</div>
-                    <div class="text-[8px] uppercase tracking-widest font-bold text-slate-300 mt-1">Elo</div>
+                <div class="shrink-0 ml-0.5 md:ml-1 text-center bg-slate-900/70 border border-slate-700/50 rounded-lg px-2.5 py-2 md:px-3 md:py-2">
+                    <div class="font-black text-lg md:text-2xl tracking-tight text-white leading-none">${cmd.elo}</div>
+                    <div class="text-[8px] md:text-[9px] uppercase tracking-widest font-bold text-slate-300 mt-1">Elo</div>
                 </div>`;
             return `
                 <div onclick="window.openCommanderProfile(${index})" class="glass relative overflow-hidden rounded-xl cursor-pointer transition hover:bg-slate-800/70 group border ${topThree ? 'border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.12)]' : 'border-slate-700/50'}">
                     <div class="mf-card-tint absolute inset-0 opacity-0 transition-opacity duration-500" data-card="${cmd.name}"></div>
                     <div class="mf-card-accent absolute left-0 top-0 bottom-0 w-1.5 opacity-0 transition-opacity duration-500" data-card="${cmd.name}"></div>
-                    <div class="relative z-10 flex items-start md:items-center p-4 gap-3">
-                        <div class="w-6 md:w-8 text-center font-black text-xl md:text-2xl ${getRankColor(cmd.rank)} shrink-0 pt-0.5 md:pt-0 leading-none">${cmd.rank}</div>
-                        <div data-card="${cmd.name}" data-version="art_crop" class="set-bg w-12 h-12 md:w-14 md:h-14 rounded-full art-fallback bg-cover bg-center border-2 ${topThree ? 'border-purple-500/40' : 'border-slate-700'} shadow-md shrink-0"></div>
-                        <div class="flex-grow min-w-0">
+                    <div class="relative z-10 flex items-center p-4 gap-3">
+                        <div class="w-6 md:w-8 flex items-center justify-center shrink-0">
+                            <div class="text-center font-black text-xl md:text-2xl ${getRankColor(cmd.rank)} leading-none">${cmd.rank}</div>
+                        </div>
+                        <div data-card="${cmd.name}" data-version="art_crop" class="set-bg w-12 h-12 md:w-14 md:h-14 rounded-full art-fallback bg-cover bg-center border-2 ${topThree ? 'border-purple-500/40' : 'border-slate-700'} shadow-md shrink-0 self-center"></div>
+                        <div class="flex-grow min-w-0 self-center">
                             <h4 class="font-bold text-base md:text-lg text-white group-hover:text-purple-400 transition drop-shadow leading-snug md:truncate">${cmd.name}</h4>
                             <span class="mf-card-mana flex items-center gap-0.5 mt-1 empty:hidden" data-card="${cmd.name}"></span>
                             <p class="mf-card-type text-[10px] sm:text-xs text-slate-300/90 italic mt-1 line-clamp-2 md:truncate empty:hidden" data-card="${cmd.name}"></p>
-                            <div class="flex items-center gap-2 mt-1.5 flex-wrap md:flex-nowrap">
-                                <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded ${winStrong ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700/80 text-slate-300 border border-slate-600/50'}">${cmd.winRate} Win</span>
+                            <div class="flex items-center gap-2 mt-1.5 flex-nowrap min-w-0">
+                                <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded shrink-0 whitespace-nowrap ${winStrong ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700/80 text-slate-300 border border-slate-600/50'}">${cmd.winRate} Win</span>
                                 <span class="text-[10px] text-slate-400 truncate min-w-0"><span class="uppercase tracking-wider font-bold text-slate-500">Owner</span> <span class="text-slate-300 font-semibold">${ownerName}</span></span>
                             </div>
                         </div>
@@ -5014,8 +5016,10 @@
             ].join('');
             return `
                 <div onclick="window.openPlayerProfile(${index})" class="glass flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-slate-800/80 transition cursor-pointer relative overflow-hidden border border-slate-700/50 group">
-                    <div class="w-5 md:w-8 text-center font-black text-lg md:text-2xl ${getRankColor(p.rank)} z-10 shrink-0">${p.rank}</div>
-                    ${renderPlayerAvatar(p, 'w-12 h-12 md:w-14 md:h-14', 'text-sm md:text-base', 'z-10 flex-shrink-0 group-hover:border-purple-500/50 transition')}
+                    <div class="w-5 md:w-8 flex items-center justify-center shrink-0 z-10">
+                        <div class="text-center font-black text-lg md:text-2xl ${getRankColor(p.rank)} leading-none">${p.rank}</div>
+                    </div>
+                    ${renderPlayerAvatar(p, 'w-12 h-12 md:w-14 md:h-14', 'text-sm md:text-base', 'z-10 flex-shrink-0 self-center group-hover:border-purple-500/50 transition')}
                     <div class="flex-grow z-10 min-w-0">
                         <h4 class="font-bold text-base md:text-lg text-white truncate group-hover:text-purple-400 transition">${p.name}</h4>
                         <div class="flex items-center gap-1.5 mt-2 flex-wrap">${stats}</div>
@@ -5922,11 +5926,12 @@
             const armory = window.appData.commanders.filter(c => c.pilots && c.pilots.includes(player.name));
             if(armory.length > 0) {
                 safeSetHTML('plr-view-armory', armory.map(c => `
-                    <div onclick="window.closePlayerProfile(); setTimeout(() => window.openCommanderProfile(${window.appData.commanders.indexOf(c)}), 300);" class="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-purple-500/50 transition cursor-pointer relative group">
-                        <div data-card="${c.name}" data-version="art_crop" class="set-bg h-24 art-fallback bg-cover bg-center opacity-70 group-hover:opacity-100 transition duration-300"></div>
-                        <div class="p-3">
-                            <h4 class="font-bold text-sm text-white truncate" title="${c.name}">${c.name}</h4>
-                            <p class="text-[10px] text-yellow-500 font-bold mt-1 uppercase tracking-wider">Elo: ${c.elo}</p>
+                    <div onclick="window.closePlayerProfile(); setTimeout(() => window.openCommanderProfile(${window.appData.commanders.indexOf(c)}), 300);" class="relative aspect-[5/7] bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group shadow-md">
+                        <div data-card="${c.name}" data-version="art_crop" class="set-bg absolute inset-0 art-fallback bg-cover bg-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
+                        <div class="absolute inset-x-0 bottom-0 p-3 z-10">
+                            <h4 class="font-bold text-sm text-white leading-snug line-clamp-2 drop-shadow-md" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</h4>
+                            <p class="text-[10px] text-yellow-400 font-bold mt-1.5 uppercase tracking-wider drop-shadow">${c.elo} Elo</p>
                         </div>
                     </div>
                 `).join(''));
