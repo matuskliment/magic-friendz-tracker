@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.8.5">
+    <meta name="mf-app-version" content="1.9.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3353,9 +3353,9 @@
                 setVersion();
             }
         })();
-        const ART_CACHE_KEY = 'mf_art_cache_v8';
+        const ART_CACHE_KEY = 'mf_art_cache_v9';
         const ART_CACHE_SCHEMA_KEY = 'mf_art_cache_schema';
-        const ART_CACHE_SCHEMA = 8;
+        const ART_CACHE_SCHEMA = 9;
         const SCRYFALL_FETCH_HEADERS = {
             'Accept': 'application/json',
             'User-Agent': `MagicFriendzTracker/${MF_APP_VERSION} (playgroup-stat-tracker)`
@@ -3457,25 +3457,33 @@
         function buildArtCacheEntry(loggedName, card) {
             const faceIndex = pickFaceIndexForLoggedName(loggedName, card);
             const faces = card.card_faces;
+            // Only transform/MDFC layouts put image_uris on each face. Adventure,
+            // split and flip cards still list card_faces but keep a single image at
+            // the top level, so fall back to card.image_uris in that case.
+            const facesHaveImages = Array.isArray(faces) && faces.some(f => f && f.image_uris);
             let frontUris = null;
             let backUris = null;
             let otherNames = [];
 
-            if (faces && faces.length > 0) {
-                frontUris = faces[faceIndex]?.image_uris || null;
+            if (facesHaveImages) {
+                frontUris = faces[faceIndex]?.image_uris || faces.find(f => f && f.image_uris)?.image_uris || null;
                 for (let i = 0; i < faces.length; i++) {
                     if (i !== faceIndex && faces[i].image_uris) {
                         backUris = faces[i].image_uris;
                         break;
                     }
                 }
-                otherNames = faces.map(f => f.name).filter(n => normalizeCardNameKey(n) !== normalizeCardNameKey(loggedName));
             } else {
                 frontUris = card.image_uris || null;
             }
 
+            if (Array.isArray(faces) && faces.length > 0) {
+                otherNames = faces.map(f => f.name).filter(n => normalizeCardNameKey(n) !== normalizeCardNameKey(loggedName));
+            }
+
             if (!frontUris) return { art_crop: 'error', normal: 'error' };
 
+            const primaryFaceMana = (Array.isArray(faces) && faces[faceIndex] && faces[faceIndex].mana_cost) || '';
             return {
                 art_crop: frontUris.art_crop || '',
                 normal: frontUris.normal || '',
@@ -3483,9 +3491,42 @@
                 normal_back: backUris ? backUris.normal || '' : '',
                 scryfallName: card.name,
                 scryfallId: card.id,
-                otherNames
+                otherNames,
+                manaCost: primaryFaceMana || card.mana_cost || '',
+                cmc: typeof card.cmc === 'number' ? card.cmc : null,
+                typeLine: card.type_line || '',
+                colorIdentity: Array.isArray(card.color_identity) ? card.color_identity : []
             };
         }
+
+        /** Render a Scryfall mana-cost string (e.g. "{5}{G}{G}") as inline symbol icons. */
+        function renderManaSymbols(manaCost, sizeCls) {
+            if (!manaCost) return '';
+            const front = String(manaCost).split('//')[0];
+            const symbols = front.match(/\{[^}]+\}/g);
+            if (!symbols) return '';
+            const cls = sizeCls || 'w-3.5 h-3.5';
+            return symbols.map(sym => {
+                const code = sym.slice(1, -1).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                if (!code) return '';
+                return `<img src="https://svgs.scryfall.io/card-symbols/${encodeURIComponent(code)}.svg" alt="${sym}" class="inline-block ${cls} align-text-bottom" loading="lazy">`;
+            }).join('');
+        }
+
+        /** Fill any mana-cost placeholders (.mf-card-mana[data-card]) from the art cache. */
+        window.refreshCardManaCost = function(onlyName) {
+            document.querySelectorAll('.mf-card-mana[data-card]').forEach(el => {
+                if (el.dataset.manaFilled === '1') return;
+                const name = el.getAttribute('data-card');
+                if (onlyName && name !== onlyName) return;
+                const cache = window.artCache[name];
+                if (!cache) return;
+                if (cache.art_crop === 'error') { el.dataset.manaFilled = '1'; return; }
+                const html = renderManaSymbols(cache.manaCost);
+                if (html) el.innerHTML = html;
+                el.dataset.manaFilled = '1';
+            });
+        };
 
         async function fetchCardFromScryfall(loggedName) {
             const query = normalizeCardSearchName(loggedName);
@@ -3627,6 +3668,7 @@
                         window.applyArtToElement(el);
                     }
                 });
+                window.refreshCardManaCost();
                 
                 if (visibleElements.length === 0) { 
                     isFetchingArt = false; 
@@ -3674,6 +3716,7 @@
                                     window.applyArtToElement(el);
                                 }
                             });
+                            window.refreshCardManaCost(rawName);
                         } else {
                             window.artCache[rawName] = { art_crop: 'error', normal: 'error' };
                             collectArtElements().forEach(el => {
@@ -4787,6 +4830,7 @@
                         </p>
                         <div class="flex items-center gap-2 mt-1.5">
                             <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded ${parseFloat(cmd.winRate) >= 50 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700/80 text-slate-300 border border-slate-600/50'}">${cmd.winRate} Win</span>
+                            <span class="mf-card-mana flex items-center gap-0.5" data-card="${cmd.name}"></span>
                         </div>
                     </div>
                     <div class="text-right z-10 ml-2">
