@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.7.9">
+    <meta name="mf-app-version" content="1.8.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -174,8 +174,14 @@
         /* Full-screen mobile sheets (modals / profiles) */
         .mf-mobile-sheet {
             position: fixed;
-            inset: 0;
-            height: 100dvh;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: auto;
+            /* Defaults to the full dynamic viewport. When the on-screen keyboard
+               opens, JS shrinks --mf-sheet-h to the visible (visualViewport) height
+               so the scroll area ends at the keyboard and every field is reachable. */
+            height: var(--mf-sheet-h, 100dvh);
             max-height: 100dvh;
             display: flex;
             flex-direction: column;
@@ -2891,15 +2897,21 @@
         }
 
         /**
-         * Give the open sheet's scroller enough bottom room that even the LAST field
-         * (e.g. game notes) can scroll above the keyboard. Cleared when keyboard closes.
+         * Shrink the open sheet to the VISIBLE viewport height when the on-screen
+         * keyboard is open. On iOS a `position:fixed; height:100dvh` sheet stays full
+         * height behind the keyboard, so the scroll area can't reveal the last fields
+         * (e.g. game notes). Pinning the sheet height to the visible area ends the
+         * scroller right at the keyboard, making every field reachable. Cleared (back
+         * to 100dvh) when the keyboard closes.
          */
         function mfSyncSheetKeyboardPadding() {
             const inset = mfKeyboardInset();
-            document.querySelectorAll('.mf-mobile-sheet:not(.hidden) .mf-sheet-scroll').forEach((scroller) => {
-                if (inset > 80) scroller.style.paddingBottom = `calc(${inset}px + env(safe-area-inset-bottom, 0px))`;
-                else scroller.style.removeProperty('padding-bottom');
-            });
+            const root = document.documentElement;
+            if (inset > 80) {
+                root.style.setProperty('--mf-sheet-h', `${Math.max(240, window.innerHeight - inset)}px`);
+            } else {
+                root.style.removeProperty('--mf-sheet-h');
+            }
         }
 
         function mfDebounce(fn, wait) {
@@ -2966,6 +2978,8 @@
         function mfReleaseSheetTouchState(sheet) {
             const targetSheet = sheet || mfGetOpenOverlaySheetEl();
             mfCleanupFocusSideEffects();
+            // Sheet is closing: restore full-height sheets (drop the keyboard shrink).
+            document.documentElement.style.removeProperty('--mf-sheet-h');
             // Floating dropdowns are mounted on <body>, so clear them globally too.
             document.querySelectorAll('.mf-floating-dropdown').forEach((d) => d.remove());
             if (!targetSheet) return;
