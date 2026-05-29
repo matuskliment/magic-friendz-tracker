@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="1.8.4">
+    <meta name="mf-app-version" content="1.8.5">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1051,6 +1051,8 @@
                     <p id="plr-view-hours" class="text-2xl font-black text-purple-300 mt-1">—</p>
                 </div>
             </div>
+
+            <div id="plr-view-extra" class="grid grid-cols-2 gap-3 mb-6"></div>
             
             <h3 class="font-bold text-white mb-3 text-sm flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
@@ -4676,6 +4678,7 @@
                     hoursPlayedLabel: formatPlayerHoursPlayed(s.minutesPlayed || 0),
                     winRate: winRateVal.toFixed(1) + "%",
                     topDeck: topDeck,
+                    topDeckPlays: maxPlays,
                     deckCount: Object.keys(s.decks).length,
                     avatarInitials: getPlayerInitials(name),
                     avatarColor: playerAvatarColorMap[cleanName] || getAvatarColorFromName(cleanName),
@@ -5628,6 +5631,62 @@
             }
         }
 
+        function renderPlayerInsights(player) {
+            const host = document.getElementById('plr-view-extra');
+            if (!host) return;
+
+            // Walk match history (already most-recent-first) for this player.
+            const matches = window.appData.matches || [];
+            const results = [];
+            matches.forEach(m => {
+                const won = (m.winners || []).some(w => w.player === player.name);
+                const lost = (m.losers || []).some(l => l.player === player.name);
+                if (won) results.push({ win: true, date: m.date });
+                else if (lost) results.push({ win: false, date: m.date });
+            });
+
+            const lastPlayedRaw = results.length ? results[0].date : null;
+            let lastPlayed = '—';
+            if (lastPlayedRaw) {
+                const d = new Date(lastPlayedRaw);
+                lastPlayed = isNaN(d.getTime())
+                    ? String(lastPlayedRaw)
+                    : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            }
+
+            let streak = 0, streakWin = null;
+            for (const r of results) {
+                if (streakWin === null) { streakWin = r.win; streak = 1; }
+                else if (r.win === streakWin) { streak += 1; }
+                else break;
+            }
+            const streakLabel = streak > 0 ? `${streak}${streakWin ? 'W' : 'L'}` : '—';
+            const streakColor = streak === 0 ? 'text-slate-300'
+                : (streakWin ? 'text-green-400' : 'text-red-400');
+            const streakSub = streak === 0 ? 'No games yet'
+                : (streakWin ? `${streak} ${streak === 1 ? 'win' : 'wins'} in a row` : `${streak} ${streak === 1 ? 'loss' : 'losses'} in a row`);
+
+            const favDeck = player.topDeck || '—';
+            const favDeckSub = player.topDeckPlays > 0
+                ? `${player.topDeckPlays} ${player.topDeckPlays === 1 ? 'play' : 'plays'}`
+                : 'No decks yet';
+            const deckCount = player.deckCount || 0;
+
+            const card = (label, value, valueCls, sub) => `
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">${label}</p>
+                    <p class="text-base font-black ${valueCls} mt-1 truncate" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</p>
+                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
+                </div>`;
+
+            host.innerHTML = [
+                card('Favorite Deck', favDeck, 'text-sky-300', favDeckSub),
+                card('Decks Played', String(deckCount), 'text-purple-300', deckCount === 1 ? 'deck piloted' : 'decks piloted'),
+                card('Current Streak', streakLabel, streakColor, streakSub),
+                card('Last Played', lastPlayed, 'text-amber-300', results.length ? `${results.length} ${results.length === 1 ? 'game' : 'games'} logged` : 'No games yet')
+            ].join('');
+        }
+
         window.openPlayerProfile = function(index) {
             const player = window.appData.players[index];
             const view = document.getElementById('view-player-detail');
@@ -5648,6 +5707,8 @@
             if(winsEl) winsEl.innerText = player.wins;
             if(winrateEl) winrateEl.innerText = player.winRate;
             if(hoursEl) hoursEl.innerText = player.hoursPlayedLabel || '—';
+
+            renderPlayerInsights(player);
             
             const armory = window.appData.commanders.filter(c => c.pilots && c.pilots.includes(player.name));
             if(armory.length > 0) {
