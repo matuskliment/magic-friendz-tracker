@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.2.1">
+    <meta name="mf-app-version" content="2.2.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3437,6 +3437,49 @@
             return formatDurationLabel(totalMinutes);
         }
 
+        function parseMatchImportDate(rawDate) {
+            const s = String(rawDate || '').trim();
+            if (!s) return null;
+            const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (iso) {
+                const d = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10), 12, 0, 0, 0);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function toMatchTimestampMs(ts) {
+            if (!ts) return 0;
+            if (typeof ts === 'number') return ts;
+            if (typeof ts.toMillis === 'function') return ts.toMillis();
+            if (typeof ts.seconds === 'number') return ts.seconds * 1000;
+            return 0;
+        }
+
+        function parseMatchSessionDate(match) {
+            if (!match) return null;
+            if (match.date) {
+                const fromLabel = parseMatchImportDate(match.date);
+                if (fromLabel) return fromLabel;
+            }
+            const ts = toMatchTimestampMs(match.timestamp);
+            if (ts) {
+                const d = new Date(ts);
+                if (!isNaN(d.getTime())) return d;
+            }
+            return null;
+        }
+
+        function startOfLocalDay(d) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+
+        function localDaysBetween(fromDate, toDate) {
+            const diff = startOfLocalDay(toDate).getTime() - startOfLocalDay(fromDate).getTime();
+            return Math.max(0, Math.round(diff / 86400000));
+        }
+
         function renderMatchExtrasBlock(m) {
             const cardsHtml = m.winningCards && m.winningCards.length > 0 ? `
                 <p class="text-[10px] text-purple-400 uppercase font-bold tracking-widest mb-2">Winning Cards</p>
@@ -5116,15 +5159,23 @@
             const roster = window.appData.explicitRoster || [];
             if (!matches.length) return null;
 
-            const sortedByTime = [...matches].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-            const firstMatch = sortedByTime[0];
-            const lastMatch = sortedByTime[sortedByTime.length - 1];
-            const firstTs = firstMatch.timestamp || Date.now();
-            const lastTs = lastMatch.timestamp || Date.now();
-            const now = Date.now();
+            const sortedBySession = [...matches].sort((a, b) => {
+                const ta = parseMatchSessionDate(a)?.getTime() || toMatchTimestampMs(a.timestamp) || 0;
+                const tb = parseMatchSessionDate(b)?.getTime() || toMatchTimestampMs(b.timestamp) || 0;
+                return ta - tb;
+            });
+            const firstMatch = sortedBySession[0];
+            const lastMatch = sortedBySession[sortedBySession.length - 1];
+            const firstSessionDate = parseMatchSessionDate(firstMatch);
+            const lastSessionDateObj = parseMatchSessionDate(lastMatch);
+            const today = new Date();
 
-            const journeyDays = Math.max(1, Math.ceil((now - firstTs) / 86400000));
-            const activeSpanDays = Math.max(1, Math.ceil((lastTs - firstTs) / 86400000) + 1);
+            const journeyDays = firstSessionDate
+                ? Math.max(1, localDaysBetween(firstSessionDate, today))
+                : 1;
+            const activeSpanDays = (firstSessionDate && lastSessionDateObj)
+                ? Math.max(1, localDaysBetween(firstSessionDate, lastSessionDateObj) + 1)
+                : 1;
 
             let totalTableMinutes = 0;
             let matchesWithDuration = 0;
@@ -5136,10 +5187,9 @@
                 const dateKey = m.date || 'Unknown';
                 dateCounts[dateKey] = (dateCounts[dateKey] || 0) + 1;
 
-                const ts = m.timestamp || 0;
-                if (ts) {
-                    const d = new Date(ts);
-                    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const sessionDate = parseMatchSessionDate(m);
+                if (sessionDate) {
+                    const monthKey = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, '0')}`;
                     monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
                 }
 
@@ -5187,7 +5237,13 @@
             }
 
             const lastSessionDate = matches[0]?.date || '';
-            const daysSinceLast = lastTs ? Math.max(0, Math.floor((now - lastTs) / 86400000)) : null;
+            const daysSinceLast = lastSessionDateObj
+                ? localDaysBetween(lastSessionDateObj, today)
+                : null;
+
+            const firstSessionLabel = firstSessionDate
+                ? firstSessionDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                : (firstMatch.date || '');
 
             return {
                 totalGames,
@@ -5209,7 +5265,7 @@
                 busiestMonth,
                 mostDedicated,
                 winRateSpread,
-                firstSessionDate: firstMatch.date || '',
+                firstSessionDate: firstSessionLabel,
                 matchesWithDuration,
             };
         }
@@ -5291,7 +5347,7 @@
                                     <span class="text-4xl sm:text-5xl font-black text-white leading-none tabular-nums">${stats.journeyDays}</span>
                                     <span class="text-lg sm:text-xl font-bold text-cyan-300/90">days</span>
                                 </div>
-                                <p class="text-xs text-slate-400 mt-2">Since <span class="text-slate-300 font-semibold">${escapeHtml(stats.firstSessionDate)}</span>${stats.activeSpanDays !== stats.journeyDays ? ` · <span class="text-slate-500">${stats.activeSpanDays} active days</span>` : ''}</p>
+                                <p class="text-xs text-slate-400 mt-2">Since first session · <span class="text-slate-300 font-semibold">${escapeHtml(stats.firstSessionDate)}</span>${stats.activeSpanDays !== stats.journeyDays ? ` · <span class="text-slate-500">${stats.activeSpanDays} days with games</span>` : ''}</p>
                             </div>
                             <div class="flex flex-wrap gap-2 sm:justify-end">
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-200 bg-cyan-500/10 border border-cyan-500/25 px-2.5 py-1 rounded-full whitespace-nowrap">${stats.totalGames} games</span>
@@ -7076,18 +7132,6 @@
                     window.showAppAlert("Failed to wipe data.", "Error", "❌");
                 }
             }, "Wipe All Data?", "☢️");
-        }
-
-        function parseMatchImportDate(rawDate) {
-            const s = String(rawDate || '').trim();
-            if (!s) return null;
-            const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-            if (iso) {
-                const d = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10), 12, 0, 0, 0);
-                return isNaN(d.getTime()) ? null : d;
-            }
-            const d = new Date(s);
-            return isNaN(d.getTime()) ? null : d;
         }
 
         function parseTrueCSV(str) {
