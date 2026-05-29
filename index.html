@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.1.2">
+    <meta name="mf-app-version" content="2.2.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -125,15 +125,27 @@
         #tab-analytics,
         #tab-analytics .space-y-8,
         #analytics-synergy,
+        #analytics-group-stats,
         #analytics-meta,
         #analytics-upset,
         #analytics-rivalry,
         #analytics-synergy-rankings { width: 100%; max-width: 100%; min-width: 0; }
         #analytics-synergy > *,
+        #analytics-group-stats > *,
         #analytics-meta > *,
         #analytics-upset > *,
         #analytics-rivalry > *,
         #analytics-synergy-rankings > * { max-width: 100%; min-width: 0; }
+        @keyframes mfGroupGlow {
+            0%, 100% { opacity: 0.45; transform: scale(1); }
+            50% { opacity: 0.75; transform: scale(1.04); }
+        }
+        .mf-group-hero-glow {
+            animation: mfGroupGlow 5s ease-in-out infinite;
+        }
+        .mf-group-stat {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.6) 100%);
+        }
         @media (max-width: 639px) {
             .group\/tooltip > div.absolute,
             .group\/tooltip [role="tooltip"] {
@@ -705,6 +717,22 @@
                             </div>
                         </h2>
                         <div id="analytics-synergy">
+                            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
+                        </div>
+                    </div>
+
+                    <!-- Group at a Glance -->
+                    <div>
+                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <span class="text-cyan-400">📈</span> Group at a Glance
+                            <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <div class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100">
+                                    Your group's footprint — games logged, time at the table, session history, and community stats from every match in this group.
+                                </div>
+                            </div>
+                        </h2>
+                        <div id="analytics-group-stats">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
                     </div>
@@ -5066,6 +5094,257 @@
                 .sort((a, b) => b.lift - a.lift || b.comboWinRate - a.comboWinRate || b.plays - a.plays);
         }
 
+        function formatGroupTableHours(totalMinutes) {
+            if (!totalMinutes || totalMinutes <= 0) return { value: '—', sub: 'No durations logged' };
+            const hours = totalMinutes / 60;
+            if (hours >= 100) return { value: `${Math.round(hours)}h`, sub: `${formatDurationLabel(totalMinutes)} at the table` };
+            if (hours >= 10) return { value: `${hours.toFixed(0)}h`, sub: `${formatDurationLabel(totalMinutes)} at the table` };
+            return { value: formatDurationLabel(totalMinutes), sub: 'Total table time' };
+        }
+
+        function formatDaysAgo(days) {
+            if (days === null || days === undefined) return '';
+            if (days === 0) return 'Today';
+            if (days === 1) return 'Yesterday';
+            return `${days} days ago`;
+        }
+
+        function computeGroupStats() {
+            const matches = window.appData.matches || [];
+            const players = window.appData.players || [];
+            const commanders = window.appData.commanders || [];
+            const roster = window.appData.explicitRoster || [];
+            if (!matches.length) return null;
+
+            const sortedByTime = [...matches].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            const firstMatch = sortedByTime[0];
+            const lastMatch = sortedByTime[sortedByTime.length - 1];
+            const firstTs = firstMatch.timestamp || Date.now();
+            const lastTs = lastMatch.timestamp || Date.now();
+            const now = Date.now();
+
+            const journeyDays = Math.max(1, Math.ceil((now - firstTs) / 86400000));
+            const activeSpanDays = Math.max(1, Math.ceil((lastTs - firstTs) / 86400000) + 1);
+
+            let totalTableMinutes = 0;
+            let matchesWithDuration = 0;
+            let totalPodSize = 0;
+            const dateCounts = {};
+            const monthCounts = {};
+
+            matches.forEach(m => {
+                const dateKey = m.date || 'Unknown';
+                dateCounts[dateKey] = (dateCounts[dateKey] || 0) + 1;
+
+                const ts = m.timestamp || 0;
+                if (ts) {
+                    const d = new Date(ts);
+                    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+                }
+
+                const duration = typeof m.durationMinutes === 'number' && m.durationMinutes > 0 ? m.durationMinutes : 0;
+                if (duration > 0) {
+                    totalTableMinutes += duration;
+                    matchesWithDuration++;
+                }
+
+                totalPodSize += [...(m.winners || []), ...(m.losers || [])].length;
+            });
+
+            const totalGames = matches.length;
+            const gameNights = Object.keys(dateCounts).length;
+            const activePlayers = players.filter(p => p.plays > 0).length;
+            const rosterSize = Math.max(roster.length, players.length, activePlayers);
+            const totalPlayerAppearances = players.reduce((sum, p) => sum + (p.plays || 0), 0);
+            const totalPlayerMinutes = players.reduce((sum, p) => sum + (p.minutesPlayed || 0), 0);
+
+            let longestNight = { date: '', count: 0 };
+            Object.entries(dateCounts).forEach(([d, c]) => {
+                if (c > longestNight.count) longestNight = { date: d, count: c };
+            });
+
+            let busiestMonth = { label: '', count: 0 };
+            Object.entries(monthCounts).forEach(([key, c]) => {
+                if (c > busiestMonth.count) {
+                    const [y, m] = key.split('-');
+                    const label = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1)
+                        .toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+                    busiestMonth = { label, count: c };
+                }
+            });
+
+            let mostDedicated = null;
+            players.forEach(p => {
+                if (!mostDedicated || (p.plays || 0) > mostDedicated.plays) mostDedicated = p;
+            });
+
+            const playersWithGames = players.filter(p => (p.plays || 0) >= 3);
+            let winRateSpread = null;
+            if (playersWithGames.length >= 2) {
+                const rates = playersWithGames.map(p => parseFloat(p.winRate));
+                winRateSpread = { min: Math.min(...rates), max: Math.max(...rates) };
+            }
+
+            const lastSessionDate = matches[0]?.date || '';
+            const daysSinceLast = lastTs ? Math.max(0, Math.floor((now - lastTs) / 86400000)) : null;
+
+            return {
+                totalGames,
+                totalTableMinutes,
+                totalPlayerMinutes,
+                avgGamesPerPlayer: activePlayers > 0 ? totalPlayerAppearances / activePlayers : 0,
+                gameNights,
+                journeyDays,
+                activeSpanDays,
+                activePlayers,
+                rosterSize,
+                uniqueCommanders: commanders.length,
+                avgPodSize: totalGames > 0 ? totalPodSize / totalGames : 0,
+                avgGameLength: matchesWithDuration > 0 ? totalTableMinutes / matchesWithDuration : 0,
+                avgGamesPerNight: gameNights > 0 ? totalGames / gameNights : 0,
+                lastSessionDate,
+                daysSinceLast,
+                longestNight,
+                busiestMonth,
+                mostDedicated,
+                winRateSpread,
+                firstSessionDate: firstMatch.date || '',
+                matchesWithDuration,
+            };
+        }
+
+        function renderGroupStats() {
+            const stats = computeGroupStats();
+            if (!stats) {
+                safeSetHTML('analytics-group-stats', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log matches to see your group's story by the numbers.</p></div>`);
+                return;
+            }
+
+            const tableHours = formatGroupTableHours(stats.totalTableMinutes);
+            const playerHours = stats.totalPlayerMinutes > 0 ? formatPlayerHoursPlayed(stats.totalPlayerMinutes) : '—';
+            const avgGameLen = stats.avgGameLength > 0 ? formatDurationLabel(Math.round(stats.avgGameLength)) : '—';
+            const avgGameLenSub = stats.matchesWithDuration > 0
+                ? `${stats.matchesWithDuration} of ${stats.totalGames} logged`
+                : 'No durations logged';
+
+            const statTile = (icon, value, label, sub, accent = 'cyan') => {
+                const borders = {
+                    cyan: 'border-cyan-500/20 group-hover:border-cyan-500/40',
+                    purple: 'border-purple-500/20 group-hover:border-purple-500/40',
+                    amber: 'border-amber-500/20 group-hover:border-amber-500/40',
+                    emerald: 'border-emerald-500/20 group-hover:border-emerald-500/40',
+                    sky: 'border-sky-500/20 group-hover:border-sky-500/40',
+                    rose: 'border-rose-500/20 group-hover:border-rose-500/40',
+                };
+                const values = {
+                    cyan: 'text-cyan-300',
+                    purple: 'text-purple-300',
+                    amber: 'text-amber-300',
+                    emerald: 'text-emerald-300',
+                    sky: 'text-sky-300',
+                    rose: 'text-rose-300',
+                };
+                return `
+                    <div class="mf-group-stat group relative overflow-hidden rounded-xl border ${borders[accent] || borders.cyan} p-3 sm:p-3.5 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/5 min-w-0">
+                        <div class="absolute -right-2 -top-2 text-2xl opacity-[0.07] pointer-events-none select-none">${icon}</div>
+                        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">${label}</p>
+                        <p class="text-xl sm:text-2xl font-black ${values[accent] || values.cyan} leading-none truncate">${escapeHtml(String(value))}</p>
+                        <p class="text-[10px] text-slate-500 font-semibold mt-1.5 truncate">${escapeHtml(String(sub))}</p>
+                    </div>`;
+            };
+
+            const dedicatedPlayer = stats.mostDedicated;
+            const dedicatedIdx = dedicatedPlayer
+                ? window.appData.players.findIndex(p => p.name === dedicatedPlayer.name)
+                : -1;
+            const dedicatedAvatar = dedicatedPlayer
+                ? renderPlayerAvatar(dedicatedPlayer, 'w-10 h-10', 'text-[10px]', 'shrink-0 border border-cyan-500/40')
+                : '';
+
+            const highlightCard = (title, value, sub, extraHtml = '') => `
+                <div class="bg-slate-950/50 border border-slate-700/50 rounded-xl p-3 sm:p-4 min-w-0 flex flex-col">
+                    <p class="text-[9px] uppercase font-bold tracking-widest text-slate-500 mb-2">${title}</p>
+                    ${extraHtml}
+                    <p class="text-base sm:text-lg font-black text-white leading-tight">${escapeHtml(String(value))}</p>
+                    <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">${escapeHtml(String(sub))}</p>
+                </div>`;
+
+            const winSpreadHtml = stats.winRateSpread
+                ? `${stats.winRateSpread.min.toFixed(0)}% – ${stats.winRateSpread.max.toFixed(0)}%`
+                : '—';
+            const playersWith3Plus = (window.appData.players || []).filter(p => (p.plays || 0) >= 3).length;
+            const winSpreadSub = stats.winRateSpread
+                ? `Among ${playersWith3Plus} players (3+ games)`
+                : 'Need more games';
+
+            safeSetHTML('analytics-group-stats', `
+                <div class="glass relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 shadow-[0_0_30px_rgba(34,211,238,0.06)] w-full max-w-full min-w-0">
+                    <div class="mf-group-hero-glow absolute -top-16 -right-16 w-48 h-48 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none"></div>
+                    <div class="mf-group-hero-glow absolute -bottom-20 -left-12 w-40 h-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" style="animation-delay: -2.5s;"></div>
+
+                    <div class="relative z-10 p-4 sm:p-5 border-b border-cyan-500/10">
+                        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                            <div>
+                                <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-cyan-400/80 mb-1">The Journey</p>
+                                <div class="flex items-baseline gap-2 flex-wrap">
+                                    <span class="text-4xl sm:text-5xl font-black text-white leading-none tabular-nums">${stats.journeyDays}</span>
+                                    <span class="text-lg sm:text-xl font-bold text-cyan-300/90">days</span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-2">Since <span class="text-slate-300 font-semibold">${escapeHtml(stats.firstSessionDate)}</span>${stats.activeSpanDays !== stats.journeyDays ? ` · <span class="text-slate-500">${stats.activeSpanDays} active days</span>` : ''}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 sm:justify-end">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-200 bg-cyan-500/10 border border-cyan-500/25 px-2.5 py-1 rounded-full whitespace-nowrap">${stats.totalGames} games</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-purple-200 bg-purple-500/10 border border-purple-500/25 px-2.5 py-1 rounded-full whitespace-nowrap">${stats.gameNights} nights</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-200 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded-full whitespace-nowrap">${tableHours.value} played</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative z-10 p-4 sm:p-5 space-y-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                            ${statTile('🎲', stats.totalGames, 'Total Games', `${stats.avgGamesPerNight.toFixed(1)} per night avg`, 'cyan')}
+                            ${statTile('⏱️', tableHours.value, 'Table Time', tableHours.sub, 'amber')}
+                            ${statTile('🌙', stats.gameNights, 'Game Nights', stats.longestNight.count > 0 ? `Longest: ${stats.longestNight.count} games` : '—', 'purple')}
+                            ${statTile('👥', stats.activePlayers, 'Active Players', stats.rosterSize > stats.activePlayers ? `${stats.rosterSize} on roster` : 'All rostered players', 'emerald')}
+                            ${statTile('📊', stats.avgGamesPerPlayer.toFixed(1), 'Avg Games / Player', `${stats.totalGames} total appearances`, 'sky')}
+                            ${statTile('🃏', stats.uniqueCommanders, 'Unique Commanders', 'Across all pilots', 'rose')}
+                            ${statTile('🪑', stats.avgPodSize.toFixed(1), 'Avg Pod Size', 'Players per game', 'cyan')}
+                            ${statTile('⌛', avgGameLen, 'Avg Game Length', avgGameLenSub, 'amber')}
+                            ${statTile('🔥', stats.avgGamesPerNight.toFixed(1), 'Games / Night', stats.busiestMonth.count > 0 ? `Peak: ${stats.busiestMonth.count} in a month` : '—', 'purple')}
+                            ${statTile('🧑‍🤝‍🧑', playerHours, 'Player-Hours', 'Time × seats at table', 'emerald')}
+                            ${statTile('📅', stats.lastSessionDate || '—', 'Last Session', formatDaysAgo(stats.daysSinceLast) || '—', 'sky')}
+                            ${statTile('⚖️', winSpreadHtml, 'Win Rate Spread', winSpreadSub, 'rose')}
+                        </div>
+
+                        <div class="pt-1">
+                            <p class="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2.5 flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Highlights
+                            </p>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                                ${highlightCard(
+                                    'Longest Game Night',
+                                    stats.longestNight.count > 0 ? `${stats.longestNight.count} matches` : '—',
+                                    stats.longestNight.date || 'No sessions yet'
+                                )}
+                                ${highlightCard(
+                                    'Busiest Month',
+                                    stats.busiestMonth.count > 0 ? `${stats.busiestMonth.count} games` : '—',
+                                    stats.busiestMonth.label || 'Not enough history'
+                                )}
+                                ${highlightCard(
+                                    'Most Dedicated',
+                                    dedicatedPlayer ? dedicatedPlayer.name : '—',
+                                    dedicatedPlayer ? `${dedicatedPlayer.plays} games · ${dedicatedPlayer.winRate} win rate` : 'No players yet',
+                                    dedicatedPlayer ? `<div class="mb-2">${dedicatedIdx >= 0 ? `<button type="button" onclick="window.openPlayerProfile(${dedicatedIdx})" class="inline-flex touch-manipulation">${dedicatedAvatar}</button>` : dedicatedAvatar}</div>` : ''
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
         function renderSignatureSynergyHero(combo) {
             const player = (window.appData.players || []).find(p => p.name === combo.player) || {
                 name: combo.player,
@@ -5496,6 +5775,7 @@
                     safeSetHTML('home-last-session', renderEmptyGroupHomeOnboarding());
                     safeSetHTML('match-feed-container', renderEmptyMatchesOnboarding());
                     safeSetHTML('analytics-synergy', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log matches to unlock Signature Synergy and other insights.</p></div>`);
+                    safeSetHTML('analytics-group-stats', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log matches to see your group's story by the numbers.</p></div>`);
                     safeSetHTML('analytics-synergy-rankings', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Combo rankings appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-meta', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">The meta appears after you log games.</p></div>`);
                     safeSetHTML('analytics-upset', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Biggest upsets show up once you have match history.</p></div>`);
@@ -5634,6 +5914,7 @@
                     safeSetHTML('analytics-synergy', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log at least ${SYNERGY_MIN_PLAYS} games with a pilot &amp; deck pair to establish Signature Synergy!</p></div>`);
                 }
                 renderSignatureSynergyRankings(synergies);
+                renderGroupStats();
                 
                 const metaDecks = [...window.appData.commanders].sort((a,b) => b.plays - a.plays).slice(0, 3);
                 let metaHTML = '';
@@ -6797,6 +7078,18 @@
             }, "Wipe All Data?", "☢️");
         }
 
+        function parseMatchImportDate(rawDate) {
+            const s = String(rawDate || '').trim();
+            if (!s) return null;
+            const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (iso) {
+                const d = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10), 12, 0, 0, 0);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
         function parseTrueCSV(str) {
             const arr = [];
             let quote = false;
@@ -6895,10 +7188,10 @@
                         
                         const cardsArray = [card1, card2, card3, card4].filter(c => c && c.trim() !== "");
 
-                        const dObj = new Date(rawDate);
+                        const dObj = parseMatchImportDate(rawDate);
                         let dateStr = "Unknown Date";
                         let timestamp = Date.now() + i;
-                        if (!isNaN(dObj.getTime())) {
+                        if (dObj) {
                             dateStr = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                             timestamp = dObj.getTime() + i;
                         }
