@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.1.0">
+    <meta name="mf-app-version" content="2.1.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -941,7 +941,7 @@
                 <div class="absolute inset-0 bg-gradient-to-b from-slate-950/10 via-slate-950/55 to-slate-950"></div>
             </div>
 
-            <div class="relative max-w-3xl mx-auto px-4 md:px-6 pb-6 md:pt-8 md:pb-8 flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
+            <div class="relative max-w-3xl mx-auto px-4 md:px-6 pb-6 md:pt-8 md:pb-8 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
                 <div class="relative z-10 mx-auto md:mx-0 shrink-0 -mt-14 md:mt-0">
                     <div class="w-56 md:w-56 aspect-[5/7] relative flip-container cursor-pointer group shadow-[0_12px_40px_rgba(0,0,0,0.55)] md:shadow-[0_0_30px_rgba(0,0,0,0.4)] rounded-xl" onclick="document.getElementById('cmd-flip-inner').classList.toggle('is-flipped')">
                         <div id="cmd-flip-inner" class="flip-inner rounded-xl w-full h-full">
@@ -962,11 +962,10 @@
                     <p id="cmd-flip-hint" class="md:hidden text-center text-[10px] text-slate-400 font-semibold mt-2 tracking-wide">Tap card to flip</p>
                 </div>
 
-                <div class="flex-1 text-center md:text-left w-full min-w-0">
+                <div class="flex-1 text-center md:text-left w-full min-w-0 md:flex md:flex-col md:justify-center">
                     <h1 id="cmd-view-name" class="text-2xl md:text-4xl font-black text-white drop-shadow-lg leading-tight">Name</h1>
                     <span id="cmd-view-mana" class="mf-card-mana flex items-center justify-center md:justify-start gap-0.5 mt-1.5 empty:hidden"></span>
                     <p id="cmd-view-type" class="mf-card-type text-[11px] sm:text-xs text-slate-300/90 italic mt-1 empty:hidden"></p>
-                    <p id="cmd-view-form" class="hidden text-xs font-bold text-slate-400 mt-2 tracking-widest"></p>
 
                     <div id="cmd-view-stat-strip" class="md:hidden flex flex-wrap justify-center gap-2 mt-4">
                         <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-1.5 text-center min-w-[4.25rem]">
@@ -987,7 +986,7 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-2.5 mt-4 md:mt-0 md:gap-3 md:mb-6 items-center md:items-start">
+                    <div class="flex flex-col gap-2.5 mt-4 md:mt-4 md:gap-3 items-center md:items-start">
                         <div class="flex items-center gap-2 flex-wrap justify-center md:justify-start">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Owner:</span>
                             <span id="cmd-view-owner" class="text-sm font-bold text-slate-200 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"></span>
@@ -1002,12 +1001,17 @@
                         </div>
                     </div>
 
-                    <div class="hidden md:inline-block bg-slate-900/50 p-4 rounded-2xl border border-slate-800 text-left mt-4">
+                    <div id="cmd-view-form-wrap" class="hidden mt-4 flex flex-col items-center md:items-start">
+                        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Recent Form</span>
+                        <p id="cmd-view-form" class="mt-1.5 text-sm md:text-base font-black text-white tracking-[0.25em] font-mono bg-slate-800/80 border border-slate-600/60 px-3 py-2 rounded-lg"></p>
+                    </div>
+
+                    <div class="hidden md:inline-block bg-slate-900/50 p-4 rounded-2xl border border-slate-800 text-left mt-5 w-fit">
                         <p class="text-[10px] text-yellow-500 uppercase tracking-widest font-bold mb-1">Current Elo</p>
                         <p id="cmd-view-elo" class="cmd-view-elo-val text-4xl font-black text-yellow-500 leading-none">1200</p>
                     </div>
 
-                    <p class="md:hidden text-center text-[10px] text-slate-500 mt-3">Peak <span class="cmd-view-peak-rank-val text-slate-400 font-bold">#1</span> · High Elo <span class="cmd-view-peak-elo-val text-slate-400 font-bold">1200</span></p>
+                    <p class="md:hidden text-center text-xs text-slate-400 mt-4">Peak <span class="cmd-view-peak-rank-val text-purple-300 font-bold">#1</span> · High Elo <span class="cmd-view-peak-elo-val text-yellow-400 font-bold">1200</span></p>
                 </div>
             </div>
         </div>
@@ -1025,12 +1029,12 @@
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner flex flex-col justify-center">
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Current Rank</p>
                     <p id="cmd-view-current-rank" class="text-xl font-bold text-purple-400">#1</p>
-                    <p class="text-[9px] text-slate-500 mt-1">Peak: <span id="cmd-view-peak-rank">#1</span></p>
+                    <p class="text-[10px] text-slate-400 mt-1.5">Peak rank <span id="cmd-view-peak-rank" class="cmd-view-peak-rank-val font-bold text-purple-300">#1</span></p>
                 </div>
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner flex flex-col justify-center">
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Highest Elo</p>
-                    <p id="cmd-view-peak-elo" class="text-xl font-bold text-white">1200</p>
-                    <p id="cmd-view-peak-elo-hint" class="hidden text-[9px] text-slate-500 mt-1">Baseline only (no games yet)</p>
+                    <p id="cmd-view-peak-elo" class="cmd-view-peak-elo-val text-xl font-bold text-yellow-400">1200</p>
+                    <p id="cmd-view-peak-elo-hint" class="hidden text-[10px] text-slate-400 mt-1.5">Baseline only (no games yet)</p>
                 </div>
             </div>
 
@@ -5818,16 +5822,17 @@
             const flipInner = document.getElementById('cmd-flip-inner');
             const bannerArt = document.getElementById('cmd-view-banner-art');
             const formEl = document.getElementById('cmd-view-form');
+            const formWrap = document.getElementById('cmd-view-form-wrap');
             
             if (flipInner) flipInner.classList.remove('is-flipped');
             if (flipBtn) flipBtn.classList.add('hidden');
 
-            if (formEl) {
+            if (formEl && formWrap) {
                 if (cmd.form && cmd.form !== '—') {
-                    formEl.innerText = `Form: ${cmd.form}`;
-                    formEl.classList.remove('hidden');
+                    formEl.innerText = cmd.form;
+                    formWrap.classList.remove('hidden');
                 } else {
-                    formEl.classList.add('hidden');
+                    formWrap.classList.add('hidden');
                 }
             }
 
