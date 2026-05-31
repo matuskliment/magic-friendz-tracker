@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.3.1">
+    <meta name="mf-app-version" content="2.3.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -2912,9 +2912,21 @@
             }
         }
 
+        function getMatchFirestoreId(match) {
+            if (!match) return '';
+            return String(match.firestoreId || match.id || '').trim();
+        }
+
+        function normalizeLoadedMatch(docSnap) {
+            const data = docSnap.data() || {};
+            const firestoreId = docSnap.id || '';
+            return { ...data, id: firestoreId, firestoreId };
+        }
+
         function renderMatchAdminActions(m, opts = {}) {
-            if (!m?.id) return '';
-            const safeId = escapeHtml(m.id);
+            const matchId = getMatchFirestoreId(m);
+            if (!matchId) return '';
+            const safeId = escapeHtml(matchId);
             const parts = [];
             if (window.canWrite()) {
                 parts.push(`<button type="button" data-match-id="${safeId}" onclick="event.stopPropagation(); window.openEditMatchModal(this.dataset.matchId)" class="flex-1 sm:flex-none bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 px-4 py-2.5 rounded-xl text-xs font-bold transition min-h-[44px] touch-manipulation">✏️ Edit Match</button>`);
@@ -5118,7 +5130,7 @@
 
             matchUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "matches"), (snapshot) => {
                 let matches = [];
-                snapshot.forEach(docSnap => matches.push({ id: docSnap.id, ...docSnap.data() }));
+                snapshot.forEach(docSnap => matches.push(normalizeLoadedMatch(docSnap)));
                 recalculateEverything(matches);
                 initApp();
             });
@@ -6722,7 +6734,7 @@
 
                 const roster = rosterSnap.docs.map(d => ({ id: d.id, ...d.data() }))
                     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
-                const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+                const matches = matchesSnap.docs.map(d => normalizeLoadedMatch(d))
                     .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
                 const payload = {
@@ -7391,13 +7403,13 @@
                 window.showAppAlert('Sign in to edit matches.', 'View only', '🔒');
                 return;
             }
-            const match = (window.appData.matches || []).find(m => m.id === matchId);
+            const match = (window.appData.matches || []).find(m => getMatchFirestoreId(m) === matchId);
             if (!match) {
                 window.showAppAlert('Could not find that match. Try refreshing the page.', 'Not found', '⚠️');
                 return;
             }
 
-            window.editingMatchId = matchId;
+            window.editingMatchId = getMatchFirestoreId(match);
             mfSetLogMatchModalMode(true);
             mfReleaseLogMatchTouchState();
             window.mfCloseStaticDropdowns();
@@ -7462,7 +7474,7 @@
                 window.showAppAlert('Only the group owner can delete matches.', 'Owner only', '🔒');
                 return;
             }
-            const match = (window.appData.matches || []).find(m => m.id === matchId);
+            const match = (window.appData.matches || []).find(m => getMatchFirestoreId(m) === matchId);
             const dateLabel = match?.date || 'this match';
             const winnerNames = (match?.winners || []).map(w => w.name).filter(Boolean).join(', ');
             const summary = winnerNames ? `\n\n${dateLabel} — ${winnerNames}` : `\n\n${dateLabel}`;
