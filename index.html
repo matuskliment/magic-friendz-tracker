@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.7.1">
+    <meta name="mf-app-version" content="2.7.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3856,18 +3856,44 @@
         }
 
         function mfFocusPickerSearchEl(searchEl) {
-            if (!searchEl || !mfIsTouchDevice()) return;
-            mfScheduleFocusTimer(() => {
-                try { searchEl.focus({ preventScroll: true }); } catch (_) {}
-            }, 50);
+            if (!searchEl || !mfIsMobileWizardPickerMode()) return;
+            try { searchEl.focus({ preventScroll: true }); } catch (_) {}
         }
 
         function mfPickerBindRow(li, onPick) {
             li.classList.add('mf-picker-row');
             li.setAttribute('role', 'option');
-            li.addEventListener('click', (e) => {
-                e.preventDefault();
+            let activePointer = null;
+            let startX = 0;
+            let startY = 0;
+            let moved = false;
+            const MOVE_PX = 10;
+
+            li.addEventListener('pointerdown', (evt) => {
+                if (evt.pointerType === 'mouse' && evt.button !== 0) return;
+                activePointer = evt.pointerId;
+                startX = evt.clientX;
+                startY = evt.clientY;
+                moved = false;
+            }, { passive: true });
+
+            li.addEventListener('pointermove', (evt) => {
+                if (evt.pointerId !== activePointer) return;
+                if (Math.hypot(evt.clientX - startX, evt.clientY - startY) > MOVE_PX) moved = true;
+            }, { passive: true });
+
+            const finishPick = (evt) => {
+                if (evt.pointerId !== activePointer) return;
+                activePointer = null;
+                if (moved) return;
+                evt.preventDefault();
                 onPick();
+            };
+
+            li.addEventListener('pointerup', finishPick);
+            li.addEventListener('pointercancel', () => {
+                activePointer = null;
+                moved = false;
             });
         }
 
