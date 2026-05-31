@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.6.3">
+    <meta name="mf-app-version" content="2.7.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -410,6 +410,9 @@
             #view-log-match.mf-log-match-wizard .mf-duration-desktop {
                 display: none !important;
             }
+            #view-log-match.mf-log-match-wizard .mf-duration-mobile {
+                display: block;
+            }
             #view-log-match.mf-log-match-wizard .mf-desktop-card-search {
                 display: none !important;
             }
@@ -477,6 +480,12 @@
             box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35);
         }
         @media (min-width: 768px) {
+            .mf-duration-mobile {
+                display: none !important;
+            }
+            .mf-duration-desktop {
+                display: grid !important;
+            }
             #log-match-next-btn,
             #log-match-wizard-progress {
                 display: none !important;
@@ -3338,6 +3347,73 @@
         // --- Log Match mobile wizard (≤767px); desktop unchanged ---
         window._logMatchWizardStep = 0;
 
+        function mfGetWinnerCount() {
+            return Math.max(1, parseInt(document.getElementById('form-winner-count')?.value || '1', 10) || 1);
+        }
+
+        /** Central user-facing copy for winner / defeated seats (Option A). */
+        function mfSeatCopy(role, index) {
+            const num = index + 1;
+            const isWinner = role === 'winner';
+            const winnerCount = mfGetWinnerCount();
+
+            let stepTitle;
+            let slotHeading;
+            if (isWinner) {
+                if (winnerCount === 1) {
+                    stepTitle = 'Who won?';
+                    slotHeading = '👑 Winner';
+                } else if (num === 1) {
+                    stepTitle = 'Co-winner 1';
+                    slotHeading = `👑 Co-winner (${num})`;
+                } else {
+                    stepTitle = `Co-winner ${num}`;
+                    slotHeading = `👑 Co-winner (${num})`;
+                }
+            } else {
+                stepTitle = `Defeated ${num}`;
+                slotHeading = `💀 Defeated (${num})`;
+            }
+
+            const errPilotMissing = isWinner && winnerCount === 1
+                ? 'Who won? Choose a pilot.'
+                : isWinner
+                    ? `Choose the pilot for co-winner ${num}.`
+                    : `Choose a pilot for defeated player ${num}.`;
+
+            const errCommanderMissing = isWinner && winnerCount === 1
+                ? 'What commander deck won?'
+                : isWinner
+                    ? `Choose the commander deck for co-winner ${num}.`
+                    : `Choose the commander deck for defeated player ${num}.`;
+
+            return {
+                stepTitle,
+                slotHeading,
+                pilotLabel: 'Pilot',
+                commanderLabel: 'Commander deck',
+                pilotPickerEmpty: 'Tap to choose pilot',
+                pilotPickerHint: 'Search your group or create new',
+                commanderPickerEmpty: 'Tap to choose commander',
+                commanderPickerHint: 'Search decks or add from Scryfall',
+                errPilotMissing,
+                errPilotInvalid: 'Pick a pilot from your group, or create a new one.',
+                errCommanderMissing,
+                errCommanderInvalid: 'Pick a commander deck from your group, or search Scryfall.',
+                errCommanderScryfall: 'Search Scryfall and tap the commander name.',
+                errCommanderScryfallNamed(name) {
+                    return `Search Scryfall and tap "${name}" from the results.`;
+                },
+                errPilotNotFound(name) {
+                    return `"${name}" isn't in your group — pick a pilot from the list, or create a new one.`;
+                },
+                errCommanderNotFound(name) {
+                    return `"${name}" isn't a saved commander deck — pick from the list or search Scryfall.`;
+                },
+                toastTitle: 'Almost there'
+            };
+        }
+
         function mfIsLogMatchWizardViewport() {
             try { return window.matchMedia('(max-width: 767px)').matches; } catch (_) { return false; }
         }
@@ -3352,7 +3428,7 @@
                     type: 'winner',
                     el: slot,
                     index: i,
-                    stepTitle: h?.innerText?.trim() || (i === 0 ? 'The Victor' : `Co-Winner ${i + 1}`)
+                    stepTitle: h?.innerText?.trim() || mfSeatCopy('winner', i).stepTitle
                 });
             });
             document.querySelectorAll('#form-losers-container .loser-slot').forEach((slot, i) => {
@@ -3361,7 +3437,7 @@
                     type: 'loser',
                     el: slot,
                     index: i,
-                    stepTitle: h?.innerText?.trim() || `The Fallen (${i + 1})`
+                    stepTitle: h?.innerText?.trim() || mfSeatCopy('defeated', i).stepTitle
                 });
             });
             const cards = document.getElementById('log-match-step-cards');
@@ -3378,8 +3454,9 @@
             slot.querySelectorAll('.mf-field-invalid').forEach(mfClearFieldError);
         }
 
-        function mfValidateWizardSeatSlot(slot, label, num) {
+        function mfValidateWizardSeatSlot(slot, role, index) {
             mfClearSlotFieldErrors(slot);
+            const copy = mfSeatCopy(role, index);
             const issues = [];
             let firstInvalid = null;
             const addIssue = (input, msg) => {
@@ -3393,14 +3470,14 @@
             const dg = slot.querySelector('.input-slot-group[data-type="deck"]');
             const p = mfSlotFieldInfo(pg, window.appData.players, 'player');
             const d = mfSlotFieldInfo(dg, window.appData.commanders, 'deck');
-            if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), `${label} ${num}: add a player.`);
-            else if (!p.valid) addIssue(p.input, `${label} ${num}: pick a player from the list, or tap + New.`);
-            if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), `${label} ${num}: add a deck.`);
+            if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), copy.errPilotMissing);
+            else if (!p.valid) addIssue(p.input, copy.errPilotInvalid);
+            if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), copy.errCommanderMissing);
             else if (!d.valid) {
-                if (d.needsScryfall) addIssue(d.input, `${label} ${num}: pick the commander from Scryfall.`);
-                else addIssue(d.input, `${label} ${num}: pick a deck from the list, or tap + New.`);
+                if (d.needsScryfall) addIssue(d.input, copy.errCommanderScryfall);
+                else addIssue(d.input, copy.errCommanderInvalid);
             }
-            return { ok: issues.length === 0, issues, firstInvalid };
+            return { ok: issues.length === 0, issues, firstInvalid, toastTitle: copy.toastTitle, toastMessage: issues[0] || '' };
         }
 
         function mfValidateLogMatchWizardStep(step) {
@@ -3424,10 +3501,10 @@
                 return { ok: true };
             }
             if (entry.type === 'winner') {
-                return mfValidateWizardSeatSlot(entry.el, 'Victor', entry.index + 1);
+                return mfValidateWizardSeatSlot(entry.el, 'winner', entry.index);
             }
             if (entry.type === 'loser') {
-                return mfValidateWizardSeatSlot(entry.el, 'Fallen', entry.index + 1);
+                return mfValidateWizardSeatSlot(entry.el, 'defeated', entry.index);
             }
             if (entry.type === 'cards' || entry.type === 'notes') {
                 return { ok: true };
@@ -3560,11 +3637,11 @@
                 if (state?.mode === 'scryfall' || state?.mode === 'create') {
                     state.mode = 'list';
                     const title = document.getElementById('log-match-picker-title');
-                    if (title) title.textContent = state.kind === 'deck' ? 'Pick deck' : 'Pick player';
+                    if (title) title.textContent = state.kind === 'deck' ? 'Choose commander' : 'Choose pilot';
                     const searchEl = document.getElementById('log-match-picker-search');
                     if (searchEl) {
                         searchEl.value = '';
-                        searchEl.placeholder = state.kind === 'deck' ? 'Search decks…' : 'Search players…';
+                        searchEl.placeholder = state.kind === 'deck' ? 'Search commander decks…' : 'Search pilots…';
                     }
                     mfRenderMobilePickerList();
                     return;
@@ -3602,7 +3679,10 @@
                     }
                 }
                 if (validation.issues?.length) {
-                    window.mfToast(validation.issues[0], { title: 'Check this step', icon: '⚠️' });
+                    window.mfToast(validation.toastMessage || validation.issues[0], {
+                        title: validation.toastTitle || 'Almost there',
+                        icon: '⚠️'
+                    });
                 }
                 return;
             }
@@ -3700,7 +3780,7 @@
                     valueEl.classList.add('text-white');
                     btn.classList.add('border-purple-500/40');
                 } else {
-                    valueEl.textContent = kind === 'player' ? 'Tap to pick player' : 'Tap to pick deck';
+                    valueEl.textContent = kind === 'player' ? 'Tap to choose pilot' : 'Tap to choose commander';
                     valueEl.classList.remove('text-white');
                     valueEl.classList.add('text-slate-400');
                     btn.classList.remove('border-purple-500/40');
@@ -3854,7 +3934,7 @@
                 if (!raw) {
                     const li = document.createElement('li');
                     li.className = 'px-4 py-3 text-sm text-slate-500 italic';
-                    li.textContent = 'Type a name for the new player';
+                    li.textContent = 'Type a name for the new pilot';
                     list.appendChild(li);
                     return;
                 }
@@ -3879,7 +3959,7 @@
             if (!query && !filtered.length && !dataArray.length) {
                 const li = document.createElement('li');
                 li.className = 'px-4 py-3 text-sm text-slate-500 italic';
-                li.textContent = isDeck ? 'No decks logged yet' : 'No players in roster yet';
+                li.textContent = isDeck ? 'No commander decks yet' : 'No pilots in your group yet';
                 list.appendChild(li);
             }
 
@@ -3929,14 +4009,14 @@
             if (!isDeck && state.mode === 'list') {
                 const newPlayerRow = document.createElement('li');
                 newPlayerRow.className = 'px-4 py-3 text-purple-300 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition flex items-center gap-2 font-medium border border-slate-700/50 mb-1';
-                newPlayerRow.innerHTML = '<span class="text-base">+</span><span>Create new player</span>';
+                newPlayerRow.innerHTML = '<span class="text-base">+</span><span>Create new pilot</span>';
                 mfPickerBindRow(newPlayerRow, () => {
                     state.mode = 'create';
                     const title = document.getElementById('log-match-picker-title');
-                    if (title) title.textContent = 'New player';
+                    if (title) title.textContent = 'New pilot';
                     if (searchEl) {
                         searchEl.value = '';
-                        searchEl.placeholder = 'Enter player name…';
+                        searchEl.placeholder = 'Enter pilot name…';
                     }
                     mfRenderMobilePickerList();
                     mfScheduleFocusTimer(() => {
@@ -3952,7 +4032,7 @@
                 if (!hasCreateRow) {
                     const li = document.createElement('li');
                     li.className = 'px-4 py-3 text-sm text-slate-500 italic';
-                    li.textContent = isDeck ? 'No decks match your search' : 'No players match your search';
+                    li.textContent = isDeck ? 'No commander decks match your search' : 'No pilots match your search';
                     list.appendChild(li);
                 }
             }
@@ -3990,10 +4070,10 @@
             const picker = document.getElementById('log-match-picker');
             const title = document.getElementById('log-match-picker-title');
             const searchEl = document.getElementById('log-match-picker-search');
-            if (title) title.textContent = kind === 'deck' ? 'Pick deck' : 'Pick player';
+            if (title) title.textContent = kind === 'deck' ? 'Choose commander' : 'Choose pilot';
             if (searchEl) {
                 searchEl.value = '';
-                searchEl.placeholder = kind === 'deck' ? 'Search decks…' : 'Search players…';
+                searchEl.placeholder = kind === 'deck' ? 'Search commander decks…' : 'Search pilots…';
             }
             modal?.classList.add('mf-picker-open');
             if (picker) picker.setAttribute('aria-hidden', 'false');
@@ -4606,7 +4686,7 @@
             });
         }
 
-        /** Shared Victor / Fallen player + deck fields (identical behavior, theme colors only). */
+        /** Shared winner / defeated seat fields (identical behavior, theme colors only). */
         function mfBuildPodSlotFields(variant) {
             const isWinner = variant === 'winner';
             const accent = isWinner ? 'green' : 'purple';
@@ -4618,26 +4698,26 @@
             const confirmBtn = isWinner
                 ? 'bg-green-600 hover:bg-green-500'
                 : 'bg-purple-600 hover:bg-purple-500';
-            const playerLabel = isWinner ? 'Pilot (Player)' : 'Pilot';
-            const deckLabel = isWinner ? 'Deck (Commander)' : 'Deck';
-            const newPlayerTitle = 'Add New Player';
-            const newDeckTitle = isWinner ? 'Create New Deck' : 'Search & Add Deck';
-            const newPlayerPlaceholder = isWinner ? 'Enter new player name...' : 'Enter player name...';
+            const playerLabel = 'Pilot';
+            const deckLabel = 'Commander deck';
+            const newPlayerTitle = 'Add new pilot';
+            const newDeckTitle = 'Add commander from Scryfall';
+            const newPlayerPlaceholder = 'Enter pilot name…';
             const cancelBtn = 'text-slate-500 hover:text-white text-xs font-bold transition min-h-[44px] px-2 touch-manipulation';
 
             return `
                         <div class="input-slot-group" data-type="player">
                             <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">${playerLabel}</label>
                             <button type="button" class="mf-mobile-field-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileFieldPicker(this)" data-picker-kind="player">
-                                <span class="mf-mobile-picker-value block truncate text-white text-sm font-medium">Tap to pick player</span>
-                                <span class="block text-[10px] text-slate-500 mt-0.5">Search roster or create new</span>
+                                <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to choose pilot</span>
+                                <span class="block text-[10px] text-slate-500 mt-0.5">Search your group or create new</span>
                             </button>
                             <div class="flex gap-2 existing-mode">
                                 <div class="relative flex-grow mf-search-wrap">
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="local-player-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search players..." autocomplete="off">
+                                    <input type="text" class="local-player-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search pilots…" autocomplete="off">
                                 </div>
                                 <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
                             </div>
@@ -4647,13 +4727,13 @@
                                     <button type="button" onclick="window.toggleNewMode(this)" class="${cancelBtn}">✕ Cancel</button>
                                 </div>
                                 <input type="text" class="new-player-input mf-touch-input w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="${newPlayerPlaceholder}" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
-                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this player</button>
+                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this pilot</button>
                             </div>
                         </div>
                         <div class="input-slot-group" data-type="deck">
                             <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">${deckLabel}</label>
                             <button type="button" class="mf-mobile-field-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileFieldPicker(this)" data-picker-kind="deck">
-                                <span class="mf-mobile-picker-value block truncate text-white text-sm font-medium">Tap to pick deck</span>
+                                <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to choose commander</span>
                                 <span class="block text-[10px] text-slate-500 mt-0.5">Search decks or add from Scryfall</span>
                             </button>
                             <div class="flex gap-2 existing-mode">
@@ -4661,7 +4741,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="local-deck-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search existing decks..." autocomplete="off">
+                                    <input type="text" class="local-deck-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search commander decks…" autocomplete="off">
                                 </div>
                                 <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
                             </div>
@@ -4685,7 +4765,7 @@
                                     </div>
                                     <input type="text" class="local-owner-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="Deck Owner (Defaults to Pilot)" autocomplete="off">
                                 </div>
-                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this deck</button>
+                                <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this commander</button>
                             </div>
                         </div>`;
         }
@@ -7008,7 +7088,7 @@
             const deltaColor = getDeltaColorText(delta);
             const sign = delta > 0 ? '+' : '';
 
-            const titleText = isWin ? '👑 Match Victory' : '💀 Match Defeat';
+            const titleText = isWin ? '👑 Match win' : '💀 Defeated';
             const titleColor = isWin ? 'text-green-400' : 'text-red-400';
             const badgeColor = delta > 0 ? 'bg-green-400/10' : (delta < 0 ? 'bg-red-400/10' : 'bg-slate-500/10');
 
@@ -8792,7 +8872,7 @@
             const wContainer = document.getElementById('form-winners-container');
             let wHtml = '';
             for (let i = 1; i <= winnerCount; i++) {
-                const title = winnerCount > 1 ? `👑 Co-Winner (${i})` : `👑 The Victor`;
+                const copy = mfSeatCopy('winner', i - 1);
                 wHtml += `
                 <div class="winner-slot log-match-step-panel glass p-5 rounded-2xl border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)] relative">
                     <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
@@ -8800,7 +8880,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
                         </div>
                     </div>
-                    <h3 class="text-sm text-green-400 font-bold mb-4 flex items-center gap-2 relative z-10">${title}</h3>
+                    <h3 class="text-sm text-green-400 font-bold mb-4 flex items-center gap-2 relative z-10">${copy.slotHeading}</h3>
                     <div class="space-y-4 relative z-10">${mfBuildPodSlotFields('winner')}</div>
                 </div>`;
             }
@@ -8810,10 +8890,11 @@
             let lHtml = '';
             const loserCount = podSize - winnerCount;
             for (let i = 1; i <= loserCount; i++) {
+                const copy = mfSeatCopy('defeated', i - 1);
                 lHtml += `
                 <div class="loser-slot log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
                     <div class="absolute -right-4 -top-4 opacity-5 text-red-500 text-6xl font-black pointer-events-none" aria-hidden="true">💀</div>
-                    <h3 class="text-xs text-red-400 font-bold mb-4 flex items-center gap-2 relative z-10">💀 The Fallen (${i})</h3>
+                    <h3 class="text-xs text-red-400 font-bold mb-4 flex items-center gap-2 relative z-10">${copy.slotHeading}</h3>
                     <div class="space-y-4 relative z-10">${mfBuildPodSlotFields('loser')}</div>
                 </div>`;
             }
@@ -8881,7 +8962,7 @@
                 const name = normalizeName(newInput?.value);
                 if (!name) {
                     newInput?.focus();
-                    window.showAppAlert('Enter a player name first.', 'Player name', '⚠️');
+                    window.showAppAlert('Enter a pilot name first.', 'Pilot name', '⚠️');
                     return;
                 }
                 if (localInput) localInput.value = name;
@@ -8893,7 +8974,7 @@
                 const deckName = String(newInput?.value || '').trim();
                 if (!deckName) {
                     newInput?.focus();
-                    window.showAppAlert('Search Scryfall (type 3+ characters) and pick a commander.', 'Deck name', '⚠️');
+                    window.showAppAlert('Search Scryfall (type 3+ characters) and pick a commander.', 'Commander deck', '⚠️');
                     return;
                 }
                 if (!mfDeckPickedFromScryfall(newInput)) {
@@ -9019,33 +9100,44 @@
                 }
             };
             let validWinners = 0;
-            const sections = [
-                { sel: '.winner-slot', label: 'Victor' },
-                { sel: '.loser-slot', label: 'Fallen' }
-            ];
-            sections.forEach(sec => {
-                document.querySelectorAll('#view-log-match ' + sec.sel).forEach((slot, idx) => {
-                    const num = idx + 1;
-                    const pg = slot.querySelector('.input-slot-group[data-type="player"]');
-                    const dg = slot.querySelector('.input-slot-group[data-type="deck"]');
-                    const p = mfSlotFieldInfo(pg, window.appData.players, 'player');
-                    const d = mfSlotFieldInfo(dg, window.appData.commanders, 'deck');
-                    if (!p.filled && !d.filled) return; // empty seat is fine
+            document.querySelectorAll('#view-log-match .winner-slot').forEach((slot, idx) => {
+                const copy = mfSeatCopy('winner', idx);
+                const pg = slot.querySelector('.input-slot-group[data-type="player"]');
+                const dg = slot.querySelector('.input-slot-group[data-type="deck"]');
+                const p = mfSlotFieldInfo(pg, window.appData.players, 'player');
+                const d = mfSlotFieldInfo(dg, window.appData.commanders, 'deck');
+                if (!p.filled && !d.filled) return;
 
-                    if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), `${sec.label} ${num}: add a player.`);
-                    else if (!p.valid) addIssue(p.input, `${sec.label} ${num}: "${p.value}" isn't a saved player — pick it from the list, or tap + New to create them.`);
+                if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), copy.errPilotMissing);
+                else if (!p.valid) addIssue(p.input, copy.errPilotNotFound(p.value));
 
-                    if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), `${sec.label} ${num}: add a deck.`);
-                    else if (!d.valid) {
-                        if (d.needsScryfall) addIssue(d.input, `${sec.label} ${num}: pick the commander from the Scryfall list to create "${d.value}".`);
-                        else addIssue(d.input, `${sec.label} ${num}: "${d.value}" isn't a saved deck — pick it from the list, or tap + New to search Scryfall.`);
-                    }
+                if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), copy.errCommanderMissing);
+                else if (!d.valid) {
+                    if (d.needsScryfall) addIssue(d.input, copy.errCommanderScryfallNamed(d.value));
+                    else addIssue(d.input, copy.errCommanderNotFound(d.value));
+                }
 
-                    if (sec.label === 'Victor' && p.valid && d.valid) validWinners++;
-                });
+                if (p.valid && d.valid) validWinners++;
+            });
+            document.querySelectorAll('#view-log-match .loser-slot').forEach((slot, idx) => {
+                const copy = mfSeatCopy('defeated', idx);
+                const pg = slot.querySelector('.input-slot-group[data-type="player"]');
+                const dg = slot.querySelector('.input-slot-group[data-type="deck"]');
+                const p = mfSlotFieldInfo(pg, window.appData.players, 'player');
+                const d = mfSlotFieldInfo(dg, window.appData.commanders, 'deck');
+                if (!p.filled && !d.filled) return;
+
+                if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), copy.errPilotMissing);
+                else if (!p.valid) addIssue(p.input, copy.errPilotNotFound(p.value));
+
+                if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), copy.errCommanderMissing);
+                else if (!d.valid) {
+                    if (d.needsScryfall) addIssue(d.input, copy.errCommanderScryfallNamed(d.value));
+                    else addIssue(d.input, copy.errCommanderNotFound(d.value));
+                }
             });
             if (validWinners === 0 && issues.length === 0) {
-                issues.push('Add at least one Victor with a player and a deck.');
+                issues.push('Add at least one winner with a pilot and commander deck.');
             }
             return { ok: issues.length === 0 && validWinners > 0, issues, firstInvalid };
         };
@@ -9107,8 +9199,8 @@
                 const maxList = 6;
                 const lines = issues.slice(0, maxList).map(s => '• ' + s);
                 if (issues.length > maxList) lines.push(`…and ${issues.length - maxList} more`);
-                const message = 'Every seat needs both a player and a deck.' + (lines.length ? '\n' + lines.join('\n') : '');
-                window.showAppAlert(message, 'Fill out all players & decks', '⚠️');
+                const message = 'Every filled seat needs a pilot and commander deck.' + (lines.length ? '\n' + lines.join('\n') : '');
+                window.showAppAlert(message, 'Almost there', '⚠️');
                 return;
             }
 
@@ -9327,7 +9419,7 @@
                     dropdown.className = useFloating ? dropdownClass : dropdownClass + ' absolute z-[200] mt-2';
                     const li = document.createElement('li');
                     li.className = 'dropdown-empty px-4 py-3 text-sm';
-                    li.textContent = isDeck ? 'No decks logged yet — tap + New to add one' : 'No players in roster yet — tap + New to add one';
+                    li.textContent = isDeck ? 'No commander decks logged yet — tap + New to add one' : 'No pilots in your group yet — tap + New to add one';
                     dropdown.appendChild(li);
                     mountDropdown(dropdown);
                 }
@@ -9354,7 +9446,7 @@
                 } else {
                     const li = document.createElement('li');
                     li.className = 'dropdown-empty px-4 py-3 text-sm border-b border-slate-700/50 last:border-0';
-                    li.textContent = isDeck ? 'No decks match your search' : 'No players match your search';
+                    li.textContent = isDeck ? 'No commander decks match your search' : 'No pilots match your search';
                     dropdown.appendChild(li);
                 }
             } else {
