@@ -130,8 +130,10 @@
                     </div>
 
                     <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-4 md:p-5">
-                        <h3 class="text-sm font-bold text-white mb-3">Deck Ownership</h3>
+                        <h3 class="text-sm font-bold text-white mb-1">Deck Ownership</h3>
+                        <p class="text-xs text-slate-500 mb-3">Assign owners and add a partner commander to existing solo decks (updates all match history).</p>
                         <div id="ownership-list" class="space-y-2 text-sm text-slate-400">Select a group to load deck ownership.</div>
+                        <p id="partner-migrate-status" class="text-[11px] text-slate-500 mt-3 hidden"></p>
                     </div>
 
                     <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-4 md:p-5">
@@ -198,6 +200,7 @@
             statRoster: document.getElementById('stat-roster'),
             selectedGroupLabel: document.getElementById('selected-group-label'),
             ownershipList: document.getElementById('ownership-list'),
+            partnerMigrateStatus: document.getElementById('partner-migrate-status'),
             exportJsonBtn: document.getElementById('export-json-btn'),
             exportCsvBtn: document.getElementById('export-csv-btn'),
             wipeBtn: document.getElementById('wipe-btn'),
@@ -233,6 +236,122 @@
         function normalizeName(str) {
             if (!str) return "";
             return String(str).trim().replace(/\s+/g, " ");
+        }
+
+        const MF_COMMANDER_PAIR_SEP = ' // ';
+
+        function mfStripDeckVariant(deckName) {
+            return String(deckName || '').trim().replace(/\s*\([^)]+\)\s*$/, '').trim();
+        }
+
+        function mfParseCommanderNamesFromDeckName(deckName) {
+            const base = mfStripDeckVariant(deckName);
+            if (!base) return [];
+            if (base.includes(MF_COMMANDER_PAIR_SEP)) {
+                return base.split(MF_COMMANDER_PAIR_SEP).map((s) => s.trim()).filter(Boolean);
+            }
+            return [base];
+        }
+
+        function mfDeckVariantFromName(deckName) {
+            const m = String(deckName || '').trim().match(/\s*\(([^)]+)\)\s*$/);
+            return m ? m[1].trim() : '';
+        }
+
+        function mfBuildDeckDisplayName(commanders, variant) {
+            const list = (commanders || []).map((c) => normalizeName(c)).filter(Boolean);
+            if (!list.length) return '';
+            const base = list.length === 1 ? list[0] : `${list[0]}${MF_COMMANDER_PAIR_SEP}${list[1]}`;
+            const v = String(variant || '').trim();
+            return v ? `${base} (${v})` : base;
+        }
+
+        function deckNamesMatch(a, b) {
+            return normalizeName(a).toLowerCase() === normalizeName(b).toLowerCase();
+        }
+
+        function setPartnerMigrateStatus(message, isError = false) {
+            if (!els.partnerMigrateStatus) return;
+            if (!message) {
+                els.partnerMigrateStatus.classList.add('hidden');
+                els.partnerMigrateStatus.textContent = '';
+                return;
+            }
+            els.partnerMigrateStatus.classList.remove('hidden');
+            els.partnerMigrateStatus.textContent = message;
+            els.partnerMigrateStatus.className = `text-[11px] mt-3 ${isError ? 'text-red-300' : 'text-emerald-300'}`;
+        }
+
+        let partnerAutocompleteReqId = 0;
+
+        async function fetchPartnerAutocomplete(query) {
+            const q = String(query || '').trim();
+            if (q.length < 3) return [];
+            const reqId = ++partnerAutocompleteReqId;
+            try {
+                const res = await fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(q)}`);
+                if (reqId !== partnerAutocompleteReqId) return [];
+                const data = await res.json();
+                return data.data || [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        async function addPartnerToExistingDeck(groupId, oldDeckName, partnerName) {
+            const partner = normalizeName(partnerName);
+            if (!partner) throw new Error('Enter a partner commander name.');
+
+            const commanders = mfParseCommanderNamesFromDeckName(oldDeckName);
+            if (commanders.length >= 2) throw new Error('This deck already has a partner commander.');
+
+            const primary = commanders[0] || mfStripDeckVariant(oldDeckName);
+            if (!primary) throw new Error('Could not parse primary commander from deck name.');
+            if (deckNamesMatch(primary, partner)) throw new Error('Partner must be a different card from the primary commander.');
+
+            const variant = mfDeckVariantFromName(oldDeckName);
+            const newDeckName = mfBuildDeckDisplayName([primary, partner], variant);
+            const newCommanders = [primary, partner];
+
+            const matchesSnap = await getDocs(collection(db, 'groups', groupId, 'matches'));
+            const matchUpdates = [];
+
+            matchesSnap.docs.forEach((matchDoc) => {
+                const data = matchDoc.data();
+                let changed = false;
+
+                const mapSeats = (seats) => {
+                    if (!Array.isArray(seats)) return seats;
+                    return seats.map((seat) => {
+                        if (!seat || !deckNamesMatch(seat.name, oldDeckName)) return seat;
+                        changed = true;
+                        const updated = { ...seat, name: newDeckName, commanders: newCommanders };
+                        return updated;
+                    });
+                };
+
+                const winners = mapSeats(data.winners);
+                const losers = mapSeats(data.losers);
+                if (changed) {
+                    matchUpdates.push(updateDoc(matchDoc.ref, { winners, losers }));
+                }
+            });
+
+            await Promise.all(matchUpdates);
+
+            const ownersRef = doc(db, 'groups', groupId, 'settings', 'deckOwners');
+            const ownersSnap = await getDoc(ownersRef);
+            if (ownersSnap.exists()) {
+                const owners = { ...ownersSnap.data() };
+                const ownerKey = Object.keys(owners).find((k) => deckNamesMatch(k, oldDeckName));
+                if (ownerKey !== undefined) {
+                    owners[newDeckName] = owners[ownerKey];
+                    delete owners[ownerKey];
+                    await setDoc(ownersRef, owners);
+                }
+            }
+
+            return { newDeckName, matchCount: matchUpdates.length };
         }
 
         function csvEscape(value) {
@@ -443,12 +562,30 @@
             els.ownershipList.innerHTML = deckNames.map(deck => {
                 const currentOwner = owners[deck] || inferredOwners[deck] || '';
                 const options = rosterNames.map(name => `<option value="${name}" ${name === currentOwner ? 'selected' : ''}>${name}</option>`).join('');
+                const commanders = mfParseCommanderNamesFromDeckName(deck);
+                const isPartner = commanders.length >= 2;
+                const deckEsc = escapeHtml(deck);
+                const deckAttr = deck.replace(/"/g, '&quot;');
+                const partnerBlock = isPartner ? `
+                    <p class="text-[10px] text-purple-300/90 font-semibold pt-1">Partner deck · ${escapeHtml(commanders.join(' + '))}</p>
+                ` : `
+                    <div class="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-800/80 mt-2">
+                        <div class="relative flex-1 min-w-0">
+                            <input type="text" list="partner-suggestions-${deckAttr.replace(/[^a-zA-Z0-9_-]/g, '_')}" data-deck="${deckAttr}" class="partner-name-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-purple-500" placeholder="Partner commander (Scryfall name)" autocomplete="off">
+                            <datalist id="partner-suggestions-${deckAttr.replace(/[^a-zA-Z0-9_-]/g, '_')}"></datalist>
+                        </div>
+                        <button type="button" data-deck="${deckAttr}" class="partner-add-btn shrink-0 text-[10px] font-bold text-purple-200 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-3 py-1.5 rounded-lg transition">Add partner</button>
+                    </div>
+                `;
                 return `
-                    <div class="flex items-center justify-between gap-3 bg-slate-950 border border-slate-700 rounded-lg p-2.5">
-                        <span class="text-sm font-semibold text-white truncate" title="${deck}">${deck}</span>
-                        <select data-deck="${deck.replace(/"/g, '&quot;')}" class="ownership-select bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-purple-500">
-                            ${options}
-                        </select>
+                    <div class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 space-y-0">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-white truncate" title="${deckEsc}">${deckEsc}</span>
+                            <select data-deck="${deckAttr}" class="ownership-select bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-purple-500 shrink-0 max-w-[45%]">
+                                ${options}
+                            </select>
+                        </div>
+                        ${partnerBlock}
                     </div>
                 `;
             }).join('');
@@ -457,6 +594,60 @@
                 sel.addEventListener('change', async () => {
                     const deckName = sel.dataset.deck;
                     await setDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners'), { [deckName]: sel.value }, { merge: true });
+                });
+            });
+
+            els.ownershipList.querySelectorAll('.partner-name-input').forEach((input) => {
+                let timer;
+                input.addEventListener('input', () => {
+                    clearTimeout(timer);
+                    const q = input.value.trim();
+                    const listId = input.getAttribute('list');
+                    const datalist = listId ? document.getElementById(listId) : null;
+                    if (!datalist || q.length < 3) {
+                        if (datalist) datalist.innerHTML = '';
+                        return;
+                    }
+                    timer = setTimeout(async () => {
+                        const names = await fetchPartnerAutocomplete(q);
+                        datalist.innerHTML = names.map((n) => `<option value="${escapeHtml(n)}"></option>`).join('');
+                    }, 280);
+                });
+            });
+
+            els.ownershipList.querySelectorAll('.partner-add-btn').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    const deckName = btn.dataset.deck;
+                    const row = btn.closest('.bg-slate-950');
+                    const input = row?.querySelector('.partner-name-input');
+                    const partner = input?.value?.trim();
+                    if (!partner) {
+                        setPartnerMigrateStatus('Enter a partner commander name first.', true);
+                        input?.focus();
+                        return;
+                    }
+                    const preview = mfBuildDeckDisplayName(
+                        [...mfParseCommanderNamesFromDeckName(deckName), partner],
+                        mfDeckVariantFromName(deckName)
+                    );
+                    const ok = window.confirm(
+                        `Add partner to "${deckName}"?\n\nNew deck name:\n${preview}\n\nAll matches using this deck will be updated.`
+                    );
+                    if (!ok) return;
+
+                    btn.disabled = true;
+                    setPartnerMigrateStatus('Updating matches…', false);
+                    try {
+                        const result = await addPartnerToExistingDeck(groupId, deckName, partner);
+                        setPartnerMigrateStatus(
+                            `Updated "${result.newDeckName}" across ${result.matchCount} match${result.matchCount === 1 ? '' : 'es'}.`,
+                            false
+                        );
+                        await loadOwnershipForSelectedGroup(groupId);
+                    } catch (e) {
+                        setPartnerMigrateStatus(e.message || String(e), true);
+                        btn.disabled = false;
+                    }
                 });
             });
         }
@@ -507,6 +698,7 @@
             els.selectedGroupLabel.textContent = `${group.name || group.id} (${group.id})${ownerHint}`;
             setActionButtonsEnabled(true);
             if (els.ownerSetStatus) els.ownerSetStatus.textContent = '';
+            setPartnerMigrateStatus('');
             renderGroupsTable();
             await Promise.all([
                 loadOwnershipForSelectedGroup(group.id),
