@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.7.7">
+    <meta name="mf-app-version" content="2.8.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -462,6 +462,29 @@
         }
         #log-match-picker-deck-extras.hidden {
             display: none;
+        }
+        #cmd-view-dual-wrap.hidden {
+            display: none;
+        }
+        #cmd-view-dual-wrap .cmd-partner-card {
+            width: 48%;
+            aspect-ratio: 5 / 7;
+            position: relative;
+            border-radius: 0.75rem;
+            border: 2px solid rgb(71 85 105 / 0.6);
+            overflow: hidden;
+            background: rgb(30 41 59);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+        }
+        #cmd-view-dual-wrap .cmd-partner-card img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #cmd-view-dual-wrap .cmd-partner-card + .cmd-partner-card {
+            margin-left: -12%;
         }
         .mf-duration-stepper-btn {
             width: 2.75rem;
@@ -1260,7 +1283,7 @@
             </div>
 
             <div class="relative max-w-3xl mx-auto px-4 md:px-6 pb-6 md:pt-8 md:pb-8 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
-                <div class="relative z-10 mx-auto md:mx-0 shrink-0 -mt-14 md:mt-0">
+                    <div id="cmd-view-single-card-wrap" class="relative z-10 mx-auto md:mx-0 shrink-0 -mt-14 md:mt-0">
                     <div class="w-56 md:w-56 aspect-[5/7] relative flip-container cursor-pointer group shadow-[0_12px_40px_rgba(0,0,0,0.55)] md:shadow-[0_0_30px_rgba(0,0,0,0.4)] rounded-xl" onclick="document.getElementById('cmd-flip-inner').classList.toggle('is-flipped')">
                         <div id="cmd-flip-inner" class="flip-inner rounded-xl w-full h-full">
                             <div class="flip-front absolute inset-0 rounded-xl border-2 border-slate-600/60 overflow-hidden bg-slate-800 flex flex-col items-center justify-center">
@@ -1278,7 +1301,15 @@
                         </div>
                     </div>
                     <p id="cmd-flip-hint" class="md:hidden text-center text-[10px] text-slate-400 font-semibold mt-2 tracking-wide">Tap card to flip</p>
-                </div>
+                    </div>
+                    <div id="cmd-view-dual-wrap" class="hidden relative z-10 mx-auto md:mx-0 shrink-0 -mt-14 md:mt-0 w-56 md:w-64 flex items-end justify-center">
+                        <div class="cmd-partner-card rotate-[-4deg] -mr-4 z-10">
+                            <img id="cmd-view-partner-img-a" class="set-src opacity-0 transition-opacity duration-300" alt="" data-version="normal">
+                        </div>
+                        <div class="cmd-partner-card rotate-[4deg] z-20">
+                            <img id="cmd-view-partner-img-b" class="set-src opacity-0 transition-opacity duration-300" alt="" data-version="normal">
+                        </div>
+                    </div>
 
                 <div class="flex-1 text-center md:text-left w-full min-w-0 md:flex md:flex-col md:justify-center">
                     <h1 id="cmd-view-name" class="text-2xl md:text-4xl font-black text-white drop-shadow-lg leading-tight">Name</h1>
@@ -3477,6 +3508,8 @@
                 deckInput.classList.add('mf-field-valid');
                 deckInput.classList.remove('mf-field-invalid');
             }
+            const commanders = mfGetCommanderNamesFromSeat(entry);
+            if (deckGroup && commanders.length) mfWriteCommandersToDeckGroup(deckGroup, commanders);
             mfSyncMobilePickerLabels();
         }
 
@@ -3770,6 +3803,25 @@
                     mfCloseMobileFieldPicker();
                     return;
                 }
+                if (state?.mode === 'scryfall-partner') {
+                    state.mode = 'partner-pick';
+                    const title = document.getElementById('log-match-picker-title');
+                    if (title) title.textContent = mfPartnerPickTitle(state.partnerType);
+                    mfRenderMobilePickerList();
+                    return;
+                }
+                if (state?.mode === 'partner-pick') {
+                    state.mode = 'scryfall';
+                    const title = document.getElementById('log-match-picker-title');
+                    if (title) title.textContent = 'Search Scryfall';
+                    const searchEl = document.getElementById('log-match-picker-search');
+                    if (searchEl) {
+                        searchEl.value = state.primaryCommander || state.scryfallName || '';
+                        searchEl.placeholder = 'Type 3+ characters…';
+                    }
+                    mfRenderMobilePickerList();
+                    return;
+                }
                 if (state?.mode === 'owner-pick') {
                     state.mode = 'deck-extras';
                     state._ownerPickReturn = true;
@@ -3779,6 +3831,13 @@
                     return;
                 }
                 if (state?.mode === 'deck-extras') {
+                    if (state.commanders?.length >= 2 || state.partnerType) {
+                        state.mode = 'partner-pick';
+                        const title = document.getElementById('log-match-picker-title');
+                        if (title) title.textContent = mfPartnerPickTitle(state.partnerType);
+                        mfRenderMobilePickerList();
+                        return;
+                    }
                     state.mode = 'scryfall';
                     const title = document.getElementById('log-match-picker-title');
                     if (title) title.textContent = 'Search Scryfall';
@@ -4003,10 +4062,14 @@
             mfRenderMobilePickerList();
         }
 
-        function mfOpenPickerDeckExtras(state, cardName) {
+        function mfOpenPickerDeckExtras(state, commanders) {
             if (!state?.group) return;
+            const list = Array.isArray(commanders)
+                ? commanders.map((c) => String(c || '').trim()).filter(Boolean)
+                : mfParseCommanderNamesFromDeckName(String(commanders || '').trim());
             state.mode = 'deck-extras';
-            state.scryfallName = String(cardName || '').trim();
+            state.commanders = list.length ? list : [String(state.primaryCommander || '').trim()].filter(Boolean);
+            state.scryfallName = mfBuildDeckIdentityName(state.commanders);
             const title = document.getElementById('log-match-picker-title');
             if (title) title.textContent = 'New commander deck';
             const nameEl = document.getElementById('log-match-picker-deck-name');
@@ -4106,23 +4169,27 @@
             mfReleaseSlotGroup(group, { hideNewMode: true });
         }
 
-        function mfMobilePickerConfirmScryfallDeck(group, cardName, extras = {}) {
+        function mfMobilePickerConfirmScryfallDeck(group, commanders, extras = {}) {
             const local = group.querySelector('.local-deck-input');
             const newInput = group.querySelector('.new-deck-input');
             const variantInput = group.querySelector('.new-deck-variant-input');
             const ownerInput = group.querySelector('.local-owner-input');
-            const n = String(cardName || '').trim();
-            if (!n) return;
+            const cmdList = Array.isArray(commanders)
+                ? commanders.map((c) => String(c || '').trim()).filter(Boolean)
+                : mfParseCommanderNamesFromDeckName(String(commanders || '').trim());
+            if (!cmdList.length) return;
             const variant = String(extras.variant || '').trim();
             const owner = String(extras.owner || '').trim();
+            const identity = mfBuildDeckIdentityName(cmdList);
+            const display = mfBuildDeckDisplayName(cmdList, variant);
             if (newInput) {
-                newInput.value = n;
-                newInput.dataset.mfScryfallName = n;
+                newInput.value = identity;
+                newInput.dataset.mfScryfallName = identity;
+                newInput.dataset.mfCommanders = JSON.stringify(cmdList);
             }
             if (variantInput) variantInput.value = variant;
             if (ownerInput) ownerInput.value = owner;
-            let display = n;
-            if (variant) display = `${n} (${variant})`;
+            mfWriteCommandersToDeckGroup(group, cmdList);
             if (local) {
                 local.value = display;
                 mfMarkFieldSelected(local);
@@ -4172,6 +4239,43 @@
                 return;
             }
 
+            if (state.mode === 'partner-pick') {
+                searchWrap?.classList.add('hidden');
+                extrasEl?.classList.add('hidden');
+                list.classList.remove('hidden');
+                list.innerHTML = '';
+                const solo = document.createElement('li');
+                solo.className = 'px-4 py-3 text-slate-200 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition font-medium';
+                solo.textContent = 'Solo commander';
+                mfPickerBindRow(solo, () => mfMobilePickerConfirmPartnerChoice(state, ''));
+                list.appendChild(solo);
+
+                (state.partnerSuggestions || []).forEach((name) => {
+                    const row = document.createElement('li');
+                    row.className = 'px-4 py-3 text-purple-200 bg-purple-500/10 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition truncate font-medium';
+                    row.textContent = name;
+                    mfPickerBindRow(row, () => mfMobilePickerConfirmPartnerChoice(state, name));
+                    list.appendChild(row);
+                });
+
+                const searchRow = document.createElement('li');
+                searchRow.className = 'px-4 py-3 text-purple-300 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition flex items-center gap-2 font-medium border border-slate-700/50';
+                searchRow.innerHTML = '<span class="text-base">+</span><span>Search for partner</span>';
+                mfPickerBindRow(searchRow, () => {
+                    state.mode = 'scryfall-partner';
+                    const title = document.getElementById('log-match-picker-title');
+                    if (title) title.textContent = mfPartnerPickTitle(state.partnerType);
+                    if (searchEl) {
+                        searchEl.value = '';
+                        searchEl.placeholder = mfPartnerSearchPlaceholder(state.partnerType);
+                    }
+                    mfRenderMobilePickerList();
+                    mfFocusPickerSearchEl(searchEl);
+                });
+                list.appendChild(searchRow);
+                return;
+            }
+
             searchWrap?.classList.remove('hidden');
             extrasEl?.classList.add('hidden');
             list.classList.remove('hidden');
@@ -4186,7 +4290,7 @@
             const query = String(searchEl?.value || '').trim().toLowerCase();
             list.innerHTML = '';
 
-            if (state.mode === 'scryfall') {
+            if (state.mode === 'scryfall' || state.mode === 'scryfall-partner') {
                 if (query.length < 3) {
                     const li = document.createElement('li');
                     li.className = 'px-4 py-3 text-sm text-slate-500 italic';
@@ -4204,7 +4308,8 @@
                     try {
                         const res = await fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(query)}`);
                         const data = await res.json();
-                        if (reqId !== mfPickerScryfallReqId || window._logMatchPickerState?.mode !== 'scryfall') return;
+                        const mode = window._logMatchPickerState?.mode;
+                        if (reqId !== mfPickerScryfallReqId || (mode !== 'scryfall' && mode !== 'scryfall-partner')) return;
                         list.innerHTML = '';
                         const names = data.data || [];
                         if (!names.length) {
@@ -4222,8 +4327,10 @@
                                 if (state.kind === 'card') {
                                     mfMobilePickerConfirmCard(state.cardInputId, name);
                                     mfCloseMobileFieldPicker();
+                                } else if (state.mode === 'scryfall-partner') {
+                                    mfMobilePickerConfirmPartnerChoice(state, name);
                                 } else {
-                                    mfOpenPickerDeckExtras(state, name);
+                                    mfAfterFirstCommanderSelected(state, name);
                                 }
                             });
                             list.appendChild(row);
@@ -4264,7 +4371,10 @@
             const dataArray = isDeck ? (window.appData.commanders || []) : (window.appData.players || []);
             let filtered = dataArray;
             if (query) {
-                filtered = filtered.filter((item) => item.name.toLowerCase().includes(query));
+                filtered = filtered.filter((item) => {
+                    if (isDeck) return mfDeckNameMatchesSearch(item.name, query);
+                    return item.name.toLowerCase().includes(query);
+                });
             }
 
             if (!query && !filtered.length && !dataArray.length) {
@@ -4362,6 +4472,9 @@
                         local.value = item.name;
                         mfMarkFieldSelected(local);
                     }
+                    if (isDeck && state.group) {
+                        mfWriteCommandersToDeckGroup(state.group, mfParseCommanderNamesFromDeckName(item.name));
+                    }
                     delete state.group.dataset.confirmedNew;
                     mfCloseMobileFieldPicker();
                 });
@@ -4422,10 +4535,13 @@
 
             document.getElementById('log-match-picker-deck-confirm')?.addEventListener('click', () => {
                 const state = window._logMatchPickerState;
-                if (!state || state.mode !== 'deck-extras' || !state.group || !state.scryfallName) return;
+                if (!state || state.mode !== 'deck-extras' || !state.group) return;
                 const variant = document.getElementById('log-match-picker-deck-variant')?.value || '';
                 const owner = document.getElementById('log-match-picker-deck-owner')?.value || '';
-                mfMobilePickerConfirmScryfallDeck(state.group, state.scryfallName, { variant, owner });
+                const commanders = state.commanders?.length
+                    ? state.commanders
+                    : mfParseCommanderNamesFromDeckName(state.scryfallName || '');
+                mfMobilePickerConfirmScryfallDeck(state.group, commanders, { variant, owner });
                 mfCloseMobileFieldPicker();
             });
 
@@ -5075,6 +5191,19 @@
                                     </div>
                                     <input type="text" class="mf-clearable new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
                                 </div>
+                                <div class="mf-deck-partner-panel hidden space-y-2 pt-1 border-t border-slate-700/50">
+                                    <p class="text-[10px] uppercase font-bold ${labelTone} tracking-wider">Partner (optional)</p>
+                                    <p class="mf-deck-partner-primary text-xs text-white font-medium truncate"></p>
+                                    <div class="mf-deck-partner-suggestions flex flex-wrap gap-2"></div>
+                                    <button type="button" class="mf-deck-partner-solo-btn w-full text-[11px] font-bold px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation min-h-[44px]">Solo commander</button>
+                                    <button type="button" class="mf-deck-partner-search-btn w-full text-[11px] font-bold px-3 py-2 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-200 touch-manipulation min-h-[44px]">Search for partner</button>
+                                    <div class="relative mf-search-wrap mf-deck-partner-search hidden">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                        </div>
+                                        <input type="text" class="mf-clearable new-deck-partner-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search partner commander…" autocomplete="off">
+                                    </div>
+                                </div>
                                 <div class="relative mt-2">
                                     <input type="text" class="mf-clearable new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Optional tag if name exists, e.g. Tokens" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
                                 </div>
@@ -5257,6 +5386,307 @@
             return String(cardName).trim().replace(/\s+/g, " ").replace(/ \([^)]+\)/g, '').trim();
         }
 
+        const MF_COMMANDER_PAIR_SEP = ' // ';
+
+        function mfStripDeckVariant(deckName) {
+            return String(deckName || '').trim().replace(/\s*\([^)]+\)\s*$/, '').trim();
+        }
+
+        function mfParseCommanderNamesFromDeckName(deckName) {
+            const base = mfStripDeckVariant(deckName);
+            if (!base) return [];
+            if (base.includes(MF_COMMANDER_PAIR_SEP)) {
+                return base.split(MF_COMMANDER_PAIR_SEP).map((s) => s.trim()).filter(Boolean);
+            }
+            return [base];
+        }
+
+        function mfGetCommanderNamesFromSeat(seat) {
+            if (!seat) return [];
+            if (Array.isArray(seat.commanders) && seat.commanders.length) return seat.commanders.map(String);
+            return mfParseCommanderNamesFromDeckName(seat.name || seat);
+        }
+
+        function mfBuildDeckIdentityName(commanders) {
+            const list = (commanders || []).map((c) => String(c || '').trim()).filter(Boolean);
+            if (!list.length) return '';
+            if (list.length === 1) return list[0];
+            return `${list[0]}${MF_COMMANDER_PAIR_SEP}${list[1]}`;
+        }
+
+        function mfBuildDeckDisplayName(commanders, variant) {
+            const base = mfBuildDeckIdentityName(commanders);
+            const v = String(variant || '').trim();
+            return v ? `${base} (${v})` : base;
+        }
+
+        function mfDeckNameMatchesSearch(deckName, query) {
+            if (!query) return true;
+            const q = query.toLowerCase();
+            if (String(deckName || '').toLowerCase().includes(q)) return true;
+            return mfParseCommanderNamesFromDeckName(deckName).some((c) => c.toLowerCase().includes(q));
+        }
+
+        function mfReadCommandersFromDeckGroup(group) {
+            if (!group) return [];
+            if (group.dataset.mfCommanders) {
+                try {
+                    const parsed = JSON.parse(group.dataset.mfCommanders);
+                    if (Array.isArray(parsed) && parsed.length) return parsed.map(String);
+                } catch (_) {}
+            }
+            const local = group.querySelector('.local-deck-input');
+            return mfParseCommanderNamesFromDeckName(local?.value || '');
+        }
+
+        function mfWriteCommandersToDeckGroup(group, commanders) {
+            if (!group) return;
+            const list = (commanders || []).map((c) => String(c || '').trim()).filter(Boolean);
+            if (list.length) group.dataset.mfCommanders = JSON.stringify(list);
+            else delete group.dataset.mfCommanders;
+        }
+
+        function mfAnalyzePartnerCapability(card) {
+            if (!card) return { canPartner: false, partnerType: null, suggestedPartners: [] };
+            const kw = card.keywords || [];
+            const oracle = String(card.oracle_text || '');
+            const typeLine = String(card.type_line || '').toLowerCase();
+            if (typeLine.includes('background')) return { canPartner: false, partnerType: null, suggestedPartners: [] };
+
+            const suggested = [];
+            const addSuggested = (name) => {
+                const n = String(name || '').trim();
+                if (n && n !== card.name && !suggested.includes(n)) suggested.push(n);
+            };
+
+            if (kw.includes('Partner with') || /partner with/i.test(oracle)) {
+                const m = oracle.match(/Partner with ([^\n(]+)/i);
+                if (m) addSuggested(m[1]);
+                (card.all_parts || []).forEach((p) => {
+                    if (p.component === 'combo_piece') addSuggested(p.name);
+                });
+                return { canPartner: true, partnerType: 'partner_with', suggestedPartners: suggested };
+            }
+            if (kw.includes('Friends forever') || /friends forever/i.test(oracle)) {
+                const m = oracle.match(/Friends forever with ([^\n(]+)/i);
+                if (m) addSuggested(m[1]);
+                (card.all_parts || []).forEach((p) => {
+                    if (p.component === 'combo_piece') addSuggested(p.name);
+                });
+                return { canPartner: true, partnerType: 'friends_forever', suggestedPartners: suggested };
+            }
+            if (kw.includes('Choose a background') || /choose a background/i.test(oracle)) {
+                return { canPartner: true, partnerType: 'background', suggestedPartners: [] };
+            }
+            if (kw.includes("Doctor's companion") || /doctor's companion/i.test(oracle)) {
+                return { canPartner: true, partnerType: 'companion', suggestedPartners: [] };
+            }
+            if (kw.includes('Partner') || /\bpartner\b/i.test(oracle)) {
+                return { canPartner: true, partnerType: 'partner', suggestedPartners: [] };
+            }
+            return { canPartner: false, partnerType: null, suggestedPartners: [] };
+        }
+
+        function mfPartnerPickTitle(partnerType) {
+            if (partnerType === 'background') return 'Choose background';
+            if (partnerType === 'companion') return 'Choose companion';
+            if (partnerType === 'partner_with' || partnerType === 'friends_forever') return 'Choose partner';
+            return 'Add partner?';
+        }
+
+        function mfPartnerSearchPlaceholder(partnerType) {
+            if (partnerType === 'background') return 'Search backgrounds…';
+            if (partnerType === 'companion') return 'Search companions…';
+            return 'Search partner commander…';
+        }
+
+        async function mfAfterFirstCommanderSelected(state, cardName) {
+            if (!state) return;
+            state.primaryCommander = String(cardName || '').trim();
+            state.partnerCommander = '';
+            state.partnerSuggestions = [];
+            state.partnerType = null;
+            state.commanders = [state.primaryCommander];
+
+            if (state.kind !== 'deck') {
+                mfOpenPickerDeckExtras(state, state.commanders);
+                return;
+            }
+
+            try {
+                const card = await fetchCardFromScryfall(state.primaryCommander);
+                const info = mfAnalyzePartnerCapability(card);
+                if (info.canPartner) {
+                    state.partnerType = info.partnerType;
+                    state.partnerSuggestions = info.suggestedPartners || [];
+                    state.mode = 'partner-pick';
+                    const title = document.getElementById('log-match-picker-title');
+                    if (title) title.textContent = mfPartnerPickTitle(state.partnerType);
+                    mfRenderMobilePickerList();
+                    return;
+                }
+            } catch (_) {}
+
+            mfOpenPickerDeckExtras(state, state.commanders);
+        }
+
+        function mfMobilePickerConfirmPartnerChoice(state, partnerName) {
+            if (!state?.primaryCommander) return;
+            const partner = String(partnerName || '').trim();
+            state.commanders = partner ? [state.primaryCommander, partner] : [state.primaryCommander];
+            state.partnerCommander = partner;
+            mfOpenPickerDeckExtras(state, state.commanders);
+        }
+
+        async function mfDesktopHandlePrimaryCommanderPick(group, cardName) {
+            if (!group) return;
+            const primary = String(cardName || '').trim();
+            mfWriteCommandersToDeckGroup(group, [primary]);
+            group.dataset.mfPrimaryCommander = primary;
+
+            const newInput = group.querySelector('.new-deck-input');
+            if (newInput) {
+                newInput.value = primary;
+                newInput.dataset.mfScryfallName = primary;
+            }
+
+            const panel = group.querySelector('.mf-deck-partner-panel');
+            const primaryEl = group.querySelector('.mf-deck-partner-primary');
+            const suggestionsEl = group.querySelector('.mf-deck-partner-suggestions');
+            const searchWrap = group.querySelector('.mf-deck-partner-search');
+            const searchBtn = group.querySelector('.mf-deck-partner-search-btn');
+            const partnerInput = group.querySelector('.new-deck-partner-input');
+            if (primaryEl) primaryEl.textContent = primary;
+            if (suggestionsEl) suggestionsEl.innerHTML = '';
+            if (partnerInput) {
+                partnerInput.value = '';
+                delete partnerInput.dataset.mfScryfallName;
+            }
+            if (searchWrap) searchWrap.classList.add('hidden');
+
+            try {
+                const card = await fetchCardFromScryfall(primary);
+                const info = mfAnalyzePartnerCapability(card);
+                if (info.canPartner && panel) {
+                    panel.classList.remove('hidden');
+                    if (searchBtn) {
+                        searchBtn.textContent = info.partnerType === 'background'
+                            ? 'Search for background'
+                            : info.partnerType === 'companion'
+                                ? 'Search for companion'
+                                : 'Search for partner';
+                    }
+                    if (partnerInput) {
+                        partnerInput.placeholder = mfPartnerSearchPlaceholder(info.partnerType);
+                    }
+                    if (suggestionsEl && info.suggestedPartners.length) {
+                        info.suggestedPartners.forEach((name) => {
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'text-[11px] font-bold px-3 py-1.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-200 touch-manipulation';
+                            btn.textContent = name;
+                            btn.addEventListener('click', () => mfDesktopSelectPartner(group, name));
+                            suggestionsEl.appendChild(btn);
+                        });
+                    }
+                    return;
+                }
+            } catch (_) {}
+
+            if (panel) panel.classList.add('hidden');
+        }
+
+        function mfDesktopSelectPartner(group, partnerName) {
+            if (!group) return;
+            const primary = group.dataset.mfPrimaryCommander || '';
+            const partner = String(partnerName || '').trim();
+            const commanders = partner ? [primary, partner] : [primary];
+            mfWriteCommandersToDeckGroup(group, commanders);
+            const newInput = group.querySelector('.new-deck-input');
+            const identity = mfBuildDeckIdentityName(commanders);
+            if (newInput) {
+                newInput.dataset.mfScryfallName = identity;
+                newInput.dataset.mfCommanders = JSON.stringify(commanders);
+                newInput.value = identity;
+            }
+            const panel = group.querySelector('.mf-deck-partner-panel');
+            const primaryEl = group.querySelector('.mf-deck-partner-primary');
+            if (primaryEl) {
+                primaryEl.textContent = partner ? `${primary} // ${partner}` : primary;
+            }
+            if (panel && partner) panel.classList.add('hidden');
+        }
+
+        function mfApplyCommanderProfileArtLayout(deckName) {
+            const commanders = mfParseCommanderNamesFromDeckName(deckName);
+            const singleWrap = document.getElementById('cmd-view-single-card-wrap');
+            const dualWrap = document.getElementById('cmd-view-dual-wrap');
+            const isDual = commanders.length >= 2;
+            if (singleWrap) singleWrap.classList.toggle('hidden', isDual);
+            if (dualWrap) dualWrap.classList.toggle('hidden', !isDual);
+            return commanders;
+        }
+
+        function mfUnionColorIdentity(caches) {
+            const set = new Set();
+            (caches || []).forEach((c) => {
+                (c?.colorIdentity || []).forEach((id) => set.add(id));
+            });
+            return set.size ? [...set] : ['C'];
+        }
+
+        function mfRefreshCommanderProfileMeta(deckName, commanders) {
+            const cmds = commanders?.length ? commanders : mfParseCommanderNamesFromDeckName(deckName);
+            const manaEl = document.getElementById('cmd-view-mana');
+            const typeEl = document.getElementById('cmd-view-type');
+            const tintEl = document.getElementById('cmd-view-banner-tint');
+            if (!cmds.length) return;
+
+            const caches = cmds.map((n) => window.artCache[n]).filter(Boolean);
+            if (manaEl) {
+                manaEl.innerHTML = caches.map((c) => renderManaSymbols(c.manaCost, 'w-4 h-4')).join('<span class="text-slate-500 mx-0.5">+</span>');
+                manaEl.dataset.metaFilled = '1';
+            }
+            if (typeEl) {
+                typeEl.textContent = caches.map((c) => (c.typeLine || '').split('//')[0].trim()).filter(Boolean).join(' · ');
+                typeEl.dataset.metaFilled = '1';
+            }
+            const combined = mfUnionColorIdentity(caches);
+            if (tintEl) {
+                tintEl.style.background = mfColorIdentityWash(combined);
+                tintEl.style.opacity = '0.2';
+                tintEl.dataset.metaFilled = '1';
+            }
+        }
+
+        function mfQueueArtForCommanderNames(names) {
+            (names || []).forEach((n) => {
+                const name = String(n || '').trim();
+                if (!name || window.artCache[name]) return;
+                const probe = document.createElement('img');
+                probe.className = 'set-src hidden';
+                probe.setAttribute('data-card', name);
+                probe.setAttribute('data-version', 'normal');
+                document.body.appendChild(probe);
+                window.processArtQueue();
+                setTimeout(() => probe.remove(), 5000);
+            });
+        }
+
+        function mfPreparePartnerProfileImages(commanders) {
+            const ids = ['cmd-view-partner-img-a', 'cmd-view-partner-img-b'];
+            commanders.forEach((name, i) => {
+                const el = document.getElementById(ids[i]);
+                if (!el) return;
+                el.style.opacity = '0';
+                el.removeAttribute('src');
+                el.classList.remove('art-loaded', 'art-error');
+                el.setAttribute('data-card', name);
+                el.setAttribute('data-version', 'normal');
+                el.classList.add('set-src');
+            });
+        }
+
         function normalizeCardNameKey(name) {
             return normalizeCardSearchName(name).toLowerCase().replace(/[^a-z0-9]/g, '');
         }
@@ -5377,21 +5807,33 @@
         };
 
         async function fetchCardFromScryfall(loggedName) {
-            const query = normalizeCardSearchName(loggedName);
-            if (!query) return null;
-
-            let res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`, { headers: SCRYFALL_FETCH_HEADERS });
-            if (res.status === 429) return { rateLimited: true };
-            if (res.ok) return await res.json();
-            if (res.status === 404) {
-                res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=cards&order=released`, { headers: SCRYFALL_FETCH_HEADERS });
+            const parts = mfParseCommanderNamesFromDeckName(loggedName);
+            const tryFetch = async (query) => {
+                const q = String(query || '').trim();
+                if (!q) return null;
+                let res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(q)}`, { headers: SCRYFALL_FETCH_HEADERS });
                 if (res.status === 429) return { rateLimited: true };
-                if (res.ok) {
-                    const searchData = await res.json();
-                    if (searchData.data && searchData.data.length > 0) return searchData.data[0];
+                if (res.ok) return await res.json();
+                if (res.status === 404) {
+                    res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&unique=cards&order=released`, { headers: SCRYFALL_FETCH_HEADERS });
+                    if (res.status === 429) return { rateLimited: true };
+                    if (res.ok) {
+                        const searchData = await res.json();
+                        if (searchData.data && searchData.data.length > 0) return searchData.data[0];
+                    }
+                }
+                return null;
+            };
+
+            if (parts.length >= 2) {
+                for (const part of parts) {
+                    const card = await tryFetch(part);
+                    if (card) return card;
                 }
             }
-            return null;
+
+            const query = parts.length === 1 ? parts[0] : normalizeCardSearchName(loggedName);
+            return tryFetch(query);
         }
 
         function updateCommanderAltNamesBadge(loggedName) {
@@ -5480,6 +5922,15 @@
                             };
                             el.onload = showCmdArt;
                             if (el.complete) showCmdArt();
+                        } else if (el.id === 'cmd-view-partner-img-a' || el.id === 'cmd-view-partner-img-b') {
+                            const showPartnerArt = () => {
+                                el.style.opacity = '1';
+                                if (window._cmdProfileDeckName) {
+                                    mfRefreshCommanderProfileMeta(window._cmdProfileDeckName);
+                                }
+                            };
+                            el.onload = showPartnerArt;
+                            if (el.complete) showPartnerArt();
                         }
                         el.classList.add('art-loaded');
                         
@@ -5565,6 +6016,9 @@
                                 }
                             });
                             window.refreshCardManaCost(rawName);
+                            if (window._cmdProfileDeckName) {
+                                mfRefreshCommanderProfileMeta(window._cmdProfileDeckName);
+                            }
                         } else {
                             window.artCache[rawName] = { art_crop: 'error', normal: 'error' };
                             collectArtElements().forEach(el => {
@@ -7233,24 +7687,25 @@
             const topThree = cmd.rank <= 3;
             const winStrong = parseFloat(cmd.winRate) >= 50;
             const eloStyle = getRankEloChipStyle(cmd.rank);
+            const artName = mfParseCommanderNamesFromDeckName(cmd.name)[0] || cmd.name;
             const eloChip = `
                 <div class="shrink-0 ml-0.5 md:ml-1 text-center ${eloStyle.bg} border ${eloStyle.border} rounded-lg px-2.5 py-2 md:px-3 md:py-2">
                     <div class="font-black text-lg md:text-2xl tracking-tight ${eloStyle.value} leading-none">${cmd.elo}</div>
                     <div class="text-[8px] md:text-[9px] uppercase tracking-widest font-bold ${eloStyle.label} mt-1">Elo</div>
                 </div>`;
             return `
-                <div onclick="window.openCommanderProfile(${index})" class="glass relative overflow-hidden rounded-xl cursor-pointer transition hover:bg-slate-800/70 group border ${topThree ? 'border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.12)]' : 'border-slate-700/50'}">
-                    <div class="mf-card-tint absolute inset-0 opacity-0 transition-opacity duration-500" data-card="${cmd.name}"></div>
-                    <div class="mf-card-accent absolute left-0 top-0 bottom-0 w-1.5 opacity-0 transition-opacity duration-500" data-card="${cmd.name}"></div>
+                <div onclick="window.openCommanderProfile(${index})" data-deck-name="${escapeHtml(cmd.name)}" class="glass relative overflow-hidden rounded-xl cursor-pointer transition hover:bg-slate-800/70 group border ${topThree ? 'border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.12)]' : 'border-slate-700/50'}">
+                    <div class="mf-card-tint absolute inset-0 opacity-0 transition-opacity duration-500" data-card="${escapeHtml(artName)}"></div>
+                    <div class="mf-card-accent absolute left-0 top-0 bottom-0 w-1.5 opacity-0 transition-opacity duration-500" data-card="${escapeHtml(artName)}"></div>
                     <div class="relative z-10 flex items-center p-4 gap-3">
                         <div class="w-6 md:w-8 flex items-center justify-center shrink-0">
                             <div class="text-center font-black text-xl md:text-2xl ${getRankColor(cmd.rank)} leading-none">${cmd.rank}</div>
                         </div>
-                        <div data-card="${cmd.name}" data-version="art_crop" class="set-bg w-12 h-12 md:w-14 md:h-14 rounded-full art-fallback bg-cover bg-center border-2 ${topThree ? 'border-purple-500/40' : 'border-slate-700'} shadow-md shrink-0 self-center"></div>
+                        <div data-card="${escapeHtml(artName)}" data-version="art_crop" class="set-bg w-12 h-12 md:w-14 md:h-14 rounded-full art-fallback bg-cover bg-center border-2 ${topThree ? 'border-purple-500/40' : 'border-slate-700'} shadow-md shrink-0 self-center"></div>
                         <div class="flex-grow min-w-0 self-center">
                             <h4 class="font-bold text-base md:text-lg text-white group-hover:text-purple-400 transition drop-shadow leading-snug md:truncate">${cmd.name}</h4>
-                            <span class="mf-card-mana flex items-center gap-0.5 mt-1 empty:hidden" data-card="${cmd.name}"></span>
-                            <p class="mf-card-type text-[10px] sm:text-xs text-slate-300/90 italic mt-1 line-clamp-2 md:truncate empty:hidden" data-card="${cmd.name}"></p>
+                            <span class="mf-card-mana flex items-center gap-0.5 mt-1 empty:hidden" data-card="${escapeHtml(artName)}"></span>
+                            <p class="mf-card-type text-[10px] sm:text-xs text-slate-300/90 italic mt-1 line-clamp-2 md:truncate empty:hidden" data-card="${escapeHtml(artName)}"></p>
                             <div class="flex max-[429px]:flex-col min-[430px]:flex-row min-[430px]:items-center max-[429px]:items-start gap-1 min-[430px]:gap-2 mt-1.5 min-w-0">
                                 <span class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded shrink-0 whitespace-nowrap ${winStrong ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700/80 text-slate-300 border border-slate-600/50'}">${cmd.winRate} Win</span>
                                 <span class="text-[10px] text-slate-400 min-[430px]:truncate min-[430px]:min-w-0 max-[429px]:w-full leading-snug"><span class="uppercase tracking-wider font-bold text-slate-500">Owner</span> <span class="text-slate-300 font-semibold">${escapeHtml(ownerName)}</span></span>
@@ -7684,11 +8139,12 @@
                 let metaHTML = '';
                 metaDecks.forEach((cmd, i) => {
                     const winBadgeColor = parseFloat(cmd.winRate) >= 50 ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-slate-700/80 text-slate-300 border-slate-600/50';
+                    const artName = mfParseCommanderNamesFromDeckName(cmd.name)[0] || cmd.name;
                     metaHTML += `
                         <div class="glass flex items-center p-3 rounded-xl border border-slate-700/50 relative overflow-hidden group w-full max-w-full min-w-0">
-                            <div data-card="${cmd.name}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 mix-blend-luminosity"></div>
+                            <div data-card="${escapeHtml(artName)}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 mix-blend-luminosity"></div>
                             <div class="w-6 text-center font-black text-xl text-blue-500/50 z-10">#${i+1}</div>
-                            <div data-card="${cmd.name}" data-version="art_crop" class="set-bg w-12 h-12 rounded-full art-fallback ml-3 bg-cover bg-center border border-slate-600 shadow-md z-10 flex-shrink-0"></div>
+                            <div data-card="${escapeHtml(artName)}" data-version="art_crop" class="set-bg w-12 h-12 rounded-full art-fallback ml-3 bg-cover bg-center border border-slate-600 shadow-md z-10 flex-shrink-0"></div>
                             <div class="ml-4 flex-grow z-10 min-w-0">
                                 <h4 class="font-bold text-white truncate">${cmd.name}</h4>
                                 <div class="text-[10px] text-slate-400 font-bold mt-0.5">${cmd.plays} Total Plays</div>
@@ -7936,10 +8392,20 @@
         window.filterLeaderboard = function() {
             const searchInput = document.getElementById('leaderboard-search');
             if (!searchInput) return;
-            const query = searchInput.value.toLowerCase();
+            const query = searchInput.value.toLowerCase().trim();
             const activeView = currentLeaderboardView === 'commander' ? 'commander-view' : 'player-view';
             const rows = document.querySelectorAll(`#${activeView} > div`);
-            rows.forEach(row => { row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none'; });
+            rows.forEach((row) => {
+                if (!query) {
+                    row.style.display = '';
+                    return;
+                }
+                const deckName = row.dataset.deckName || row.innerText;
+                const matches = currentLeaderboardView === 'commander'
+                    ? mfDeckNameMatchesSearch(deckName, query)
+                    : deckName.toLowerCase().includes(query);
+                row.style.display = matches ? '' : 'none';
+            });
         }
 
         let eloChartInstance = null;
@@ -7990,38 +8456,57 @@
                 }
             }
 
-            if(imgEl) {
-                imgEl.style.opacity = '0'; 
-                imgEl.removeAttribute('src'); 
-                
-                const fSpin = document.getElementById('cmd-fallback-spinner');
-                const fBrok = document.getElementById('cmd-fallback-broken');
-                const fText = document.getElementById('cmd-fallback-text');
-                if (fSpin) fSpin.classList.remove('hidden');
-                if (fBrok) fBrok.classList.add('hidden');
-                if (fText) {
-                    fText.innerText = 'Art in Queue...';
-                    fText.className = 'text-[10px] text-purple-400 font-bold uppercase tracking-widest text-center px-2 animate-pulse';
+            const commanders = mfApplyCommanderProfileArtLayout(cmd.name);
+            const isDual = commanders.length >= 2;
+            const imgA = document.getElementById('cmd-view-partner-img-a');
+            const imgB = document.getElementById('cmd-view-partner-img-b');
+
+            if (isDual) {
+                mfPreparePartnerProfileImages(commanders);
+                applyCachedArtToElements(commanders[0], [imgA]);
+                applyCachedArtToElements(commanders[1], [imgB]);
+                mfQueueArtForCommanderNames(commanders);
+                mfRefreshCommanderProfileMeta(cmd.name, commanders);
+                if (bannerArt) {
+                    bannerArt.setAttribute('data-card', commanders[0]);
+                    bannerArt.setAttribute('data-version', 'art_crop');
+                    bannerArt.classList.remove('art-loaded');
+                    applyCachedArtToElements(commanders[0], [bannerArt]);
+                }
+            } else {
+                if(imgEl) {
+                    imgEl.style.opacity = '0'; 
+                    imgEl.removeAttribute('src'); 
+                    
+                    const fSpin = document.getElementById('cmd-fallback-spinner');
+                    const fBrok = document.getElementById('cmd-fallback-broken');
+                    const fText = document.getElementById('cmd-fallback-text');
+                    if (fSpin) fSpin.classList.remove('hidden');
+                    if (fBrok) fBrok.classList.add('hidden');
+                    if (fText) {
+                        fText.innerText = 'Art in Queue...';
+                        fText.className = 'text-[10px] text-purple-400 font-bold uppercase tracking-widest text-center px-2 animate-pulse';
+                    }
+
+                    imgEl.classList.remove('art-loaded'); 
+                    imgEl.setAttribute('data-card', cmd.name);
+                    imgEl.setAttribute('data-version', 'normal');
+                    imgEl.classList.add('set-src');
                 }
 
-                imgEl.classList.remove('art-loaded'); 
-                imgEl.setAttribute('data-card', cmd.name);
-                imgEl.setAttribute('data-version', 'normal');
-                imgEl.classList.add('set-src');
-            }
+                if(backImg) {
+                    backImg.style.opacity = '0';
+                    backImg.removeAttribute('src');
+                    backImg.classList.remove('art-loaded');
+                    backImg.setAttribute('data-card', cmd.name);
+                    backImg.setAttribute('data-version', 'normal');
+                    backImg.classList.add('set-src-back');
+                }
 
-            if(backImg) {
-                backImg.style.opacity = '0';
-                backImg.removeAttribute('src');
-                backImg.classList.remove('art-loaded');
-                backImg.setAttribute('data-card', cmd.name);
-                backImg.setAttribute('data-version', 'normal');
-                backImg.classList.add('set-src-back');
+                applyCachedArtToElements(cmd.name, [imgEl, backImg, bannerArt].filter(Boolean));
+                updateCommanderAltNamesBadge(cmd.name);
+                window.refreshCardManaCost(cmd.name);
             }
-
-            applyCachedArtToElements(cmd.name, [imgEl, backImg, bannerArt].filter(Boolean));
-            updateCommanderAltNamesBadge(cmd.name);
-            window.refreshCardManaCost(cmd.name);
             
             const pilotsList = cmd.pilots || [cmd.owner];
             if(pilotsEl) {
@@ -9223,6 +9708,29 @@
             mfClearLogMatchFieldDropdowns();
             mfAfterLogMatchSlotsUpdated();
             mfEnhanceClearableInputs(document.getElementById('view-log-match'));
+            document.querySelectorAll('#view-log-match .mf-deck-partner-solo-btn').forEach((btn) => {
+                if (btn.dataset.mfBound) return;
+                btn.dataset.mfBound = '1';
+                btn.addEventListener('click', () => {
+                    const group = btn.closest('.input-slot-group');
+                    if (!group) return;
+                    mfDesktopSelectPartner(group, '');
+                    group.querySelector('.mf-deck-partner-panel')?.classList.add('hidden');
+                });
+            });
+            document.querySelectorAll('#view-log-match .mf-deck-partner-search-btn').forEach((btn) => {
+                if (btn.dataset.mfBound) return;
+                btn.dataset.mfBound = '1';
+                btn.addEventListener('click', () => {
+                    const group = btn.closest('.input-slot-group');
+                    const searchWrap = group?.querySelector('.mf-deck-partner-search');
+                    searchWrap?.classList.toggle('hidden');
+                    const input = searchWrap?.querySelector('.new-deck-partner-input');
+                    if (input && !searchWrap?.classList.contains('hidden')) {
+                        try { input.focus({ preventScroll: true }); } catch (_) {}
+                    }
+                });
+            });
         }
 
         function slotUsesNewMode(group) {
@@ -9293,8 +9801,9 @@
                 const newInput = group.querySelector('.new-deck-input');
                 const variantInput = group.querySelector('.new-deck-variant-input');
                 const localInput = group.querySelector('.local-deck-input');
-                const deckName = String(newInput?.value || '').trim();
-                if (!deckName) {
+                const commanders = mfReadCommandersFromDeckGroup(group);
+                const identity = mfBuildDeckIdentityName(commanders);
+                if (!identity) {
                     newInput?.focus();
                     window.showAppAlert('Search Scryfall (type 3+ characters) and pick a commander.', 'Commander deck', '⚠️');
                     return;
@@ -9305,9 +9814,8 @@
                     window.showAppAlert('Pick the commander from the Scryfall list to create this deck.', 'Choose from Scryfall', '⚠️');
                     return;
                 }
-                let display = deckName;
                 const variant = String(variantInput?.value || '').trim();
-                if (variant) display = `${deckName} (${variant})`;
+                const display = mfBuildDeckDisplayName(commanders, variant);
                 if (localInput) localInput.value = display;
                 fieldToRefocus = localInput;
             }
@@ -9376,12 +9884,14 @@
             mfClearFieldError(input);
         }
 
-        // A new-deck input is only legitimate if its current value matches the name
-        // that was actually picked from the Scryfall dropdown.
         function mfDeckPickedFromScryfall(newDeckInput) {
             if (!newDeckInput) return false;
+            const group = newDeckInput.closest('.input-slot-group');
             const picked = newDeckInput.dataset.mfScryfallName;
-            return !!picked && normalizeName(newDeckInput.value) === normalizeName(picked);
+            if (!picked) return false;
+            const commanders = mfReadCommandersFromDeckGroup(group);
+            const identity = commanders.length ? mfBuildDeckIdentityName(commanders) : normalizeName(newDeckInput.value);
+            return normalizeName(picked) === normalizeName(identity);
         }
 
         // Resolve a single slot field's state. type is 'player' or 'deck'.
@@ -9473,13 +9983,21 @@
             const playerVal = normalizeName(playerInput?.value);
 
             const isNewDeck = slotUsesNewMode(deckGroup);
-            const deckInput = isNewDeck ? deckGroup.querySelector('.new-deck-input') : deckGroup.querySelector('.local-deck-input');
-            let deckVal = normalizeName(deckInput.value);
-
+            const localInput = deckGroup.querySelector('.local-deck-input');
+            const newDeckInput = deckGroup.querySelector('.new-deck-input');
             const variantInput = deckGroup.querySelector('.new-deck-variant-input');
-            if (isNewDeck && variantInput && variantInput.value.trim()) {
-                const variant = variantInput.value.trim();
-                deckVal = `${deckVal} (${variant})`;
+
+            let commanders = mfReadCommandersFromDeckGroup(deckGroup);
+            const nameSource = (localInput?.value || newDeckInput?.value || '').trim();
+            if (!commanders.length && nameSource) {
+                commanders = mfParseCommanderNamesFromDeckName(nameSource);
+            }
+
+            let deckVal = normalizeName(localInput?.value || '');
+            if (isNewDeck) {
+                deckVal = normalizeName(mfBuildDeckDisplayName(commanders, variantInput?.value?.trim() || ''));
+            } else if (!deckVal && commanders.length) {
+                deckVal = normalizeName(mfBuildDeckIdentityName(commanders));
             }
 
             let ownerVal = "";
@@ -9490,7 +10008,14 @@
                 }
             }
 
-            return { player: playerVal, deck: deckVal, owner: ownerVal, isNewPlayer: isNewPlayer, isNewDeck: isNewDeck };
+            return {
+                player: playerVal,
+                deck: deckVal,
+                commanders: commanders.length ? commanders : undefined,
+                owner: ownerVal,
+                isNewPlayer: isNewPlayer,
+                isNewDeck: isNewDeck
+            };
         }
 
         window.submitMatchForm = async function(event) {
@@ -9571,8 +10096,16 @@
                     }
                 }
 
-                const winners = winnersData.map(wData => ({ name: wData.deck, player: wData.player, owner: wData.owner }));
-                const losers = losersData.map(lData => ({ name: lData.deck, player: lData.player, owner: lData.owner }));
+                const winners = winnersData.map(wData => {
+                    const seat = { name: wData.deck, player: wData.player, owner: wData.owner };
+                    if (wData.commanders?.length) seat.commanders = wData.commanders;
+                    return seat;
+                });
+                const losers = losersData.map(lData => {
+                    const seat = { name: lData.deck, player: lData.player, owner: lData.owner };
+                    if (lData.commanders?.length) seat.commanders = lData.commanders;
+                    return seat;
+                });
 
                 const c1 = document.getElementById('form-card-1');
                 const c2 = document.getElementById('form-card-2');
@@ -9907,7 +10440,17 @@
                                 li.classList.add('touch-manipulation');
                                 mfBindDropdownPick(li, activeInput, () => {
                                     activeInput.value = name;
-                                    activeInput.dataset.mfScryfallName = name;
+                                    if (activeInput.classList.contains('new-deck-partner-input')) {
+                                        const group = activeInput.closest('.input-slot-group');
+                                        mfDesktopSelectPartner(group, name);
+                                        activeInput.dataset.mfScryfallName = name;
+                                    } else {
+                                        activeInput.dataset.mfScryfallName = name;
+                                        if (activeInput.classList.contains('new-deck-input')) {
+                                            const group = activeInput.closest('.input-slot-group');
+                                            mfDesktopHandlePrimaryCommanderPick(group, name);
+                                        }
+                                    }
                                 });
                                 ul.appendChild(li);
                             });
