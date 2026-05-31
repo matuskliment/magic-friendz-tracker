@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.7.0">
+    <meta name="mf-app-version" content="2.7.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -389,6 +389,8 @@
             }
             #view-log-match.mf-log-match-wizard #log-match-next-btn {
                 display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
             }
             #view-log-match.mf-log-match-wizard.mf-wizard-on-review #log-match-next-btn {
                 display: none !important;
@@ -551,6 +553,32 @@
             margin: 0;
             padding: 0;
             cursor: pointer;
+        }
+        @media (min-width: 768px) {
+            .date-input-shell {
+                position: relative;
+            }
+            #view-log-match #form-date.mf-date-input {
+                position: relative;
+                padding-right: 3rem !important;
+            }
+            #view-log-match #form-date.mf-date-input::-webkit-calendar-picker-indicator {
+                position: absolute;
+                right: 0.75rem;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 1.25rem;
+                height: 1.25rem;
+                margin: 0;
+                opacity: 0.85;
+            }
+        }
+        #log-match-next-btn,
+        #log-match-save-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.25;
         }
     </style>
 </head>
@@ -3827,6 +3855,13 @@
             input.dataset.mfScryfallName = input.value;
         }
 
+        function mfFocusPickerSearchEl(searchEl) {
+            if (!searchEl || !mfIsTouchDevice()) return;
+            mfScheduleFocusTimer(() => {
+                try { searchEl.focus({ preventScroll: true }); } catch (_) {}
+            }, 50);
+        }
+
         function mfPickerBindRow(li, onPick) {
             li.classList.add('mf-picker-row');
             li.setAttribute('role', 'option');
@@ -3980,6 +4015,7 @@
                                 searchEl.placeholder = 'Type 3+ characters…';
                             }
                             mfRenderMobilePickerList();
+                            mfFocusPickerSearchEl(searchEl);
                         } else {
                             mfMobilePickerConfirmNewPlayer(state.group, raw);
                             mfCloseMobileFieldPicker();
@@ -4002,6 +4038,7 @@
                         searchEl.placeholder = 'Type 3+ characters…';
                     }
                     mfRenderMobilePickerList();
+                    mfFocusPickerSearchEl(searchEl);
                 });
                 list.appendChild(newDeckRow);
             }
@@ -4019,9 +4056,7 @@
                         searchEl.placeholder = 'Enter pilot name…';
                     }
                     mfRenderMobilePickerList();
-                    mfScheduleFocusTimer(() => {
-                        try { searchEl?.focus({ preventScroll: true }); } catch (_) {}
-                    }, 50);
+                    mfFocusPickerSearchEl(searchEl);
                 });
                 list.appendChild(newPlayerRow);
             }
@@ -4079,9 +4114,6 @@
             if (picker) picker.setAttribute('aria-hidden', 'false');
             mfClearLogMatchFieldDropdowns();
             mfRenderMobilePickerList();
-            mfScheduleFocusTimer(() => {
-                try { searchEl?.focus({ preventScroll: true }); } catch (_) {}
-            }, 50);
         };
 
         window.mfOpenMobileCardPicker = function(btn) {
@@ -4103,9 +4135,7 @@
             if (picker) picker.setAttribute('aria-hidden', 'false');
             mfClearLogMatchFieldDropdowns();
             mfRenderMobilePickerList();
-            mfScheduleFocusTimer(() => {
-                try { searchEl?.focus({ preventScroll: true }); } catch (_) {}
-            }, 50);
+            mfFocusPickerSearchEl(searchEl);
         };
 
         (function mfBindMobilePickerSearch() {
