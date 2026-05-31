@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.3.3">
+    <meta name="mf-app-version" content="2.4.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1039,6 +1039,10 @@
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Pilots:</span>
                             <div id="cmd-view-pilots" class="flex flex-wrap gap-1.5 justify-center md:justify-start"></div>
                         </div>
+                        <div id="cmd-view-deck-link-wrap" class="hidden w-full flex flex-col sm:flex-row sm:items-center gap-2 justify-center md:justify-start">
+                            <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Deck list:</span>
+                            <div id="cmd-view-deck-link-content" class="min-w-0 w-full sm:w-auto"></div>
+                        </div>
                     </div>
 
                     <div id="cmd-view-form-wrap" class="hidden mt-4 flex flex-col items-center md:items-start">
@@ -1547,6 +1551,7 @@
         let matchUnsubscribe = null;
         let rosterUnsubscribe = null;
         let settingsUnsubscribe = null;
+        let deckLinksUnsubscribe = null;
         let avatarsUnsubscribe = null;
         let memberUnsubscribe = null;
         window.publicAvatarMap = {};
@@ -1564,8 +1569,10 @@
         window.rosterInviteFlash = {};
         window.userHasAnyGroupAccess = null;
         window.accessibleGroups = [];
-        window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
+        window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, deckLinkOverrides: {}, biggestUpset: null, playerH2H: {} };
         window.editingMatchId = null;
+        window._cmdProfileDeckName = '';
+        window._cmdDeckLinkEditing = '';
 
         function normalizeEmail(email) {
             return String(email || '').trim().toLowerCase();
@@ -1786,21 +1793,194 @@
             }, { merge: true });
         }
 
-        function canEditPlayerAvatar(playerName) {
-            if (!window.canWrite()) return false;
-            if (window.canOwnerDelete()) return true;
-            if (!auth.currentUser) return false;
+        function isCurrentUserRosterPlayer(playerName) {
+            if (!auth.currentUser || !playerName) return false;
             const rosterEntry = findRosterEntryByName(playerName);
-            if (!rosterEntry) return false;
-            if (rosterEntry.uid && rosterEntry.uid === auth.currentUser.uid) return true;
+            if (rosterEntry?.uid && rosterEntry.uid === auth.currentUser.uid) return true;
             const myEmail = normalizeEmail(auth.currentUser.email);
-            if (myEmail && rosterEntry.email && normalizeEmail(rosterEntry.email) === myEmail) return true;
+            if (myEmail && rosterEntry?.email && normalizeEmail(rosterEntry.email) === myEmail) return true;
             const linkedName = window.linkedPlayerName || '';
             if (linkedName && normalizeName(linkedName).toLowerCase() === normalizeName(playerName).toLowerCase()) {
                 return true;
             }
             return false;
         }
+
+        function canEditPlayerAvatar(playerName) {
+            if (!window.canWrite()) return false;
+            if (window.canOwnerDelete()) return true;
+            if (!auth.currentUser) return false;
+            return isCurrentUserRosterPlayer(playerName);
+        }
+
+        function canEditDeckLink(cmd) {
+            if (!auth.currentUser || !cmd) return false;
+            if (window.canOwnerDelete()) return true;
+            if (!window.canWrite()) return false;
+            const ownerName = (cmd.owner || '').trim();
+            if (!ownerName) return false;
+            return isCurrentUserRosterPlayer(ownerName);
+        }
+
+        function parseDeckLinkUrl(raw) {
+            const trimmed = String(raw || '').trim();
+            if (!trimmed) return { valid: false, error: 'Enter a Moxfield or Archidekt deck URL.' };
+            let url;
+            try {
+                url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+            } catch {
+                return { valid: false, error: 'That doesn’t look like a valid URL.' };
+            }
+            if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+                return { valid: false, error: 'URL must use http or https.' };
+            }
+            const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+            let provider = '';
+            if (host === 'moxfield.com') provider = 'moxfield';
+            else if (host === 'archidekt.com') provider = 'archidekt';
+            else return { valid: false, error: 'Only Moxfield and Archidekt links are supported.' };
+            if (provider === 'moxfield' && !/\/decks\//i.test(url.pathname)) {
+                return { valid: false, error: 'Use a Moxfield deck URL (moxfield.com/decks/…).' };
+            }
+            if (provider === 'archidekt' && !/\/decks\//i.test(url.pathname)) {
+                return { valid: false, error: 'Use an Archidekt deck URL (archidekt.com/decks/…).' };
+            }
+            return {
+                valid: true,
+                href: url.href,
+                provider,
+                label: provider === 'moxfield' ? 'Moxfield' : 'Archidekt'
+            };
+        }
+
+        function getCommanderByName(deckName) {
+            return (window.appData.commanders || []).find(c => c.name === deckName) || null;
+        }
+
+        function refreshOpenCommanderDeckLinkUI() {
+            const deckName = window._cmdProfileDeckName;
+            if (!deckName) return;
+            const view = document.getElementById('view-commander-detail');
+            if (!view || view.classList.contains('hidden') || view.classList.contains('translate-x-full')) return;
+            const cmd = getCommanderByName(deckName);
+            if (cmd) updateCommanderDeckLinkUI(cmd);
+        }
+
+        function updateCommanderDeckLinkUI(cmd) {
+            const wrap = document.getElementById('cmd-view-deck-link-wrap');
+            const content = document.getElementById('cmd-view-deck-link-content');
+            if (!wrap || !content || !cmd) return;
+
+            const canEdit = canEditDeckLink(cmd);
+            const linkRaw = cmd.deckLink || window.appData.deckLinkOverrides?.[cmd.name] || '';
+            const parsed = linkRaw ? parseDeckLinkUrl(linkRaw) : null;
+            const hasLink = !!(parsed && parsed.valid);
+            const editing = window._cmdDeckLinkEditing === cmd.name;
+
+            if (!hasLink && !canEdit) {
+                wrap.classList.add('hidden');
+                content.innerHTML = '';
+                return;
+            }
+
+            wrap.classList.remove('hidden');
+            const deckNameJs = cmd.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            const linkBtnClass = 'inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border transition touch-manipulation';
+            const moxfieldBtn = `${linkBtnClass} text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 border-sky-500/30`;
+            const archidektBtn = `${linkBtnClass} text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30`;
+            const editBtnClass = 'inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-500 hover:text-purple-300 hover:bg-purple-500/10 border border-transparent hover:border-purple-500/20 transition touch-manipulation';
+
+            if (editing) {
+                content.innerHTML = `
+                    <div class="flex flex-col sm:flex-row gap-2 w-full sm:max-w-md">
+                        <input type="url" id="cmd-view-deck-link-input" value="${escapeHtml(linkRaw)}" placeholder="https://moxfield.com/decks/…" class="mf-touch-input flex-1 min-w-0 bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 transition" onkeydown="if(event.key==='Enter'){event.preventDefault();window.saveDeckLink('${deckNameJs}');}">
+                        <div class="flex gap-2 shrink-0">
+                            <button type="button" onclick="window.saveDeckLink('${deckNameJs}')" class="text-[11px] font-bold text-white bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded-lg transition min-h-[40px] touch-manipulation">Save</button>
+                            <button type="button" onclick="window.cancelDeckLinkEdit()" class="text-[11px] font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-lg transition min-h-[40px] touch-manipulation">Cancel</button>
+                            ${hasLink ? `<button type="button" onclick="window.removeDeckLink('${deckNameJs}')" class="text-[11px] font-semibold text-red-300 hover:text-red-200 px-3 py-2 rounded-lg transition min-h-[40px] touch-manipulation">Remove</button>` : ''}
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1.5 leading-snug">Public or unlisted decks work best so your group can view the list.</p>`;
+                return;
+            }
+
+            const parts = [];
+            if (hasLink) {
+                const btnClass = parsed.provider === 'moxfield' ? moxfieldBtn : archidektBtn;
+                parts.push(`<a href="${escapeHtml(parsed.href)}" target="_blank" rel="noopener noreferrer" class="${btnClass}" title="Open deck on ${escapeHtml(parsed.label)}">View on ${escapeHtml(parsed.label)}<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`);
+            }
+            if (canEdit) {
+                const editLabel = hasLink ? 'Edit deck list link' : 'Add deck list link';
+                parts.push(`<button type="button" onclick="window.startDeckLinkEdit('${deckNameJs}')" class="${editBtnClass}" title="${escapeHtml(editLabel)}" aria-label="${escapeHtml(editLabel)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>`);
+            }
+            if (!hasLink && canEdit) {
+                parts.unshift(`<span class="text-[11px] text-slate-500">No link yet</span>`);
+            }
+
+            content.innerHTML = `<div class="flex flex-wrap items-center gap-2">${parts.join('')}</div>`;
+        }
+
+        window.startDeckLinkEdit = function(deckName) {
+            window._cmdDeckLinkEditing = deckName;
+            refreshOpenCommanderDeckLinkUI();
+            setTimeout(() => document.getElementById('cmd-view-deck-link-input')?.focus(), 50);
+        };
+
+        window.cancelDeckLinkEdit = function() {
+            window._cmdDeckLinkEditing = '';
+            refreshOpenCommanderDeckLinkUI();
+        };
+
+        window.saveDeckLink = async function(deckName) {
+            const cmd = getCommanderByName(deckName);
+            if (!cmd || !canEditDeckLink(cmd)) {
+                window.showAppAlert('You can only edit deck links for decks you own, unless you are the group owner.', 'Not allowed', '🔒');
+                return;
+            }
+            const input = document.getElementById('cmd-view-deck-link-input');
+            const parsed = parseDeckLinkUrl(input?.value || '');
+            if (!parsed.valid) {
+                window.showAppAlert(parsed.error, 'Invalid link', '⚠️');
+                return;
+            }
+            try {
+                await setDoc(doc(db, 'groups', window.groupIdRaw, 'settings', 'deckLinks'), {
+                    [deckName]: parsed.href
+                }, { merge: true });
+                window._cmdDeckLinkEditing = '';
+                window.mfToast('Deck list link saved.', { title: 'Saved', icon: '✅' });
+                refreshOpenCommanderDeckLinkUI();
+            } catch (error) {
+                console.error('saveDeckLink error:', error);
+                window.showAppAlert('Failed to save deck list link.', 'Error', '❌');
+            }
+        };
+
+        window.removeDeckLink = function(deckName) {
+            const cmd = getCommanderByName(deckName);
+            if (!cmd || !canEditDeckLink(cmd)) {
+                window.showAppAlert('You can only edit deck links for decks you own, unless you are the group owner.', 'Not allowed', '🔒');
+                return;
+            }
+            window.showAppConfirm(
+                'Remove this deck list link?',
+                async () => {
+                    try {
+                        await setDoc(doc(db, 'groups', window.groupIdRaw, 'settings', 'deckLinks'), {
+                            [deckName]: deleteField()
+                        }, { merge: true });
+                        window._cmdDeckLinkEditing = '';
+                        window.mfToast('Deck list link removed.', { title: 'Removed', icon: '✅' });
+                        refreshOpenCommanderDeckLinkUI();
+                    } catch (error) {
+                        console.error('removeDeckLink error:', error);
+                        window.showAppAlert('Failed to remove deck list link.', 'Error', '❌');
+                    }
+                },
+                'Remove link?',
+                '🗑️'
+            );
+        };
 
         async function linkOwnerRosterEntries(groupId, uid, email, linkedPlayerName) {
             const normalized = normalizeEmail(email);
@@ -2017,6 +2197,9 @@
 
             if (prevCanWrite !== canWrite && window.appData?.matches?.length) {
                 initApp();
+            }
+            if (prevCanWrite !== canWrite) {
+                refreshOpenCommanderDeckLinkUI();
             }
             window._mfLastCanWrite = canWrite;
 
@@ -4028,6 +4211,7 @@
             if (matchUnsubscribe) { matchUnsubscribe(); matchUnsubscribe = null; }
             if (rosterUnsubscribe) { rosterUnsubscribe(); rosterUnsubscribe = null; }
             if (settingsUnsubscribe) { settingsUnsubscribe(); settingsUnsubscribe = null; }
+            if (deckLinksUnsubscribe) { deckLinksUnsubscribe(); deckLinksUnsubscribe = null; }
             if (avatarsUnsubscribe) { avatarsUnsubscribe(); avatarsUnsubscribe = null; }
             if (memberUnsubscribe) { memberUnsubscribe(); memberUnsubscribe = null; }
             window.publicAvatarMap = {};
@@ -4327,8 +4511,10 @@
             
             try { window.history.pushState({}, '', '?group=' + formattedString); } catch(e) { console.warn("Sandbox prevented URL update"); }
             
-            window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
+            window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, deckLinkOverrides: {}, biggestUpset: null, playerH2H: {} };
             window.editingMatchId = null;
+            window._cmdProfileDeckName = '';
+            window._cmdDeckLinkEditing = '';
             
             initAppRouting().then((isValid) => {
                 if (btn) { btn.disabled = false; btn.innerText = originalText; }
@@ -4975,6 +5161,9 @@
                 if (window.appData.ownerOverrides[deckName]) {
                     deckStats[deckName].owner = window.appData.ownerOverrides[deckName];
                 }
+                if (window.appData.deckLinkOverrides[deckName]) {
+                    deckStats[deckName].deckLink = window.appData.deckLinkOverrides[deckName];
+                }
             });
 
             (window.appData.explicitRoster || []).forEach(playerObj => {
@@ -5014,6 +5203,7 @@
                     peakRank: s.peakRank || rank,
                     winRate: ((s.wins / s.plays) * 100).toFixed(1) + "%",
                     owner: s.owner,
+                    deckLink: s.deckLink || '',
                     pilots: Array.from(s.pilots),
                     form: buildRecentForm(s.history),
                     plays: s.plays,
@@ -5106,6 +5296,7 @@
             if (matchUnsubscribe) { matchUnsubscribe(); }
             if (rosterUnsubscribe) { rosterUnsubscribe(); }
             if (settingsUnsubscribe) { settingsUnsubscribe(); }
+            if (deckLinksUnsubscribe) { deckLinksUnsubscribe(); }
 
             settingsUnsubscribe = onSnapshot(doc(db, "groups", window.groupIdRaw, "settings", "deckOwners"), (docSnap) => {
                 window.appData.ownerOverrides = docSnap.exists() ? docSnap.data() : {};
@@ -5113,6 +5304,15 @@
                     recalculateEverything(window.appData.matches);
                     initApp();
                 }
+            });
+
+            deckLinksUnsubscribe = onSnapshot(doc(db, "groups", window.groupIdRaw, "settings", "deckLinks"), (docSnap) => {
+                window.appData.deckLinkOverrides = docSnap.exists() ? docSnap.data() : {};
+                if (window.appData.matches && window.appData.matches.length > 0) {
+                    recalculateEverything(window.appData.matches);
+                    initApp();
+                }
+                refreshOpenCommanderDeckLinkUI();
             });
 
             // Public, PII-free avatar store so view-only (signed-out) users can see profile photos.
@@ -6352,6 +6552,8 @@
             if(titleEl) titleEl.innerText = cmd.name;
             if(nameEl) nameEl.innerText = cmd.name;
             if(ownerEl) ownerEl.innerText = cmd.owner;
+            window._cmdProfileDeckName = cmd.name;
+            window._cmdDeckLinkEditing = '';
 
             resetCommanderDetailMeta(cmd.name);
             fillCommanderDetailStats(cmd);
@@ -6414,6 +6616,8 @@
                     `<span class="text-xs font-semibold text-slate-200 bg-purple-500/20 border border-purple-500/30 px-2 py-1 rounded-md">${p}</span>`
                 ).join('');
             }
+
+            updateCommanderDeckLinkUI(cmd);
             
             if(pkEloHintEl) pkEloHintEl.classList.toggle('hidden', !cmd.isBaselineOnlyElo);
             const nemesisDeck = renderCommanderMatchup(nemesisEl, nemesisHintEl, cmd.nemesis);
@@ -6483,6 +6687,8 @@
         }
 
         window.closeCommanderProfile = function() {
+            window._cmdProfileDeckName = '';
+            window._cmdDeckLinkEditing = '';
             const view = document.getElementById('view-commander-detail');
             if (view) {
                 mfReleaseSheetTouchState(view);
@@ -6740,12 +6946,14 @@
                 const groupId = window.groupIdRaw;
                 const groupRef = doc(db, "groups", groupId);
                 const ownersRef = doc(db, "groups", groupId, "settings", "deckOwners");
+                const deckLinksRef = doc(db, "groups", groupId, "settings", "deckLinks");
                 const rosterRef = collection(db, "groups", groupId, "roster");
                 const matchesRef = collection(db, "groups", groupId, "matches");
 
-                const [groupSnap, ownersSnap, rosterSnap, matchesSnap] = await Promise.all([
+                const [groupSnap, ownersSnap, deckLinksSnap, rosterSnap, matchesSnap] = await Promise.all([
                     getDoc(groupRef),
                     getDoc(ownersRef),
+                    getDoc(deckLinksRef),
                     getDocs(rosterRef),
                     getDocs(matchesRef)
                 ]);
@@ -6763,7 +6971,8 @@
                     },
                     group: groupSnap.exists() ? { id: groupSnap.id, ...groupSnap.data() } : null,
                     settings: {
-                        deckOwners: ownersSnap.exists() ? ownersSnap.data() : {}
+                        deckOwners: ownersSnap.exists() ? ownersSnap.data() : {},
+                        deckLinks: deckLinksSnap.exists() ? deckLinksSnap.data() : {}
                     },
                     roster,
                     matches
