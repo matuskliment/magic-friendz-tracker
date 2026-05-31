@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.4.1">
+    <meta name="mf-app-version" content="2.4.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3477,7 +3477,7 @@
                 mfRepositionFloatingDropdowns();
                 // Keyboard just opened/closed: keep the focused field visible.
                 const ae = document.activeElement;
-                if (ae && mfIsFocusableField(ae) && ae.closest('.mf-mobile-sheet')) {
+                if (ae && mfIsFocusableField(ae) && ae.closest('.mf-mobile-sheet') && mfIsTouchDevice()) {
                     // Defer to next frame so the just-applied bottom padding reflows first;
                     // otherwise the last field (game notes) can't scroll above the keyboard.
                     requestAnimationFrame(() => mfScrollFieldIntoView(ae));
@@ -7873,7 +7873,7 @@
                 newMode.classList.remove('hidden');
                 newMode.removeAttribute('inert');
                 const firstInput = newMode.querySelector('input');
-                if (firstInput) {
+                if (firstInput && mfIsTouchDevice()) {
                     firstInput.focus({ preventScroll: true });
                     mfScrollWithinSheet(firstInput);
                 }
@@ -8300,7 +8300,9 @@
             const newInput = group.querySelector(isDeck ? '.new-deck-input' : '.new-player-input');
             if (newInput) {
                 newInput.value = query;
-                try { newInput.focus({ preventScroll: true }); } catch (_) {}
+                if (mfIsTouchDevice()) {
+                    try { newInput.focus({ preventScroll: true }); } catch (_) {}
+                }
                 if (isDeck) window.queueScryfallAutocomplete(newInput);
             }
         }
@@ -8484,7 +8486,7 @@
         document.addEventListener('focusin', function(e) {
             if (e.target && mfIsFocusableField(e.target)) {
                 const inSheet = e.target.closest('.mf-mobile-sheet');
-                if (inSheet && mfIsSheetOpen(inSheet)) {
+                if (inSheet && mfIsSheetOpen(inSheet) && mfIsTouchDevice()) {
                     const target = e.target;
                     mfScheduleFocusTimer(() => {
                         mfSyncSheetKeyboardPadding();
