@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.2.4">
+    <meta name="mf-app-version" content="2.3.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1254,7 +1254,7 @@
                 Cancel
             </button>
             <h2 id="log-match-title" class="text-sm font-bold text-slate-200 whitespace-nowrap">Log New Match</h2>
-            <button type="button" onclick="window.mfSaveMatchHeader(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30 min-h-[44px] min-w-[112px] text-center whitespace-nowrap touch-manipulation">Save Match</button>
+            <button type="button" id="log-match-save-btn" onclick="window.mfSaveMatchHeader(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30 min-h-[44px] min-w-[112px] text-center whitespace-nowrap touch-manipulation">Save Match</button>
         </div>
 
         <div id="log-match-scroll" class="mf-sheet-scroll">
@@ -1516,7 +1516,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, collectionGroup, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, getDocs, query, where, limit, orderBy, serverTimestamp, documentId } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, collectionGroup, addDoc, updateDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, deleteField, getDocs, query, where, limit, orderBy, serverTimestamp, documentId } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
@@ -1565,6 +1565,7 @@
         window.userHasAnyGroupAccess = null;
         window.accessibleGroups = [];
         window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
+        window.editingMatchId = null;
 
         function normalizeEmail(email) {
             return String(email || '').trim().toLowerCase();
@@ -2874,6 +2875,55 @@
             const dObj = new Date(year, month - 1, day);
             if (isNaN(dObj.getTime())) throw new Error('Pick a valid date.');
             return dObj;
+        }
+
+        function mfSetStaticDropdown(hiddenInputId, value, displayText) {
+            const input = document.getElementById(hiddenInputId);
+            const dropdown = input?.closest('.custom-static-dropdown');
+            if (input) input.value = String(value);
+            const label = dropdown?.querySelector('.static-dropdown-display');
+            if (label) label.innerText = displayText;
+        }
+
+        function mfSetLogMatchModalMode(isEdit) {
+            const title = document.getElementById('log-match-title');
+            const saveBtn = document.getElementById('log-match-save-btn');
+            if (title) title.innerText = isEdit ? 'Edit Match' : 'Log New Match';
+            if (saveBtn) saveBtn.innerText = isEdit ? 'Save Changes' : 'Save Match';
+        }
+
+        function mfFillPodSlot(slotContainer, entry) {
+            if (!slotContainer || !entry) return;
+            const playerGroup = slotContainer.querySelector('.input-slot-group[data-type="player"]');
+            const deckGroup = slotContainer.querySelector('.input-slot-group[data-type="deck"]');
+            const playerInput = playerGroup?.querySelector('.local-player-input');
+            const deckInput = deckGroup?.querySelector('.local-deck-input');
+            if (playerInput && entry.player) {
+                playerInput.value = entry.player;
+                playerInput.dataset.mfSelected = '1';
+                playerInput.classList.add('mf-field-valid');
+                playerInput.classList.remove('mf-field-invalid');
+            }
+            if (deckInput && entry.name) {
+                deckInput.value = entry.name;
+                deckInput.dataset.mfSelected = '1';
+                deckInput.classList.add('mf-field-valid');
+                deckInput.classList.remove('mf-field-invalid');
+            }
+        }
+
+        function renderMatchAdminActions(m) {
+            if (!m?.id) return '';
+            const safeId = escapeHtml(m.id);
+            const parts = [];
+            if (window.canWrite()) {
+                parts.push(`<button type="button" data-match-id="${safeId}" onclick="event.stopPropagation(); window.openEditMatchModal(this.dataset.matchId)" class="flex-1 sm:flex-none bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 px-4 py-2.5 rounded-xl text-xs font-bold transition min-h-[44px] touch-manipulation">✏️ Edit Match</button>`);
+            }
+            if (window.canOwnerDelete()) {
+                parts.push(`<button type="button" data-match-id="${safeId}" onclick="event.stopPropagation(); window.deleteMatch(this.dataset.matchId)" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-xl text-xs font-bold transition min-h-[44px] touch-manipulation">🗑️ Delete</button>`);
+            }
+            if (!parts.length) return '';
+            return `<div class="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-700/50">${parts.join('')}</div>`;
         }
 
         let bootLoaderDismissed = false;
@@ -4250,6 +4300,7 @@
             try { window.history.pushState({}, '', '?group=' + formattedString); } catch(e) { console.warn("Sandbox prevented URL update"); }
             
             window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
+            window.editingMatchId = null;
             
             initAppRouting().then((isValid) => {
                 if (btn) { btn.disabled = false; btn.innerText = originalText; }
@@ -5064,7 +5115,7 @@
 
             matchUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "matches"), (snapshot) => {
                 let matches = [];
-                snapshot.forEach(doc => matches.push(doc.data()));
+                snapshot.forEach(docSnap => matches.push({ id: docSnap.id, ...docSnap.data() }));
                 recalculateEverything(matches);
                 initApp();
             });
@@ -5698,6 +5749,7 @@
                         }).join('')}
 
                         ${renderMatchExtrasBlock(m)}
+                        ${renderMatchAdminActions(m)}
                     </div>
                 </div>
             `;
@@ -5769,6 +5821,7 @@
                         }).join('')}
 
                         ${renderMatchExtrasBlock(m)}
+                        ${renderMatchAdminActions(m)}
                     </div>
                 </div>
             `;
@@ -7290,6 +7343,8 @@
                 window.showAppAlert('Sign in with your invited email to log matches.\n\nOpen the Group tab to request a magic link.', 'View only', '🔒');
                 return;
             }
+            window.editingMatchId = null;
+            mfSetLogMatchModalMode(false);
             const modal = document.getElementById('view-log-match');
             initFormDatePickers(new Date());
             mfReleaseLogMatchTouchState();
@@ -7327,7 +7382,109 @@
             }
         }
 
+        window.openEditMatchModal = function(matchId) {
+            if (!window.canWrite()) {
+                window.showAppAlert('Sign in to edit matches.', 'View only', '🔒');
+                return;
+            }
+            const match = (window.appData.matches || []).find(m => m.id === matchId);
+            if (!match) {
+                window.showAppAlert('Could not find that match. Try refreshing the page.', 'Not found', '⚠️');
+                return;
+            }
+
+            window.editingMatchId = matchId;
+            mfSetLogMatchModalMode(true);
+            mfReleaseLogMatchTouchState();
+            window.mfCloseStaticDropdowns();
+
+            const sessionDate = parseMatchSessionDate(match) || new Date();
+            initFormDatePickers(sessionDate);
+
+            const winners = match.winners || [];
+            const losers = match.losers || [];
+            const podSize = Math.max(2, winners.length + losers.length);
+            const winnerCount = Math.max(1, winners.length);
+
+            mfSetStaticDropdown('form-pod-size', podSize, `${podSize} Players`);
+            mfSetStaticDropdown(
+                'form-winner-count',
+                winnerCount,
+                winnerCount === 1 ? '1 (Solo Win)' : `${winnerCount} (Tie Game)`
+            );
+
+            window.updatePlayerSlots();
+
+            document.querySelectorAll('.winner-slot').forEach((slot, i) => {
+                if (winners[i]) mfFillPodSlot(slot, winners[i]);
+            });
+            document.querySelectorAll('.loser-slot').forEach((slot, i) => {
+                if (losers[i]) mfFillPodSlot(slot, losers[i]);
+            });
+
+            const cards = match.winningCards || [];
+            ['form-card-1', 'form-card-2', 'form-card-3'].forEach((id, i) => {
+                const el = document.getElementById(id);
+                if (el) el.value = cards[i] || '';
+            });
+
+            const nEl = document.getElementById('form-notes');
+            if (nEl) nEl.value = match.notes || '';
+
+            const hEl = document.getElementById('form-duration-hours');
+            const mEl = document.getElementById('form-duration-minutes');
+            if (typeof match.durationMinutes === 'number' && match.durationMinutes > 0) {
+                const hours = Math.floor(match.durationMinutes / 60);
+                const mins = match.durationMinutes % 60;
+                if (hEl) hEl.value = hours > 0 ? String(hours) : '';
+                if (mEl) mEl.value = mins > 0 ? String(mins) : '';
+            } else {
+                if (hEl) hEl.value = '';
+                if (mEl) mEl.value = '';
+            }
+
+            const modal = document.getElementById('view-log-match');
+            if (modal) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('translate-y-full');
+                    window.mfSyncPageScroll();
+                }, 10);
+            }
+        };
+
+        window.deleteMatch = function(matchId) {
+            if (!window.canOwnerDelete()) {
+                window.showAppAlert('Only the group owner can delete matches.', 'Owner only', '🔒');
+                return;
+            }
+            const match = (window.appData.matches || []).find(m => m.id === matchId);
+            const dateLabel = match?.date || 'this match';
+            const winnerNames = (match?.winners || []).map(w => w.name).filter(Boolean).join(', ');
+            const summary = winnerNames ? `\n\n${dateLabel} — ${winnerNames}` : `\n\n${dateLabel}`;
+
+            window.showAppConfirm(
+                `Permanently delete this match?${summary}\n\nEveryone's Elo and stats will recalculate. This cannot be undone.`,
+                async () => {
+                    try {
+                        if (window.editingMatchId === matchId) {
+                            window.closeLogMatchModal();
+                        }
+                        await deleteDoc(doc(db, 'groups', window.groupIdRaw, 'matches', matchId));
+                        window.showAppAlert('Match deleted. Stats have been updated.', 'Deleted', '✅');
+                    } catch (error) {
+                        console.error('Delete match error:', error);
+                        window.showAppAlert('Failed to delete match.', 'Error', '❌');
+                    }
+                },
+                'Delete Match?',
+                '🗑️'
+            );
+        };
+
         window.closeLogMatchModal = function() {
+            window.editingMatchId = null;
+            mfSetLogMatchModalMode(false);
             document.querySelectorAll('#view-log-match .input-slot-group').forEach((g) => {
                 mfReleaseSlotGroup(g, { hideNewMode: true });
                 delete g.dataset.confirmedNew;
@@ -7759,11 +7916,26 @@
                     winningCards: cards,
                     notes: notes
                 };
-                if (durationMinutes > 0) newMatch.durationMinutes = durationMinutes;
+                if (durationMinutes > 0) {
+                    newMatch.durationMinutes = durationMinutes;
+                } else if (window.editingMatchId) {
+                    newMatch.durationMinutes = deleteField();
+                }
 
-                await addDoc(collection(db, "groups", window.groupIdRaw, "matches"), newMatch);
+                if (window.editingMatchId) {
+                    await updateDoc(
+                        doc(db, 'groups', window.groupIdRaw, 'matches', window.editingMatchId),
+                        newMatch
+                    );
+                } else {
+                    await addDoc(collection(db, 'groups', window.groupIdRaw, 'matches'), newMatch);
+                }
 
-                btn.innerText = "Match Saved!";
+                const wasEdit = !!window.editingMatchId;
+                window.editingMatchId = null;
+                mfSetLogMatchModalMode(false);
+
+                btn.innerText = wasEdit ? 'Changes Saved!' : 'Match Saved!';
                 btn.classList.remove('opacity-50', 'text-purple-400', 'bg-purple-500/10', 'border-purple-500/30');
                 btn.classList.add('text-green-400', 'bg-green-500/10', 'border-green-500/30');
                 
