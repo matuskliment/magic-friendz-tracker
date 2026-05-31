@@ -1567,12 +1567,6 @@
         window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, biggestUpset: null, playerH2H: {} };
         window.editingMatchId = null;
 
-        function mfDebugLog(hypothesisId, location, message, data, runId) {
-            // #region agent log
-            fetch('http://127.0.0.1:7908/ingest/943deae8-0938-4155-ab85-8e8398203a4e', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '9fd7f9' }, body: JSON.stringify({ sessionId: '9fd7f9', hypothesisId, location, message, data: data || {}, timestamp: Date.now(), runId: runId || 'pre-fix' }) }).catch(() => {});
-            // #endregion
-        }
-
         function normalizeEmail(email) {
             return String(email || '').trim().toLowerCase();
         }
@@ -2022,14 +2016,6 @@
             }
 
             if (prevCanWrite !== canWrite && window.appData?.matches?.length) {
-                // #region agent log
-                mfDebugLog('H-C', 'updateAccessUI', 'access changed — refreshing match feed', {
-                    prevCanWrite: !!prevCanWrite,
-                    canWrite,
-                    groupAccess: window.groupAccess,
-                    matchCount: window.appData.matches.length
-                }, 'post-fix');
-                // #endregion
                 initApp();
             }
             window._mfLastCanWrite = canWrite;
@@ -2940,52 +2926,27 @@
         function normalizeLoadedMatch(docSnap) {
             const data = docSnap.data() || {};
             const firestoreId = docSnap.id || '';
-            const normalized = { ...data, id: firestoreId, firestoreId };
-            if ((window._mfDbgNormCount = (window._mfDbgNormCount || 0)) < 2) {
-                window._mfDbgNormCount++;
-                // #region agent log
-                mfDebugLog('H-A', 'normalizeLoadedMatch', 'sample normalized match', {
-                    docSnapId: firestoreId,
-                    dataHadIdField: Object.prototype.hasOwnProperty.call(data, 'id'),
-                    dataIdValue: data.id ?? null,
-                    normalizedId: normalized.id,
-                    normalizedFirestoreId: normalized.firestoreId,
-                    date: normalized.date || null
-                });
-                // #endregion
-            }
-            return normalized;
+            return { ...data, id: firestoreId, firestoreId };
         }
 
         function renderMatchAdminActions(m, opts = {}) {
             const matchId = getMatchFirestoreId(m);
-            if ((window._mfDbgAdminCount = (window._mfDbgAdminCount || 0)) < 3) {
-                window._mfDbgAdminCount++;
-                // #region agent log
-                mfDebugLog('H-C', 'renderMatchAdminActions', 'render decision', {
-                    matchId: matchId || null,
-                    canWrite: !!window.canWrite(),
-                    canOwnerDelete: !!window.canOwnerDelete(),
-                    groupAccess: window.groupAccess,
-                    date: m?.date || null,
-                    inline: !!opts.inline
-                });
-                // #endregion
-            }
             if (!matchId) return '';
             const safeId = escapeHtml(matchId);
+            const btnBase = 'inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-500 transition touch-manipulation border border-transparent';
+            const editIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+            const deleteIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
             const parts = [];
             if (window.canWrite()) {
-                parts.push(`<button type="button" data-match-id="${safeId}" onclick="event.stopPropagation(); window.openEditMatchModal(this.dataset.matchId)" class="flex-1 sm:flex-none bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 px-4 py-2.5 rounded-xl text-xs font-bold transition min-h-[44px] touch-manipulation">✏️ Edit Match</button>`);
+                parts.push(`<button type="button" data-match-id="${safeId}" onclick="event.stopPropagation(); window.openEditMatchModal(this.dataset.matchId)" class="${btnBase} hover:text-purple-300 hover:bg-purple-500/10 hover:border-purple-500/20" title="Edit match" aria-label="Edit match">${editIcon}</button>`);
             }
             if (window.canOwnerDelete()) {
-                parts.push(`<button type="button" data-match-id="${safeId}" onclick="event.stopPropagation(); window.deleteMatch(this.dataset.matchId)" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-xl text-xs font-bold transition min-h-[44px] touch-manipulation">🗑️ Delete</button>`);
+                parts.push(`<button type="button" data-match-id="${safeId}" onclick="event.stopPropagation(); window.deleteMatch(this.dataset.matchId)" class="${btnBase} hover:text-red-300 hover:bg-red-500/10 hover:border-red-500/20" title="Delete match" aria-label="Delete match">${deleteIcon}</button>`);
             }
             if (!parts.length) return '';
-            if (opts.inline) {
-                return `<div class="flex flex-col sm:flex-row gap-2 mt-3">${parts.join('')}</div>`;
-            }
-            return `<div class="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-700/50">${parts.join('')}</div>`;
+            const inner = `<div class="flex items-center gap-0.5">${parts.join('')}</div>`;
+            if (opts.inline) return inner;
+            return `<div class="flex justify-end mt-3 pt-3 border-t border-slate-700/40">${inner}</div>`;
         }
 
         let bootLoaderDismissed = false;
@@ -5112,18 +5073,6 @@
             }).sort((a,b) => parseFloat(b.winRate) - parseFloat(a.winRate) || b.wins - a.wins).map((p, i) => ({...p, rank: i+1}));
 
             window.appData.matches = [...sortedMatches].reverse();
-            // #region agent log
-            (function () {
-                const ms = window.appData.matches;
-                const withId = ms.filter(m => !!getMatchFirestoreId(m)).length;
-                mfDebugLog('H-D', 'recalculateEverything', 'matches after recalc', {
-                    total: ms.length,
-                    withFirestoreId: withId,
-                    withoutId: ms.length - withId,
-                    sample: ms.slice(0, 2).map(m => ({ date: m.date, id: m.id, firestoreId: m.firestoreId }))
-                });
-            })();
-            // #endregion
             window.appData.sessionData = [];
             const latestSessionDate = window.appData.matches.length > 0 ? window.appData.matches[0].date : "";
             const latestSessionMatches = window.appData.matches.filter(m => m.date === latestSessionDate);
@@ -5195,15 +5144,6 @@
             matchUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "matches"), (snapshot) => {
                 let matches = [];
                 snapshot.forEach(docSnap => matches.push(normalizeLoadedMatch(docSnap)));
-                // #region agent log
-                mfDebugLog('H-B', 'startMatchListener', 'snapshot loaded', {
-                    groupId: window.groupIdRaw,
-                    docCount: snapshot.size,
-                    appVersion: MF_APP_VERSION,
-                    withDocSnapId: matches.filter(m => !!m.firestoreId).length,
-                    withoutDocSnapId: matches.filter(m => !m.firestoreId).length
-                });
-                // #endregion
                 recalculateEverything(matches);
                 initApp();
             });
@@ -5772,25 +5712,27 @@
             const durationBadge = m.durationMinutes > 0
                 ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded whitespace-nowrap">${formatDurationLabel(m.durationMinutes)}</span>`
                 : '';
+            const adminActionsHtml = renderMatchAdminActions(m, { inline: true });
+            const cardActionsColumn = adminActionsHtml
+                ? `<div class="flex flex-col items-center gap-0.5 shrink-0 pt-0.5">${adminActionsHtml}${chevronHtml}</div>`
+                : chevronHtml;
             const cardHeaderHtml = showDate
                 ? `<div class="flex items-center justify-between gap-3 mb-2 pb-2 border-b border-slate-700/40">
                         <div class="flex items-center gap-2 min-w-0">
                             <time class="text-xs text-slate-400 font-mono whitespace-nowrap">${m.date}</time>
                             ${durationBadge}
                         </div>
-                        ${chevronHtml}
+                        ${cardActionsColumn}
                     </div>
                     <div class="space-y-2.5 min-w-0">${winnersHtml}</div>`
                 : `<div class="flex items-start gap-2 min-w-0">
                         <div class="flex-1 min-w-0 space-y-2.5">${winnersHtml}</div>
-                        ${chevronHtml}
+                        ${cardActionsColumn}
                     </div>`;
 
-            const inlineAdminActions = renderMatchAdminActions(m, { inline: true });
             return `
                 <div onclick="window.toggleMatchDetails('${safeId}')" class="glass p-3 md:p-4 rounded-xl border border-slate-700/50 hover:bg-slate-800/80 transition-all duration-300 cursor-pointer group shadow-sm hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] overflow-hidden">
                     ${cardHeaderHtml}
-                    ${inlineAdminActions}
                     
                     <div id="match-details-${safeId}" class="hidden mt-4 pt-4 border-t border-slate-700/50 space-y-2 opacity-0 transition-opacity duration-300">
                         <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-3">Elo Shifts This Match</p>
@@ -5856,6 +5798,12 @@
             const titleColor = isWin ? 'text-green-400' : 'text-red-400';
             const badgeColor = delta > 0 ? 'bg-green-400/10' : (delta < 0 ? 'bg-red-400/10' : 'bg-slate-500/10');
 
+            const chevronSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+            const cmdAdminActions = renderMatchAdminActions(m, { inline: true });
+            const cmdHeaderActions = cmdAdminActions
+                ? `<div class="flex items-center gap-1 shrink-0">${cmdAdminActions}<div id="match-chevron-cmd-${safeId}" class="text-slate-500 group-hover:text-purple-400 transition-transform duration-300">${chevronSvg}</div></div>`
+                : `<div id="match-chevron-cmd-${safeId}" class="text-slate-500 group-hover:text-purple-400 transition-transform duration-300 shrink-0">${chevronSvg}</div>`;
+
             return `
                 <div onclick="window.toggleMatchDetails('cmd-${safeId}')" class="glass p-4 md:p-5 rounded-xl border border-slate-700/50 hover:bg-slate-800/80 transition-all duration-300 cursor-pointer group shadow-sm hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]">
                     <div class="flex justify-between items-center">
@@ -5867,9 +5815,7 @@
                             </h3>
                             <p class="text-[10px] text-slate-400 mt-1">Pilot: <span class="text-slate-200">${targetData.player}</span></p>
                         </div>
-                        <div id="match-chevron-cmd-${safeId}" class="text-slate-500 group-hover:text-purple-400 transition-transform duration-300">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                        </div>
+                        ${cmdHeaderActions}
                     </div>
                     
                     <div id="match-details-cmd-${safeId}" class="hidden mt-4 pt-4 border-t border-slate-700/50 space-y-2 opacity-0 transition-opacity duration-300">
@@ -5910,7 +5856,6 @@
                         }).join('')}
 
                         ${renderMatchExtrasBlock(m)}
-                        ${renderMatchAdminActions(m)}
                     </div>
                 </div>
             `;
@@ -6236,7 +6181,6 @@
                     groupedMatches[m.date].push(m);
                 });
                 
-                window._mfDbgAdminCount = 0;
                 const matchFeedHTML = Object.keys(groupedMatches).map(date => `
                     <div class="mb-8">
                         <h2 class="text-sm font-bold text-slate-300 mb-4 border-b border-slate-800 pb-2 flex items-center gap-2">
@@ -6248,15 +6192,6 @@
                         </div>
                     </div>
                 `).join('');
-                // #region agent log
-                mfDebugLog('H-E', 'initApp', 'match feed html built', {
-                    matchCount: window.appData.matches.length,
-                    feedHasEditButton: matchFeedHTML.includes('Edit Match'),
-                    feedHasDeleteButton: matchFeedHTML.includes('Delete'),
-                    canWrite: !!window.canWrite(),
-                    canOwnerDelete: !!window.canOwnerDelete()
-                });
-                // #endregion
                 safeSetHTML('match-feed-container', matchFeedHTML);
                 
                 safeSetHTML('roster-list', renderPlayerListHtml());
