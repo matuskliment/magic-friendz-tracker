@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.6.1">
+    <meta name="mf-app-version" content="2.6.3">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -410,8 +410,14 @@
             #view-log-match.mf-log-match-wizard .mf-duration-desktop {
                 display: none !important;
             }
-            #view-log-match.mf-log-match-wizard .mf-duration-mobile {
+            #view-log-match.mf-log-match-wizard .mf-desktop-card-search {
+                display: none !important;
+            }
+            #view-log-match.mf-log-match-wizard .mf-mobile-card-picker {
                 display: block;
+            }
+            #view-log-match.mf-log-match-wizard .mf-notes-input {
+                min-height: 11rem;
             }
             #view-log-match.mf-picker-open #log-match-scroll {
                 display: none !important;
@@ -426,6 +432,9 @@
             }
         }
         .mf-mobile-field-picker {
+            display: none;
+        }
+        .mf-mobile-card-picker {
             display: none;
         }
         .mf-duration-mobile {
@@ -1491,7 +1500,7 @@
                         <div class="flex flex-wrap gap-2 pt-1">
                             <button type="button" onclick="window.mfDurationPreset(90)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">1.5h</button>
                             <button type="button" onclick="window.mfDurationPreset(120)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">2h</button>
-                            <button type="button" onclick="window.mfDurationPreset(300)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">5h</button>
+                            <button type="button" onclick="window.mfDurationPreset(180)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">3h</button>
                             <button type="button" onclick="window.mfDurationPreset(0)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-500 touch-manipulation">Clear</button>
                         </div>
                     </div>
@@ -1512,38 +1521,59 @@
             <div id="form-winners-container" class="space-y-4 md:space-y-4"></div>
             <div id="form-losers-container" class="space-y-4 md:space-y-4"></div>
 
-            <div id="log-match-step-extras" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
+            <div id="log-match-step-cards" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
                 <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     Winning Cards (Optional)
                 </h3>
-                <div class="space-y-3 mb-5">
-                    <div class="mf-search-wrap relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Card 1</label>
+                        <button type="button" class="mf-mobile-field-picker mf-mobile-card-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileCardPicker(this)" data-card-input="form-card-1">
+                            <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to search Scryfall</span>
+                        </button>
+                        <div class="mf-desktop-card-search mf-search-wrap relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </div>
+                            <input type="text" id="form-card-1" placeholder="Card 1 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                         </div>
-                        <input type="text" id="form-card-1" placeholder="Card 1 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
-                    <div class="mf-search-wrap relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Card 2</label>
+                        <button type="button" class="mf-mobile-field-picker mf-mobile-card-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileCardPicker(this)" data-card-input="form-card-2">
+                            <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to search Scryfall</span>
+                        </button>
+                        <div class="mf-desktop-card-search mf-search-wrap relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </div>
+                            <input type="text" id="form-card-2" placeholder="Card 2 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                         </div>
-                        <input type="text" id="form-card-2" placeholder="Card 2 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
-                    <div class="mf-search-wrap relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Card 3</label>
+                        <button type="button" class="mf-mobile-field-picker mf-mobile-card-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileCardPicker(this)" data-card-input="form-card-3">
+                            <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to search Scryfall</span>
+                        </button>
+                        <div class="mf-desktop-card-search mf-search-wrap relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </div>
+                            <input type="text" id="form-card-3" placeholder="Card 3 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                         </div>
-                        <input type="text" id="form-card-3" placeholder="Card 3 (type 3+ chars to search...)" class="scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
                     </div>
                 </div>
-                
-                <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
+                <p class="md:hidden text-[10px] text-slate-500 mt-4 text-center">Optional — tap Next for notes</p>
+            </div>
+
+            <div id="log-match-step-notes" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
+                <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                     Game Notes / Strategy
                 </h3>
-                <textarea id="form-notes" rows="2" placeholder="How did they pull it off? E.g., 'Overwhelming goblins...'" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none shadow-sm"></textarea>
-                <p class="md:hidden text-[10px] text-slate-500 mt-3 text-center">Optional — tap Next to continue</p>
+                <textarea id="form-notes" rows="5" placeholder="How did they pull it off? E.g., 'Overwhelming goblins...'" class="mf-notes-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-4 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none shadow-sm min-h-[120px]"></textarea>
+                <p class="md:hidden text-[10px] text-slate-500 mt-4 text-center">Optional — tap Next to review</p>
             </div>
 
             <div id="log-match-step-review" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-purple-500/30 shadow-sm">
@@ -3334,8 +3364,10 @@
                     stepTitle: h?.innerText?.trim() || `The Fallen (${i + 1})`
                 });
             });
-            const extras = document.getElementById('log-match-step-extras');
-            if (extras) plan.push({ type: 'extras', el: extras, stepTitle: 'Extras (optional)' });
+            const cards = document.getElementById('log-match-step-cards');
+            if (cards) plan.push({ type: 'cards', el: cards, stepTitle: 'Winning cards (optional)' });
+            const notes = document.getElementById('log-match-step-notes');
+            if (notes) plan.push({ type: 'notes', el: notes, stepTitle: 'Game notes (optional)' });
             const review = document.getElementById('log-match-step-review');
             if (review) plan.push({ type: 'review', el: review, stepTitle: 'Review & save' });
             return plan;
@@ -3397,7 +3429,7 @@
             if (entry.type === 'loser') {
                 return mfValidateWizardSeatSlot(entry.el, 'Fallen', entry.index + 1);
             }
-            if (entry.type === 'extras') {
+            if (entry.type === 'cards' || entry.type === 'notes') {
                 return { ok: true };
             }
             if (entry.type === 'review') {
@@ -3477,6 +3509,7 @@
             }
             if (isReview) mfRenderLogMatchReview();
             mfSyncMobilePickerLabels();
+            mfSyncMobileCardPickerLabels();
             mfSyncDurationStepperDisplay();
             const scrollEl = document.getElementById('log-match-scroll');
             if (scrollEl) scrollEl.scrollTop = 0;
@@ -3520,6 +3553,10 @@
             const modal = document.getElementById('view-log-match');
             if (modal?.classList.contains('mf-picker-open')) {
                 const state = window._logMatchPickerState;
+                if (state?.kind === 'card') {
+                    mfCloseMobileFieldPicker();
+                    return;
+                }
                 if (state?.mode === 'scryfall' || state?.mode === 'create') {
                     state.mode = 'list';
                     const title = document.getElementById('log-match-picker-title');
@@ -3579,6 +3616,7 @@
             mfSyncLogMatchWizardShell();
             mfSyncDurationStepperDisplay();
             mfSyncMobilePickerLabels();
+            mfSyncMobileCardPickerLabels();
         }
 
         // --- Mobile duration steppers (no keyboard on wizard) ---
@@ -3614,17 +3652,16 @@
         window.mfDurationStep = function(unit, delta) {
             let { hours, mins } = mfReadDurationParts();
             if (unit === 'hours') {
-                hours = Math.max(0, Math.min(12, hours + delta));
+                hours += delta;
+                if (hours > 12) hours = 0;
+                else if (hours < 0) hours = 12;
             } else {
-                mins = Math.max(0, mins + delta);
-                if (mins >= 60) {
-                    hours = Math.min(12, hours + Math.floor(mins / 60));
-                    mins = mins % 60;
-                }
-            }
-            if (hours >= 12) {
-                hours = 12;
-                mins = 0;
+                const step = 5;
+                mins = Math.round(mins / step) * step;
+                if (mins >= 60) mins = 0;
+                mins += delta < 0 ? -step : step;
+                if (mins >= 60) mins -= 60;
+                if (mins < 0) mins += 60;
             }
             mfWriteDurationParts(hours, mins);
         };
@@ -3650,7 +3687,7 @@
         }
 
         function mfSyncMobilePickerLabels() {
-            document.querySelectorAll('#view-log-match .mf-mobile-field-picker').forEach((btn) => {
+            document.querySelectorAll('#view-log-match .mf-mobile-field-picker:not(.mf-mobile-card-picker)').forEach((btn) => {
                 const group = btn.closest('.input-slot-group');
                 const kind = btn.dataset.pickerKind;
                 const valueEl = btn.querySelector('.mf-mobile-picker-value');
@@ -3679,6 +3716,35 @@
             window._logMatchPickerState = null;
             mfClearLogMatchFieldDropdowns();
             mfSyncMobilePickerLabels();
+            mfSyncMobileCardPickerLabels();
+        }
+
+        function mfSyncMobileCardPickerLabels() {
+            document.querySelectorAll('#view-log-match .mf-mobile-card-picker').forEach((btn) => {
+                const inputId = btn.dataset.cardInput;
+                const valueEl = btn.querySelector('.mf-mobile-picker-value');
+                const input = inputId ? document.getElementById(inputId) : null;
+                if (!valueEl) return;
+                const v = (input?.value || '').trim();
+                if (v) {
+                    valueEl.textContent = v;
+                    valueEl.classList.remove('text-slate-400');
+                    valueEl.classList.add('text-white');
+                    btn.classList.add('border-purple-500/40');
+                } else {
+                    valueEl.textContent = 'Tap to search Scryfall';
+                    valueEl.classList.remove('text-white');
+                    valueEl.classList.add('text-slate-400');
+                    btn.classList.remove('border-purple-500/40');
+                }
+            });
+        }
+
+        function mfMobilePickerConfirmCard(cardInputId, cardName) {
+            const input = document.getElementById(cardInputId);
+            if (!input) return;
+            input.value = String(cardName || '').trim();
+            input.dataset.mfScryfallName = input.value;
         }
 
         function mfPickerBindRow(li, onPick) {
@@ -3762,7 +3828,11 @@
                             row.className = 'px-4 py-3 text-slate-200 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition truncate font-medium';
                             row.textContent = name;
                             mfPickerBindRow(row, () => {
-                                mfMobilePickerConfirmScryfallDeck(state.group, name);
+                                if (state.kind === 'card') {
+                                    mfMobilePickerConfirmCard(state.cardInputId, name);
+                                } else {
+                                    mfMobilePickerConfirmScryfallDeck(state.group, name);
+                                }
                                 mfCloseMobileFieldPicker();
                             });
                             list.appendChild(row);
@@ -3924,6 +3994,30 @@
             if (searchEl) {
                 searchEl.value = '';
                 searchEl.placeholder = kind === 'deck' ? 'Search decks…' : 'Search players…';
+            }
+            modal?.classList.add('mf-picker-open');
+            if (picker) picker.setAttribute('aria-hidden', 'false');
+            mfClearLogMatchFieldDropdowns();
+            mfRenderMobilePickerList();
+            mfScheduleFocusTimer(() => {
+                try { searchEl?.focus({ preventScroll: true }); } catch (_) {}
+            }, 50);
+        };
+
+        window.mfOpenMobileCardPicker = function(btn) {
+            if (!mfIsMobileWizardPickerMode()) return;
+            const cardInputId = btn.dataset.cardInput;
+            if (!cardInputId) return;
+            window._logMatchPickerState = { kind: 'card', cardInputId, mode: 'scryfall' };
+            const modal = document.getElementById('view-log-match');
+            const picker = document.getElementById('log-match-picker');
+            const title = document.getElementById('log-match-picker-title');
+            const searchEl = document.getElementById('log-match-picker-search');
+            const cardNum = cardInputId.replace('form-card-', '');
+            if (title) title.textContent = cardNum ? `Search card ${cardNum}` : 'Search Scryfall';
+            if (searchEl) {
+                searchEl.value = '';
+                searchEl.placeholder = 'Type 3+ characters…';
             }
             modal?.classList.add('mf-picker-open');
             if (picker) picker.setAttribute('aria-hidden', 'false');
@@ -9332,6 +9426,7 @@
 
         window.queueScryfallAutocomplete = function(input) {
             if (!input) return;
+            if (mfIsMobileWizardPickerMode() && /^form-card-\d+$/.test(input.id || '')) return;
             clearTimeout(scryfallTimeout);
             const query = String(input.value || '').trim();
 
