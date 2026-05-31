@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.7.5">
+    <meta name="mf-app-version" content="2.7.6">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1504,9 +1504,12 @@
                         <input type="text" id="log-match-picker-deck-variant" autocomplete="off" placeholder="e.g. Tokens" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm placeholder:text-slate-500">
                     </div>
                     <div>
-                        <label for="log-match-picker-deck-owner" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-0.5">Deck owner</label>
-                        <input type="text" id="log-match-picker-deck-owner" autocomplete="off" placeholder="Defaults to pilot" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm placeholder:text-slate-500">
-                        <button type="button" id="log-match-picker-deck-owner-pick" class="mt-2 text-[11px] font-bold text-purple-400 hover:text-purple-300 touch-manipulation min-h-[44px] px-1">Choose from group</button>
+                        <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-0.5">Deck owner</label>
+                        <button type="button" id="log-match-picker-deck-owner-btn" class="w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600">
+                            <span id="log-match-picker-deck-owner-label" class="block truncate text-slate-400 text-sm font-medium">Default to pilot</span>
+                            <span class="block text-[10px] text-slate-500 mt-0.5">Tap to choose owner</span>
+                        </button>
+                        <input type="hidden" id="log-match-picker-deck-owner" value="">
                     </div>
                     <button type="button" id="log-match-picker-deck-confirm" class="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this commander</button>
                 </div>
@@ -3894,10 +3897,51 @@
             const ownerEl = document.getElementById('log-match-picker-deck-owner');
             if (variantEl) variantEl.value = '';
             if (ownerEl) ownerEl.value = '';
+            mfSyncDeckOwnerPickerLabel();
             window._logMatchPickerState = null;
             mfClearLogMatchFieldDropdowns();
             mfSyncMobilePickerLabels();
             mfSyncMobileCardPickerLabels();
+        }
+
+        function mfSyncDeckOwnerPickerLabel() {
+            const ownerEl = document.getElementById('log-match-picker-deck-owner');
+            const labelEl = document.getElementById('log-match-picker-deck-owner-label');
+            const btn = document.getElementById('log-match-picker-deck-owner-btn');
+            if (!labelEl) return;
+            const v = (ownerEl?.value || '').trim();
+            if (v) {
+                labelEl.textContent = v;
+                labelEl.classList.remove('text-slate-400');
+                labelEl.classList.add('text-white');
+                btn?.classList.add('border-purple-500/40');
+            } else {
+                labelEl.textContent = 'Default to pilot';
+                labelEl.classList.remove('text-white');
+                labelEl.classList.add('text-slate-400');
+                btn?.classList.remove('border-purple-500/40');
+            }
+        }
+
+        function mfMobilePickerSetDeckOwner(state, ownerName) {
+            const ownerEl = document.getElementById('log-match-picker-deck-owner');
+            if (ownerEl) ownerEl.value = String(ownerName || '').trim();
+            mfSyncDeckOwnerPickerLabel();
+            state.mode = 'deck-extras';
+            state._ownerPickReturn = true;
+            const title = document.getElementById('log-match-picker-title');
+            if (title) title.textContent = 'New commander deck';
+            mfRenderMobilePickerList();
+        }
+
+        function mfOpenPickerDeckOwnerPick() {
+            const state = window._logMatchPickerState;
+            if (!state || state.mode !== 'deck-extras') return;
+            state.mode = 'owner-pick';
+            state._ownerPickReturn = true;
+            const title = document.getElementById('log-match-picker-title');
+            if (title) title.textContent = 'Choose deck owner';
+            mfRenderMobilePickerList();
         }
 
         function mfOpenPickerDeckExtras(state, cardName) {
@@ -3915,6 +3959,7 @@
                 if (ownerEl) ownerEl.value = '';
             }
             state._ownerPickReturn = false;
+            mfSyncDeckOwnerPickerLabel();
             mfRenderMobilePickerList();
         }
 
@@ -4027,33 +4072,27 @@
             mfReleaseSlotGroup(group, { hideNewMode: true });
         }
 
-        function mfRenderMobilePickerOwnerList(state, list, searchEl) {
-            const query = String(searchEl?.value || '').trim().toLowerCase();
+        function mfRenderMobilePickerOwnerList(state, list) {
             list.innerHTML = '';
-            let filtered = window.appData.players || [];
-            if (query) {
-                filtered = filtered.filter((item) => item.name.toLowerCase().includes(query));
-            }
-            if (!filtered.length) {
+            const defaultRow = document.createElement('li');
+            defaultRow.className = 'px-4 py-3 text-slate-200 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition font-medium';
+            defaultRow.textContent = 'Default to pilot';
+            mfPickerBindRow(defaultRow, () => mfMobilePickerSetDeckOwner(state, ''));
+            list.appendChild(defaultRow);
+
+            const players = window.appData.players || [];
+            if (!players.length) {
                 const li = document.createElement('li');
                 li.className = 'px-4 py-3 text-sm text-slate-500 italic';
-                li.textContent = query ? 'No pilots match your search' : 'No pilots in your group yet';
+                li.textContent = 'No other pilots in your group';
                 list.appendChild(li);
                 return;
             }
-            filtered.forEach((item) => {
+            players.forEach((item) => {
                 const row = document.createElement('li');
                 row.className = 'px-4 py-3 text-slate-200 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition truncate font-medium';
                 row.textContent = item.name;
-                mfPickerBindRow(row, () => {
-                    const ownerEl = document.getElementById('log-match-picker-deck-owner');
-                    if (ownerEl) ownerEl.value = item.name;
-                    state.mode = 'deck-extras';
-                    state._ownerPickReturn = true;
-                    const title = document.getElementById('log-match-picker-title');
-                    if (title) title.textContent = 'New commander deck';
-                    mfRenderMobilePickerList();
-                });
+                mfPickerBindRow(row, () => mfMobilePickerSetDeckOwner(state, item.name));
                 list.appendChild(row);
             });
         }
@@ -4079,7 +4118,9 @@
             list.classList.remove('hidden');
 
             if (state.mode === 'owner-pick') {
-                mfRenderMobilePickerOwnerList(state, list, searchEl);
+                searchWrap?.classList.add('hidden');
+                extrasEl?.classList.add('hidden');
+                mfRenderMobilePickerOwnerList(state, list);
                 return;
             }
 
@@ -4329,19 +4370,8 @@
                 mfCloseMobileFieldPicker();
             });
 
-            document.getElementById('log-match-picker-deck-owner-pick')?.addEventListener('click', () => {
-                const state = window._logMatchPickerState;
-                if (!state || state.mode !== 'deck-extras') return;
-                state.mode = 'owner-pick';
-                state._ownerPickReturn = true;
-                const title = document.getElementById('log-match-picker-title');
-                if (title) title.textContent = 'Choose deck owner';
-                const searchEl = document.getElementById('log-match-picker-search');
-                if (searchEl) {
-                    searchEl.value = '';
-                    searchEl.placeholder = 'Search pilots…';
-                }
-                mfRenderMobilePickerList();
+            document.getElementById('log-match-picker-deck-owner-btn')?.addEventListener('click', () => {
+                mfOpenPickerDeckOwnerPick();
             });
         })();
 
@@ -4993,7 +5023,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                                     </div>
-                                    <input type="text" class="local-owner-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="Deck Owner (Defaults to Pilot)" autocomplete="off">
+                                    <input type="text" class="local-owner-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm min-h-[48px] cursor-pointer" placeholder="Default to pilot" autocomplete="off" readonly tabindex="0">
                                 </div>
                                 <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this commander</button>
                             </div>
@@ -9629,6 +9659,38 @@
             const slotGroup = mfGetDropdownHost(input);
             const useFloating = mfIsLogMatchAutocompleteInput(input);
             mfDismissFloatingDropdown(input);
+
+            const isOwner = input.classList.contains('local-owner-input');
+            if (isOwner) {
+                const dropdownClass = 'custom-dropdown w-full bg-slate-800 border border-slate-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden';
+                const dropdown = document.createElement('ul');
+                dropdown.className = useFloating ? dropdownClass : dropdownClass + ' absolute z-[200] mt-2';
+
+                const defaultLi = document.createElement('li');
+                defaultLi.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 font-medium touch-manipulation';
+                defaultLi.textContent = 'Default to pilot';
+                mfBindDropdownPick(defaultLi, input, () => {
+                    input.value = '';
+                    input.classList.remove('mf-field-valid');
+                });
+                dropdown.appendChild(defaultLi);
+
+                (dataArray || []).forEach((item) => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 last:border-0 touch-manipulation';
+                    li.innerHTML = `<span class="truncate font-medium">${escapeHtml(item.name)}</span>`;
+                    mfBindDropdownPick(li, input, () => {
+                        input.value = item.name;
+                        mfMarkFieldSelected(input);
+                    });
+                    dropdown.appendChild(li);
+                });
+
+                if (useFloating) mfMountFloatingDropdown(input, dropdown);
+                else input.parentNode.appendChild(dropdown);
+                if (slotGroup) slotGroup.classList.add('mf-slot-active');
+                return;
+            }
 
             const query = String(input.value || '').trim().toLowerCase();
             let filtered = dataArray || [];
