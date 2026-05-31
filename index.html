@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.5.1">
+    <meta name="mf-app-version" content="2.6.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -399,6 +399,73 @@
             #view-log-match.mf-log-match-wizard #log-match-wizard-progress {
                 display: block;
             }
+            /* Mobile wizard: tap-to-pick rows instead of inline autocomplete */
+            #view-log-match.mf-log-match-wizard .input-slot-group .existing-mode,
+            #view-log-match.mf-log-match-wizard .input-slot-group .new-mode {
+                display: none !important;
+            }
+            #view-log-match.mf-log-match-wizard .mf-mobile-field-picker {
+                display: block;
+            }
+            #view-log-match.mf-log-match-wizard .mf-duration-desktop {
+                display: none !important;
+            }
+            #view-log-match.mf-log-match-wizard .mf-duration-mobile {
+                display: block;
+            }
+            #view-log-match.mf-picker-open #log-match-scroll {
+                display: none !important;
+            }
+            #view-log-match.mf-picker-open #log-match-picker {
+                display: flex !important;
+            }
+            #view-log-match.mf-picker-open #log-match-next-btn,
+            #view-log-match.mf-picker-open #log-match-save-btn {
+                visibility: hidden;
+                pointer-events: none;
+            }
+        }
+        .mf-mobile-field-picker {
+            display: none;
+        }
+        .mf-duration-mobile {
+            display: none;
+        }
+        #log-match-picker {
+            display: none;
+            flex-direction: column;
+            min-height: 0;
+        }
+        #log-match-picker-list {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        #log-match-picker-list .mf-picker-row {
+            touch-action: manipulation;
+        }
+        .mf-duration-stepper-btn {
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 0.75rem;
+            background: rgb(30 41 59);
+            border: 1px solid rgb(51 65 85);
+            color: rgb(226 232 240);
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        .mf-duration-stepper-btn:active {
+            background: rgb(51 65 85);
+        }
+        #view-log-match.mf-log-match-wizard .mf-mobile-field-picker.mf-field-invalid {
+            border-color: rgb(239 68 68) !important;
+            box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35);
         }
         @media (min-width: 768px) {
             #log-match-next-btn,
@@ -1347,6 +1414,14 @@
             <button type="button" id="log-match-save-btn" onclick="window.mfSaveMatchHeader(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30 min-h-[44px] min-w-[112px] text-center whitespace-nowrap touch-manipulation shrink-0">Save Match</button>
         </div>
 
+        <div id="log-match-picker" class="mf-sheet-scroll" aria-hidden="true">
+            <div class="shrink-0 px-4 pt-3 pb-2 border-b border-slate-800 bg-slate-950">
+                <p id="log-match-picker-title" class="text-xs uppercase tracking-wider font-bold text-purple-400 mb-2">Pick player</p>
+                <input type="search" id="log-match-picker-search" enterkeyhint="search" autocomplete="off" placeholder="Search…" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+            </div>
+            <ul id="log-match-picker-list" class="p-2 space-y-0.5" role="listbox"></ul>
+        </div>
+
         <div id="log-match-scroll" class="mf-sheet-scroll">
         <div class="p-4 md:p-6 space-y-6 max-w-xl mx-auto w-full min-w-0 pb-24 md:pb-24">
             <div id="log-match-step-settings" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm min-w-0">
@@ -1396,7 +1471,31 @@
                 </div>
                 <div class="mt-4 pt-4 border-t border-slate-800/80">
                     <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Game length <span class="text-slate-500 font-semibold normal-case">(optional)</span></label>
-                    <div class="grid grid-cols-2 gap-4 max-w-xs">
+                    <div class="mf-duration-mobile space-y-3 max-w-xs">
+                        <div class="flex items-center justify-between gap-3 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
+                            <span class="text-sm text-slate-300 font-medium">Hours</span>
+                            <div class="flex items-center gap-3">
+                                <button type="button" class="mf-duration-stepper-btn" onclick="window.mfDurationStep('hours', -1)" aria-label="Decrease hours">−</button>
+                                <span id="form-duration-hours-display" class="w-8 text-center text-lg font-bold text-white tabular-nums">0</span>
+                                <button type="button" class="mf-duration-stepper-btn" onclick="window.mfDurationStep('hours', 1)" aria-label="Increase hours">+</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
+                            <span class="text-sm text-slate-300 font-medium">Minutes</span>
+                            <div class="flex items-center gap-3">
+                                <button type="button" class="mf-duration-stepper-btn" onclick="window.mfDurationStep('minutes', -15)" aria-label="Decrease minutes">−</button>
+                                <span id="form-duration-minutes-display" class="w-8 text-center text-lg font-bold text-white tabular-nums">0</span>
+                                <button type="button" class="mf-duration-stepper-btn" onclick="window.mfDurationStep('minutes', 15)" aria-label="Increase minutes">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 pt-1">
+                            <button type="button" onclick="window.mfDurationPreset(60)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">1h</button>
+                            <button type="button" onclick="window.mfDurationPreset(90)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">1h 30m</button>
+                            <button type="button" onclick="window.mfDurationPreset(120)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">2h</button>
+                            <button type="button" onclick="window.mfDurationPreset(0)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-500 touch-manipulation">Clear</button>
+                        </div>
+                    </div>
+                    <div class="mf-duration-desktop grid grid-cols-2 gap-4 max-w-xs">
                         <div>
                             <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Hours</span>
                             <input type="text" id="form-duration-hours" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();event.target.blur();}">
@@ -3203,6 +3302,7 @@
                 deckInput.classList.add('mf-field-valid');
                 deckInput.classList.remove('mf-field-invalid');
             }
+            mfSyncMobilePickerLabels();
         }
 
         // --- Log Match mobile wizard (≤767px); desktop unchanged ---
@@ -3347,6 +3447,7 @@
         function mfApplyLogMatchWizardStep() {
             const modal = document.getElementById('view-log-match');
             if (!modal || !modal.classList.contains('mf-log-match-wizard')) return;
+            mfCloseMobileFieldPicker();
             const plan = mfBuildLogMatchWizardPlan();
             if (!plan.length) return;
             if (window._logMatchWizardStep >= plan.length) window._logMatchWizardStep = plan.length - 1;
@@ -3375,6 +3476,8 @@
                 iconBack?.classList.remove('hidden');
             }
             if (isReview) mfRenderLogMatchReview();
+            mfSyncMobilePickerLabels();
+            mfSyncDurationStepperDisplay();
             const scrollEl = document.getElementById('log-match-scroll');
             if (scrollEl) scrollEl.scrollTop = 0;
         }
@@ -3415,6 +3518,23 @@
             }
             window.mfCloseStaticDropdowns();
             const modal = document.getElementById('view-log-match');
+            if (modal?.classList.contains('mf-picker-open')) {
+                const state = window._logMatchPickerState;
+                if (state?.mode === 'scryfall') {
+                    state.mode = 'list';
+                    const title = document.getElementById('log-match-picker-title');
+                    if (title) title.textContent = state.kind === 'deck' ? 'Pick deck' : 'Pick player';
+                    const searchEl = document.getElementById('log-match-picker-search');
+                    if (searchEl) {
+                        searchEl.value = '';
+                        searchEl.placeholder = state.kind === 'deck' ? 'Search decks…' : 'Search players…';
+                    }
+                    mfRenderMobilePickerList();
+                    return;
+                }
+                mfCloseMobileFieldPicker();
+                return;
+            }
             if (modal?.classList.contains('mf-log-match-wizard') && window._logMatchWizardStep > 0) {
                 window._logMatchWizardStep--;
                 mfApplyLogMatchWizardStep();
@@ -3435,7 +3555,14 @@
             const validation = mfValidateLogMatchWizardStep(step);
             if (!validation.ok) {
                 if (validation.firstInvalid && mfIsTouchDevice()) {
-                    try { validation.firstInvalid.focus({ preventScroll: true }); } catch (_) {}
+                    const group = validation.firstInvalid.closest('.input-slot-group');
+                    const pickerBtn = group?.querySelector('.mf-mobile-field-picker');
+                    if (pickerBtn && mfIsMobileWizardPickerMode()) {
+                        pickerBtn.classList.add('mf-field-invalid');
+                        pickerBtn.scrollIntoView({ block: 'center', behavior: 'auto' });
+                    } else {
+                        try { validation.firstInvalid.focus({ preventScroll: true }); } catch (_) {}
+                    }
                 }
                 if (validation.issues?.length) {
                     window.mfToast(validation.issues[0], { title: 'Check this step', icon: '⚠️' });
@@ -3450,7 +3577,329 @@
         function mfInitLogMatchWizard() {
             window._logMatchWizardStep = 0;
             mfSyncLogMatchWizardShell();
+            mfSyncDurationStepperDisplay();
+            mfSyncMobilePickerLabels();
         }
+
+        // --- Mobile duration steppers (no keyboard on wizard) ---
+        function mfReadDurationParts() {
+            const hEl = document.getElementById('form-duration-hours');
+            const mEl = document.getElementById('form-duration-minutes');
+            const hours = hEl && hEl.value !== '' ? Math.max(0, parseInt(hEl.value, 10) || 0) : 0;
+            const mins = mEl && mEl.value !== '' ? Math.max(0, parseInt(mEl.value, 10) || 0) : 0;
+            return { hours, mins };
+        }
+
+        function mfWriteDurationParts(hours, mins) {
+            const hEl = document.getElementById('form-duration-hours');
+            const mEl = document.getElementById('form-duration-minutes');
+            const totalMins = hours * 60 + mins;
+            if (hEl) hEl.value = hours > 0 ? String(hours) : '';
+            if (mEl) mEl.value = mins > 0 ? String(mins) : '';
+            if (totalMins > 12 * 60) {
+                if (hEl) hEl.value = '12';
+                if (mEl) mEl.value = '';
+            }
+            mfSyncDurationStepperDisplay();
+        }
+
+        function mfSyncDurationStepperDisplay() {
+            const { hours, mins } = mfReadDurationParts();
+            const hDisp = document.getElementById('form-duration-hours-display');
+            const mDisp = document.getElementById('form-duration-minutes-display');
+            if (hDisp) hDisp.textContent = String(hours);
+            if (mDisp) mDisp.textContent = String(mins);
+        }
+
+        window.mfDurationStep = function(unit, delta) {
+            let { hours, mins } = mfReadDurationParts();
+            if (unit === 'hours') {
+                hours = Math.max(0, Math.min(12, hours + delta));
+            } else {
+                mins = Math.max(0, mins + delta);
+                if (mins >= 60) {
+                    hours = Math.min(12, hours + Math.floor(mins / 60));
+                    mins = mins % 60;
+                }
+            }
+            if (hours >= 12) {
+                hours = 12;
+                mins = 0;
+            }
+            mfWriteDurationParts(hours, mins);
+        };
+
+        window.mfDurationPreset = function(totalMinutes) {
+            if (!totalMinutes) {
+                mfWriteDurationParts(0, 0);
+                return;
+            }
+            const hours = Math.floor(totalMinutes / 60);
+            const mins = totalMinutes % 60;
+            mfWriteDurationParts(hours, mins);
+        };
+
+        // --- Mobile full-screen picker (player / deck / Scryfall) ---
+        window._logMatchPickerState = null;
+        let mfPickerScryfallTimer = null;
+        let mfPickerScryfallReqId = 0;
+
+        function mfIsMobileWizardPickerMode() {
+            const modal = document.getElementById('view-log-match');
+            return !!(modal && modal.classList.contains('mf-log-match-wizard') && mfIsLogMatchWizardViewport());
+        }
+
+        function mfSyncMobilePickerLabels() {
+            document.querySelectorAll('#view-log-match .mf-mobile-field-picker').forEach((btn) => {
+                const group = btn.closest('.input-slot-group');
+                const kind = btn.dataset.pickerKind;
+                const valueEl = btn.querySelector('.mf-mobile-picker-value');
+                if (!group || !valueEl) return;
+                const local = group.querySelector(kind === 'player' ? '.local-player-input' : '.local-deck-input');
+                const v = (local?.value || '').trim();
+                if (v) {
+                    valueEl.textContent = v;
+                    valueEl.classList.remove('text-slate-400');
+                    valueEl.classList.add('text-white');
+                    btn.classList.add('border-purple-500/40');
+                } else {
+                    valueEl.textContent = kind === 'player' ? 'Tap to pick player' : 'Tap to pick deck';
+                    valueEl.classList.remove('text-white');
+                    valueEl.classList.add('text-slate-400');
+                    btn.classList.remove('border-purple-500/40');
+                }
+            });
+        }
+
+        function mfCloseMobileFieldPicker() {
+            const modal = document.getElementById('view-log-match');
+            modal?.classList.remove('mf-picker-open');
+            const picker = document.getElementById('log-match-picker');
+            if (picker) picker.setAttribute('aria-hidden', 'true');
+            window._logMatchPickerState = null;
+            mfClearLogMatchFieldDropdowns();
+            mfSyncMobilePickerLabels();
+        }
+
+        function mfPickerBindRow(li, onPick) {
+            li.classList.add('mf-picker-row');
+            li.setAttribute('role', 'option');
+            li.addEventListener('click', (e) => {
+                e.preventDefault();
+                onPick();
+            });
+        }
+
+        function mfMobilePickerConfirmNewPlayer(group, name) {
+            const local = group.querySelector('.local-player-input');
+            const newInput = group.querySelector('.new-player-input');
+            const n = normalizeName(name);
+            if (!n) return;
+            if (newInput) newInput.value = n;
+            if (local) {
+                local.value = n;
+                mfMarkFieldSelected(local);
+            }
+            group.dataset.confirmedNew = '1';
+            mfReleaseSlotGroup(group, { hideNewMode: true });
+        }
+
+        function mfMobilePickerConfirmScryfallDeck(group, cardName) {
+            const local = group.querySelector('.local-deck-input');
+            const newInput = group.querySelector('.new-deck-input');
+            const n = String(cardName || '').trim();
+            if (!n) return;
+            if (newInput) {
+                newInput.value = n;
+                newInput.dataset.mfScryfallName = n;
+            }
+            if (local) {
+                local.value = n;
+                mfMarkFieldSelected(local);
+            }
+            group.dataset.confirmedNew = '1';
+            mfReleaseSlotGroup(group, { hideNewMode: true });
+        }
+
+        function mfRenderMobilePickerList() {
+            const state = window._logMatchPickerState;
+            const list = document.getElementById('log-match-picker-list');
+            const searchEl = document.getElementById('log-match-picker-search');
+            if (!state || !list) return;
+            const query = String(searchEl?.value || '').trim().toLowerCase();
+            list.innerHTML = '';
+
+            if (state.mode === 'scryfall') {
+                if (query.length < 3) {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 text-sm text-slate-500 italic';
+                    li.textContent = 'Type at least 3 characters to search Scryfall';
+                    list.appendChild(li);
+                    return;
+                }
+                const li = document.createElement('li');
+                li.className = 'dropdown-loading px-4 py-3 text-sm flex items-center gap-2';
+                li.innerHTML = '<span class="dropdown-mini-spinner" aria-hidden="true"></span><span>Searching cards…</span>';
+                list.appendChild(li);
+                const reqId = ++mfPickerScryfallReqId;
+                clearTimeout(mfPickerScryfallTimer);
+                mfPickerScryfallTimer = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(query)}`);
+                        const data = await res.json();
+                        if (reqId !== mfPickerScryfallReqId || window._logMatchPickerState?.mode !== 'scryfall') return;
+                        list.innerHTML = '';
+                        const names = data.data || [];
+                        if (!names.length) {
+                            const empty = document.createElement('li');
+                            empty.className = 'px-4 py-3 text-sm text-slate-500 italic';
+                            empty.textContent = 'No cards match your search';
+                            list.appendChild(empty);
+                            return;
+                        }
+                        names.forEach((name) => {
+                            const row = document.createElement('li');
+                            row.className = 'px-4 py-3 text-slate-200 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition truncate font-medium';
+                            row.textContent = name;
+                            mfPickerBindRow(row, () => {
+                                mfMobilePickerConfirmScryfallDeck(state.group, name);
+                                mfCloseMobileFieldPicker();
+                            });
+                            list.appendChild(row);
+                        });
+                    } catch (_) {
+                        if (reqId !== mfPickerScryfallReqId) return;
+                        list.innerHTML = '';
+                        const err = document.createElement('li');
+                        err.className = 'px-4 py-3 text-sm text-amber-300/90';
+                        err.textContent = 'Could not reach Scryfall — try again';
+                        list.appendChild(err);
+                    }
+                }, 280);
+                return;
+            }
+
+            const isDeck = state.kind === 'deck';
+            const dataArray = isDeck ? (window.appData.commanders || []) : (window.appData.players || []);
+            let filtered = dataArray;
+            if (query) {
+                filtered = filtered.filter((item) => item.name.toLowerCase().includes(query));
+            }
+
+            if (!query && !filtered.length && !dataArray.length) {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-3 text-sm text-slate-500 italic';
+                li.textContent = isDeck ? 'No decks logged yet' : 'No players in roster yet';
+                list.appendChild(li);
+            }
+
+            if (query) {
+                const raw = String(searchEl.value || '').trim();
+                const hasExact = dataArray.some((x) => x.name.toLowerCase() === raw.toLowerCase());
+                if (!hasExact && raw) {
+                    const create = document.createElement('li');
+                    create.className = 'px-4 py-3 text-purple-300 bg-purple-500/10 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition flex items-center gap-2 font-medium';
+                    create.innerHTML = `<span class="text-base">+</span><span class="truncate">${isDeck ? `Search Scryfall for "${escapeHtml(raw)}"` : `Create "${escapeHtml(raw)}"`}</span>`;
+                    mfPickerBindRow(create, () => {
+                        if (isDeck) {
+                            state.mode = 'scryfall';
+                            const title = document.getElementById('log-match-picker-title');
+                            if (title) title.textContent = 'Search Scryfall';
+                            if (searchEl) {
+                                searchEl.value = raw;
+                                searchEl.placeholder = 'Type 3+ characters…';
+                            }
+                            mfRenderMobilePickerList();
+                        } else {
+                            mfMobilePickerConfirmNewPlayer(state.group, raw);
+                            mfCloseMobileFieldPicker();
+                        }
+                    });
+                    list.appendChild(create);
+                }
+            }
+
+            if (isDeck && state.mode === 'list') {
+                const newDeckRow = document.createElement('li');
+                newDeckRow.className = 'px-4 py-3 text-purple-300 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition flex items-center gap-2 font-medium border border-slate-700/50 mb-1';
+                newDeckRow.innerHTML = '<span class="text-base">+</span><span>Add new deck from Scryfall</span>';
+                mfPickerBindRow(newDeckRow, () => {
+                    state.mode = 'scryfall';
+                    const title = document.getElementById('log-match-picker-title');
+                    if (title) title.textContent = 'Search Scryfall';
+                    if (searchEl) {
+                        searchEl.value = '';
+                        searchEl.placeholder = 'Type 3+ characters…';
+                    }
+                    mfRenderMobilePickerList();
+                });
+                list.appendChild(newDeckRow);
+            }
+
+            if (filtered.length === 0 && query) {
+                const raw = String(searchEl.value || '').trim();
+                const hasCreateRow = raw && !dataArray.some((x) => x.name.toLowerCase() === raw.toLowerCase());
+                if (!hasCreateRow) {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 text-sm text-slate-500 italic';
+                    li.textContent = isDeck ? 'No decks match your search' : 'No players match your search';
+                    list.appendChild(li);
+                }
+            }
+
+            filtered.forEach((item) => {
+                const row = document.createElement('li');
+                row.className = 'px-4 py-3 text-slate-200 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition flex items-center justify-between gap-2';
+                if (isDeck && item.owner) {
+                    row.innerHTML = `<span class="truncate font-medium">${escapeHtml(item.name)}</span><span class="text-[10px] text-slate-400 shrink-0 border border-slate-600 bg-slate-900 px-1.5 py-0.5 rounded">${escapeHtml(item.owner)}</span>`;
+                } else {
+                    row.innerHTML = `<span class="truncate font-medium">${escapeHtml(item.name)}</span>`;
+                }
+                mfPickerBindRow(row, () => {
+                    const local = state.group.querySelector(isDeck ? '.local-deck-input' : '.local-player-input');
+                    if (local) {
+                        local.value = item.name;
+                        mfMarkFieldSelected(local);
+                    }
+                    delete state.group.dataset.confirmedNew;
+                    mfCloseMobileFieldPicker();
+                });
+                list.appendChild(row);
+            });
+        }
+
+        window.mfOpenMobileFieldPicker = function(btn) {
+            if (!mfIsMobileWizardPickerMode()) return;
+            btn.classList.remove('mf-field-invalid');
+            const group = btn.closest('.input-slot-group');
+            const slot = btn.closest('.winner-slot, .loser-slot');
+            if (!group || !slot) return;
+            const kind = btn.dataset.pickerKind === 'deck' ? 'deck' : 'player';
+            window._logMatchPickerState = { group, slot, kind, mode: 'list' };
+            const modal = document.getElementById('view-log-match');
+            const picker = document.getElementById('log-match-picker');
+            const title = document.getElementById('log-match-picker-title');
+            const searchEl = document.getElementById('log-match-picker-search');
+            if (title) title.textContent = kind === 'deck' ? 'Pick deck' : 'Pick player';
+            if (searchEl) {
+                searchEl.value = '';
+                searchEl.placeholder = kind === 'deck' ? 'Search decks…' : 'Search players…';
+            }
+            modal?.classList.add('mf-picker-open');
+            if (picker) picker.setAttribute('aria-hidden', 'false');
+            mfClearLogMatchFieldDropdowns();
+            mfRenderMobilePickerList();
+            mfScheduleFocusTimer(() => {
+                try { searchEl?.focus({ preventScroll: true }); } catch (_) {}
+            }, 50);
+        };
+
+        (function mfBindMobilePickerSearch() {
+            const searchEl = document.getElementById('log-match-picker-search');
+            if (!searchEl || searchEl.dataset.mfBound) return;
+            searchEl.dataset.mfBound = '1';
+            searchEl.addEventListener('input', () => mfRenderMobilePickerList());
+        })();
 
         let mfLogMatchWizardResizeTimer = null;
         window.addEventListener('resize', () => {
@@ -3685,14 +4134,17 @@
             const scroller = field.closest('.mf-sheet-scroll');
 
             if (inLogMatch && scroller) {
+                const visible = mfGetVisibleViewportRect();
                 const sheet = field.closest('.mf-mobile-sheet');
                 const header = sheet?.querySelector('.mf-sheet-header');
-                const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
-                const desiredTop = headerBottom + 12;
+                const headerBottom = header ? header.getBoundingClientRect().bottom : visible.top;
+                const bandTop = headerBottom + 12;
+                const bandBottom = visible.bottom - 16;
                 const fieldRect = field.getBoundingClientRect();
-                const delta = fieldRect.top - desiredTop;
-                if (Math.abs(delta) > 4) {
-                    scroller.scrollTop += delta;
+                if (fieldRect.bottom > bandBottom) {
+                    scroller.scrollTop += fieldRect.bottom - bandBottom;
+                } else if (fieldRect.top < bandTop) {
+                    scroller.scrollTop += fieldRect.top - bandTop;
                 }
             } else {
                 try {
@@ -3799,16 +4251,16 @@
             });
         }
 
+        let mfUserScrollingSheetUntil = 0;
+
         function mfBindMobileViewportFixes() {
             if (window.__mfViewportFixesBound) return;
             window.__mfViewportFixesBound = true;
 
             const resetIosViewportOffset = mfDebounce(() => {
+                if (Date.now() < mfUserScrollingSheetUntil) return;
                 const vv = window.visualViewport;
                 if (!vv || vv.offsetTop <= 0) return;
-                // Only the iOS keyboard "stuck offset" case inside a full-screen sheet
-                // (those are pinned to the top). Never hijack normal page scrolling
-                // such as the landing/login page, Settings, or dashboard.
                 const ae = document.activeElement;
                 if (!ae || !mfIsFocusableField(ae) || !ae.closest('.mf-mobile-sheet')) return;
                 document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -3817,11 +4269,9 @@
             const onViewportResize = () => {
                 mfSyncSheetKeyboardPadding();
                 mfRepositionFloatingDropdowns();
-                // Keyboard just opened/closed: keep the focused field visible.
+                if (Date.now() < mfUserScrollingSheetUntil) return;
                 const ae = document.activeElement;
                 if (ae && mfIsFocusableField(ae) && ae.closest('.mf-mobile-sheet') && mfIsTouchDevice()) {
-                    // Defer to next frame so the just-applied bottom padding reflows first;
-                    // otherwise the last field (game notes) can't scroll above the keyboard.
                     requestAnimationFrame(() => mfScrollFieldIntoView(ae));
                 }
             };
@@ -3832,7 +4282,12 @@
                 vv.addEventListener('scroll', resetIosViewportOffset);
                 vv.addEventListener('scroll', mfRepositionFloatingDropdowns);
             }
-            document.getElementById('log-match-scroll')?.addEventListener('scroll', mfRepositionFloatingDropdowns, { passive: true });
+            document.querySelectorAll('.mf-sheet-scroll').forEach((scroller) => {
+                scroller.addEventListener('scroll', () => {
+                    mfUserScrollingSheetUntil = Date.now() + 400;
+                    mfRepositionFloatingDropdowns();
+                }, { passive: true });
+            });
 
             // Tap (not scroll) anywhere that isn't a dropdown or an autocomplete field
             // → close all dropdowns. Using 'click' (not 'pointerdown') so scrolling the
@@ -3953,6 +4408,7 @@
         }
 
         function mfMountFloatingDropdown(input, dropdown) {
+            if (mfIsMobileWizardPickerMode()) return;
             // Only one floating dropdown alive at a time — clear any others first.
             document.querySelectorAll('.mf-floating-dropdown').forEach((d) => {
                 if (d !== dropdown) d.remove();
@@ -4038,6 +4494,10 @@
             return `
                         <div class="input-slot-group" data-type="player">
                             <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">${playerLabel}</label>
+                            <button type="button" class="mf-mobile-field-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileFieldPicker(this)" data-picker-kind="player">
+                                <span class="mf-mobile-picker-value block truncate text-white text-sm font-medium">Tap to pick player</span>
+                                <span class="block text-[10px] text-slate-500 mt-0.5">Search roster or create new</span>
+                            </button>
                             <div class="flex gap-2 existing-mode">
                                 <div class="relative flex-grow mf-search-wrap">
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
@@ -4058,6 +4518,10 @@
                         </div>
                         <div class="input-slot-group" data-type="deck">
                             <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">${deckLabel}</label>
+                            <button type="button" class="mf-mobile-field-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileFieldPicker(this)" data-picker-kind="deck">
+                                <span class="mf-mobile-picker-value block truncate text-white text-sm font-medium">Tap to pick deck</span>
+                                <span class="block text-[10px] text-slate-500 mt-0.5">Search decks or add from Scryfall</span>
+                            </button>
                             <div class="flex gap-2 existing-mode">
                                 <div class="relative flex-grow mf-search-wrap">
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
@@ -8031,6 +8495,7 @@
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
+            mfSyncDurationStepperDisplay();
             
             if (modal) {
                 modal.classList.remove('hidden'); 
@@ -8160,6 +8625,7 @@
                 delete el.dataset.mfSelected;
             });
             document.querySelectorAll('#view-log-match .mf-slot-hint.show').forEach((el) => el.classList.remove('show'));
+            mfCloseMobileFieldPicker();
             mfReleaseLogMatchTouchState();
             if (modal) {
                 modal.classList.add('translate-y-full'); 
@@ -8703,6 +9169,7 @@
         }
 
         window.renderLocalDropdown = function(input, dataArray, isDeck) {
+            if (mfIsMobileWizardPickerMode()) return;
             const slotGroup = mfGetDropdownHost(input);
             const useFloating = mfIsLogMatchAutocompleteInput(input);
             mfDismissFloatingDropdown(input);
