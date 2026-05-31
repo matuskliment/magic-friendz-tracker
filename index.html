@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.7.2">
+    <meta name="mf-app-version" content="2.7.3">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -555,22 +555,36 @@
             cursor: pointer;
         }
         @media (min-width: 768px) {
+            .match-settings-date-cell {
+                overflow: visible;
+            }
             .date-input-shell {
                 position: relative;
+                overflow: visible;
             }
             #view-log-match #form-date.mf-date-input {
-                position: relative;
-                padding-right: 3rem !important;
+                display: inline-flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.625rem;
+                padding: 0.75rem !important;
+            }
+            #view-log-match #form-date.mf-date-input::-webkit-datetime-edit-fields-wrapper {
+                flex: 1 1 auto;
+                min-width: 0;
+                overflow: hidden;
+            }
+            #view-log-match #form-date.mf-date-input::-webkit-datetime-edit {
+                max-width: 100%;
             }
             #view-log-match #form-date.mf-date-input::-webkit-calendar-picker-indicator {
-                position: absolute;
-                right: 0.75rem;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 1.25rem;
-                height: 1.25rem;
+                position: static;
+                flex-shrink: 0;
+                width: 1.125rem;
+                height: 1.125rem;
                 margin: 0;
-                opacity: 0.85;
+                opacity: 0.75;
+                transform: none;
             }
         }
         #log-match-next-btn,
@@ -1544,11 +1558,11 @@
                     <div class="mf-duration-desktop grid grid-cols-2 gap-4 max-w-xs">
                         <div>
                             <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Hours</span>
-                            <input type="text" id="form-duration-hours" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();event.target.blur();}">
+                            <input type="text" id="form-duration-hours" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="0" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm placeholder:text-slate-500" onkeydown="if(event.key==='Enter'){event.preventDefault();event.target.blur();}">
                         </div>
                         <div>
                             <span class="block text-[10px] text-slate-500 mb-1 ml-0.5">Minutes</span>
-                            <input type="text" id="form-duration-minutes" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="—" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();event.target.blur();}">
+                            <input type="text" id="form-duration-minutes" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="0" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm placeholder:text-slate-500" onkeydown="if(event.key==='Enter'){event.preventDefault();event.target.blur();}">
                         </div>
                     </div>
                     <p class="text-[10px] text-slate-500 mt-2 ml-1">Each player in the pod gets this time credited toward their hours played.</p>
