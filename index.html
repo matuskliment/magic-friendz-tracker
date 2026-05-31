@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.8.1">
+    <meta name="mf-app-version" content="2.8.2">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -485,6 +485,61 @@
         }
         #cmd-view-dual-wrap .cmd-partner-card + .cmd-partner-card {
             margin-left: -12%;
+        }
+        .mf-dual-avatar {
+            position: relative;
+            width: 3rem;
+            height: 3rem;
+            flex-shrink: 0;
+        }
+        .mf-dual-avatar .set-bg {
+            position: absolute;
+            border-radius: 9999px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        }
+        .mf-dual-avatar-a {
+            left: 0;
+            top: 1px;
+            width: 1.65rem;
+            height: 1.65rem;
+            transform: rotate(-10deg);
+            z-index: 1;
+        }
+        .mf-dual-avatar-b {
+            right: 0;
+            bottom: 1px;
+            width: 1.75rem;
+            height: 1.75rem;
+            transform: rotate(8deg);
+            z-index: 2;
+        }
+        .mf-dual-avatar-sm {
+            width: 2.75rem;
+            height: 2.75rem;
+        }
+        .mf-dual-avatar-sm .mf-dual-avatar-a {
+            width: 1.45rem;
+            height: 1.45rem;
+        }
+        .mf-dual-avatar-sm .mf-dual-avatar-b {
+            width: 1.55rem;
+            height: 1.55rem;
+        }
+        @media (min-width: 768px) {
+            .mf-dual-avatar {
+                width: 3.5rem;
+                height: 3.5rem;
+            }
+            .mf-dual-avatar-a {
+                width: 1.9rem;
+                height: 1.9rem;
+            }
+            .mf-dual-avatar-b {
+                width: 2rem;
+                height: 2rem;
+            }
         }
         .mf-duration-stepper-btn {
             width: 2.75rem;
@@ -5687,6 +5742,30 @@
             });
         }
 
+        function mfRenderCommanderListAvatar(deckName, opts = {}) {
+            const size = opts.size || 'md';
+            const topThree = !!opts.topThree;
+            const commanders = mfParseCommanderNamesFromDeckName(deckName);
+            const borderPrimary = topThree ? 'border-purple-500/40' : 'border-slate-700';
+            const borderSecondary = topThree ? 'border-purple-400/60' : 'border-slate-600';
+            const singleSizes = { sm: 'w-10 h-10', md: 'w-12 h-12 md:w-14 md:h-14', lg: 'w-12 h-12' };
+            const dualWrapSizes = { sm: 'mf-dual-avatar mf-dual-avatar-sm', md: 'mf-dual-avatar', lg: 'mf-dual-avatar mf-dual-avatar-sm' };
+
+            if (commanders.length < 2) {
+                const name = commanders[0] || deckName;
+                return `<div data-card="${escapeHtml(name)}" data-version="art_crop" class="set-bg ${singleSizes[size] || singleSizes.md} rounded-full art-fallback bg-cover bg-center border-2 ${borderPrimary} shadow-md shrink-0 self-center"></div>`;
+            }
+
+            return `<div class="${dualWrapSizes[size] || dualWrapSizes.md} shrink-0 self-center" aria-hidden="true">
+                <div data-card="${escapeHtml(commanders[0])}" data-version="art_crop" class="set-bg mf-dual-avatar-a art-fallback bg-cover bg-center border-2 ${borderPrimary}"></div>
+                <div data-card="${escapeHtml(commanders[1])}" data-version="art_crop" class="set-bg mf-dual-avatar-b art-fallback bg-cover bg-center border-2 ${borderSecondary}"></div>
+            </div>`;
+        }
+
+        function mfPrimaryCommanderArtName(deckName) {
+            return mfParseCommanderNamesFromDeckName(deckName)[0] || deckName;
+        }
+
         function normalizeCardNameKey(name) {
             return normalizeCardSearchName(name).toLowerCase().replace(/[^a-z0-9]/g, '');
         }
@@ -7687,7 +7766,8 @@
             const topThree = cmd.rank <= 3;
             const winStrong = parseFloat(cmd.winRate) >= 50;
             const eloStyle = getRankEloChipStyle(cmd.rank);
-            const artName = mfParseCommanderNamesFromDeckName(cmd.name)[0] || cmd.name;
+            const artName = mfPrimaryCommanderArtName(cmd.name);
+            const avatarHtml = mfRenderCommanderListAvatar(cmd.name, { size: 'md', topThree });
             const eloChip = `
                 <div class="shrink-0 ml-0.5 md:ml-1 text-center ${eloStyle.bg} border ${eloStyle.border} rounded-lg px-2.5 py-2 md:px-3 md:py-2">
                     <div class="font-black text-lg md:text-2xl tracking-tight ${eloStyle.value} leading-none">${cmd.elo}</div>
@@ -7701,7 +7781,7 @@
                         <div class="w-6 md:w-8 flex items-center justify-center shrink-0">
                             <div class="text-center font-black text-xl md:text-2xl ${getRankColor(cmd.rank)} leading-none">${cmd.rank}</div>
                         </div>
-                        <div data-card="${escapeHtml(artName)}" data-version="art_crop" class="set-bg w-12 h-12 md:w-14 md:h-14 rounded-full art-fallback bg-cover bg-center border-2 ${topThree ? 'border-purple-500/40' : 'border-slate-700'} shadow-md shrink-0 self-center"></div>
+                        ${avatarHtml}
                         <div class="flex-grow min-w-0 self-center">
                             <h4 class="font-bold text-base md:text-lg text-white group-hover:text-purple-400 transition drop-shadow leading-snug md:truncate">${cmd.name}</h4>
                             <span class="mf-card-mana flex items-center gap-0.5 mt-1 empty:hidden" data-card="${escapeHtml(artName)}"></span>
@@ -8139,12 +8219,13 @@
                 let metaHTML = '';
                 metaDecks.forEach((cmd, i) => {
                     const winBadgeColor = parseFloat(cmd.winRate) >= 50 ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-slate-700/80 text-slate-300 border-slate-600/50';
-                    const artName = mfParseCommanderNamesFromDeckName(cmd.name)[0] || cmd.name;
+                    const artName = mfPrimaryCommanderArtName(cmd.name);
+                    const avatarHtml = mfRenderCommanderListAvatar(cmd.name, { size: 'sm' });
                     metaHTML += `
                         <div class="glass flex items-center p-3 rounded-xl border border-slate-700/50 relative overflow-hidden group w-full max-w-full min-w-0">
                             <div data-card="${escapeHtml(artName)}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 mix-blend-luminosity"></div>
                             <div class="w-6 text-center font-black text-xl text-blue-500/50 z-10">#${i+1}</div>
-                            <div data-card="${escapeHtml(artName)}" data-version="art_crop" class="set-bg w-12 h-12 rounded-full art-fallback ml-3 bg-cover bg-center border border-slate-600 shadow-md z-10 flex-shrink-0"></div>
+                            <div class="ml-3 z-10 flex-shrink-0">${avatarHtml}</div>
                             <div class="ml-4 flex-grow z-10 min-w-0">
                                 <h4 class="font-bold text-white truncate">${cmd.name}</h4>
                                 <div class="text-[10px] text-slate-400 font-bold mt-0.5">${cmd.plays} Total Plays</div>
