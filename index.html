@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.4.2">
+    <meta name="mf-app-version" content="2.5.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -363,6 +363,48 @@
                 flex: 1 1 auto;
                 width: auto;
                 max-width: 28rem;
+            }
+        }
+        /* Log Match mobile wizard (≤767px) — desktop keeps scroll-all form */
+        @media (max-width: 767px) {
+            #view-log-match.mf-log-match-wizard #log-match-scroll > .p-4 {
+                padding-bottom: 1rem;
+            }
+            #view-log-match.mf-log-match-wizard .log-match-step-panel {
+                display: none !important;
+            }
+            #view-log-match.mf-log-match-wizard .log-match-step-panel.is-wizard-active {
+                display: block !important;
+            }
+            #view-log-match.mf-log-match-wizard .mf-sheet-bottom-spacer {
+                display: none;
+            }
+            #view-log-match.mf-log-match-wizard #log-match-save-btn {
+                display: none !important;
+            }
+            #view-log-match.mf-log-match-wizard #log-match-next-btn {
+                display: inline-flex !important;
+            }
+            #view-log-match.mf-log-match-wizard.mf-wizard-on-review #log-match-next-btn {
+                display: none !important;
+            }
+            #view-log-match.mf-log-match-wizard.mf-wizard-on-review #log-match-save-btn {
+                display: inline-flex !important;
+            }
+            #view-log-match.mf-log-match-wizard #log-match-wizard-progress {
+                display: block;
+            }
+        }
+        @media (min-width: 768px) {
+            #log-match-next-btn,
+            #log-match-wizard-progress {
+                display: none !important;
+            }
+            #log-match-save-btn {
+                display: inline-flex !important;
+            }
+            #log-match-step-review {
+                display: none !important;
             }
         }
         .match-settings-date-cell {
@@ -1286,18 +1328,23 @@
 
     <!-- FULL SCREEN VIEW: LOG MATCH MODAL -->
     <div id="view-log-match" class="mf-mobile-sheet z-[120] bg-slate-950 transform translate-y-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="log-match-title">
-        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
-            <button type="button" onclick="window.mfCloseLogMatchHeader(event)" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                Cancel
+        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md gap-2">
+            <button type="button" id="log-match-header-left-btn" onclick="window.mfLogMatchHeaderLeft(event)" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation shrink-0">
+                <svg id="log-match-header-left-icon-close" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <svg id="log-match-header-left-icon-back" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span id="log-match-header-left-label" class="text-sm font-semibold">Cancel</span>
             </button>
-            <h2 id="log-match-title" class="text-sm font-bold text-slate-200 whitespace-nowrap">Log New Match</h2>
-            <button type="button" id="log-match-save-btn" onclick="window.mfSaveMatchHeader(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30 min-h-[44px] min-w-[112px] text-center whitespace-nowrap touch-manipulation">Save Match</button>
+            <div class="flex-1 min-w-0 text-center px-1">
+                <h2 id="log-match-title" class="text-sm font-bold text-slate-200 truncate">Log New Match</h2>
+                <p id="log-match-wizard-progress" class="hidden text-[10px] text-slate-500 font-medium mt-0.5 truncate">Step 1 of 5</p>
+            </div>
+            <button type="button" id="log-match-next-btn" onclick="window.mfLogMatchWizardNext(event)" class="hidden text-white font-bold hover:text-purple-100 transition px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg border border-purple-500/40 min-h-[44px] min-w-[72px] text-center whitespace-nowrap touch-manipulation shrink-0">Next</button>
+            <button type="button" id="log-match-save-btn" onclick="window.mfSaveMatchHeader(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30 min-h-[44px] min-w-[112px] text-center whitespace-nowrap touch-manipulation shrink-0">Save Match</button>
         </div>
 
         <div id="log-match-scroll" class="mf-sheet-scroll">
-        <div class="p-4 md:p-6 space-y-6 max-w-xl mx-auto w-full min-w-0 pb-24">
-            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm min-w-0">
+        <div class="p-4 md:p-6 space-y-6 max-w-xl mx-auto w-full min-w-0 pb-24 md:pb-24">
+            <div id="log-match-step-settings" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm min-w-0">
                 <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     Match Settings
@@ -1358,10 +1405,10 @@
                 </div>
             </div>
 
-            <div id="form-winners-container" class="space-y-4"></div>
-            <div id="form-losers-container" class="space-y-4"></div>
+            <div id="form-winners-container" class="space-y-4 md:space-y-4"></div>
+            <div id="form-losers-container" class="space-y-4 md:space-y-4"></div>
 
-            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
+            <div id="log-match-step-extras" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
                 <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     Winning Cards (Optional)
@@ -1392,6 +1439,16 @@
                     Game Notes / Strategy
                 </h3>
                 <textarea id="form-notes" rows="2" placeholder="How did they pull it off? E.g., 'Overwhelming goblins...'" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none shadow-sm"></textarea>
+                <p class="md:hidden text-[10px] text-slate-500 mt-3 text-center">Optional — tap Next to continue</p>
+            </div>
+
+            <div id="log-match-step-review" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-purple-500/30 shadow-sm">
+                <h3 class="text-xs text-purple-300 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    Review &amp; save
+                </h3>
+                <div id="log-match-review-content" class="space-y-3 text-sm"></div>
+                <p class="text-[10px] text-slate-500 mt-4 text-center">Tap Save Match when everything looks right.</p>
             </div>
             <!-- Bottom breathing room so the last fields (e.g. Game Notes) can always
                  scroll well clear of the on-screen keyboard. -->
@@ -3143,6 +3200,259 @@
             }
         }
 
+        // --- Log Match mobile wizard (≤767px); desktop unchanged ---
+        window._logMatchWizardStep = 0;
+
+        function mfIsLogMatchWizardViewport() {
+            try { return window.matchMedia('(max-width: 767px)').matches; } catch (_) { return false; }
+        }
+
+        function mfBuildLogMatchWizardPlan() {
+            const plan = [];
+            const settings = document.getElementById('log-match-step-settings');
+            if (settings) plan.push({ type: 'settings', el: settings, stepTitle: 'Match setup' });
+            document.querySelectorAll('#form-winners-container .winner-slot').forEach((slot, i) => {
+                const h = slot.querySelector('h3');
+                plan.push({
+                    type: 'winner',
+                    el: slot,
+                    index: i,
+                    stepTitle: h?.innerText?.trim() || (i === 0 ? 'The Victor' : `Co-Winner ${i + 1}`)
+                });
+            });
+            document.querySelectorAll('#form-losers-container .loser-slot').forEach((slot, i) => {
+                const h = slot.querySelector('h3');
+                plan.push({
+                    type: 'loser',
+                    el: slot,
+                    index: i,
+                    stepTitle: h?.innerText?.trim() || `The Fallen (${i + 1})`
+                });
+            });
+            const extras = document.getElementById('log-match-step-extras');
+            if (extras) plan.push({ type: 'extras', el: extras, stepTitle: 'Extras (optional)' });
+            const review = document.getElementById('log-match-step-review');
+            if (review) plan.push({ type: 'review', el: review, stepTitle: 'Review & save' });
+            return plan;
+        }
+
+        function mfClearSlotFieldErrors(slot) {
+            if (!slot) return;
+            slot.querySelectorAll('.mf-field-invalid').forEach(mfClearFieldError);
+        }
+
+        function mfValidateWizardSeatSlot(slot, label, num) {
+            mfClearSlotFieldErrors(slot);
+            const issues = [];
+            let firstInvalid = null;
+            const addIssue = (input, msg) => {
+                issues.push(msg);
+                if (input) {
+                    mfSetFieldError(input, msg);
+                    if (!firstInvalid) firstInvalid = input;
+                }
+            };
+            const pg = slot.querySelector('.input-slot-group[data-type="player"]');
+            const dg = slot.querySelector('.input-slot-group[data-type="deck"]');
+            const p = mfSlotFieldInfo(pg, window.appData.players, 'player');
+            const d = mfSlotFieldInfo(dg, window.appData.commanders, 'deck');
+            if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), `${label} ${num}: add a player.`);
+            else if (!p.valid) addIssue(p.input, `${label} ${num}: pick a player from the list, or tap + New.`);
+            if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), `${label} ${num}: add a deck.`);
+            else if (!d.valid) {
+                if (d.needsScryfall) addIssue(d.input, `${label} ${num}: pick the commander from Scryfall.`);
+                else addIssue(d.input, `${label} ${num}: pick a deck from the list, or tap + New.`);
+            }
+            return { ok: issues.length === 0, issues, firstInvalid };
+        }
+
+        function mfValidateLogMatchWizardStep(step) {
+            const plan = mfBuildLogMatchWizardPlan();
+            const entry = plan[step];
+            if (!entry) return { ok: true };
+            if (entry.type === 'settings') {
+                try {
+                    readFormMatchDate();
+                } catch (err) {
+                    const dateEl = document.getElementById('form-date');
+                    mfSetFieldError(dateEl, err.message || 'Pick a date.');
+                    return { ok: false, firstInvalid: dateEl, issues: [err.message || 'Pick a date.'] };
+                }
+                const duration = parseFormDurationMinutes();
+                if (duration === -1) {
+                    const hEl = document.getElementById('form-duration-hours');
+                    mfSetFieldError(hEl, 'Max 12 hours.');
+                    return { ok: false, firstInvalid: hEl, issues: ['Game length cannot exceed 12 hours.'] };
+                }
+                return { ok: true };
+            }
+            if (entry.type === 'winner') {
+                return mfValidateWizardSeatSlot(entry.el, 'Victor', entry.index + 1);
+            }
+            if (entry.type === 'loser') {
+                return mfValidateWizardSeatSlot(entry.el, 'Fallen', entry.index + 1);
+            }
+            if (entry.type === 'extras') {
+                return { ok: true };
+            }
+            if (entry.type === 'review') {
+                return window.mfValidateMatchForm();
+            }
+            return { ok: true };
+        }
+
+        function mfRenderLogMatchReview() {
+            const host = document.getElementById('log-match-review-content');
+            if (!host) return;
+            let dateLabel = '—';
+            try {
+                const d = readFormMatchDate();
+                dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch (_) {}
+            const pod = document.getElementById('form-pod-size')?.value || '?';
+            const dur = parseFormDurationMinutes();
+            const durLabel = dur > 0 ? formatDurationLabel(dur) : null;
+            const rows = [];
+            document.querySelectorAll('.winner-slot').forEach((slot, i) => {
+                const d = extractSlotData(slot);
+                if (d.player && d.deck) {
+                    rows.push(`<div class="flex gap-2 items-start bg-green-500/10 border border-green-500/25 rounded-lg px-3 py-2"><span class="text-green-400 shrink-0">👑</span><div class="min-w-0"><p class="font-semibold text-white truncate">${escapeHtml(d.deck)}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(d.player)}</p></div></div>`);
+                }
+            });
+            document.querySelectorAll('.loser-slot').forEach((slot) => {
+                const d = extractSlotData(slot);
+                if (d.player && d.deck) {
+                    rows.push(`<div class="flex gap-2 items-start bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2"><span class="text-red-400/80 shrink-0">💀</span><div class="min-w-0"><p class="font-semibold text-slate-200 truncate">${escapeHtml(d.deck)}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(d.player)}</p></div></div>`);
+                }
+            });
+            const cards = ['form-card-1', 'form-card-2', 'form-card-3']
+                .map(id => document.getElementById(id)?.value?.trim())
+                .filter(Boolean);
+            const notes = document.getElementById('form-notes')?.value?.trim() || '';
+            host.innerHTML = `
+                <div class="text-[11px] text-slate-400 space-y-1 mb-3 pb-3 border-b border-slate-800">
+                    <p><span class="text-slate-500">Date:</span> <span class="text-slate-200">${escapeHtml(dateLabel)}</span></p>
+                    <p><span class="text-slate-500">Pod:</span> <span class="text-slate-200">${escapeHtml(pod)} players</span>${durLabel ? ` · <span class="text-slate-500">Length:</span> <span class="text-slate-200">${escapeHtml(durLabel)}</span>` : ''}</p>
+                </div>
+                <div class="space-y-2">${rows.length ? rows.join('') : '<p class="text-slate-500 italic text-xs">No seats filled yet.</p>'}</div>
+                ${cards.length ? `<p class="text-[11px] text-slate-500 mt-3 pt-3 border-t border-slate-800">Winning cards: <span class="text-slate-300">${cards.map(c => escapeHtml(c)).join(', ')}</span></p>` : ''}
+                ${notes ? `<p class="text-[11px] text-slate-500 mt-2">Notes: <span class="text-slate-300">${escapeHtml(notes)}</span></p>` : ''}`;
+        }
+
+        function mfApplyLogMatchWizardStep() {
+            const modal = document.getElementById('view-log-match');
+            if (!modal || !modal.classList.contains('mf-log-match-wizard')) return;
+            const plan = mfBuildLogMatchWizardPlan();
+            if (!plan.length) return;
+            if (window._logMatchWizardStep >= plan.length) window._logMatchWizardStep = plan.length - 1;
+            if (window._logMatchWizardStep < 0) window._logMatchWizardStep = 0;
+            const step = window._logMatchWizardStep;
+            const entry = plan[step];
+            mfClearLogMatchFieldDropdowns();
+            document.querySelectorAll('.log-match-step-panel').forEach(p => p.classList.remove('is-wizard-active'));
+            entry.el?.classList.add('is-wizard-active');
+            const isReview = entry.type === 'review';
+            modal.classList.toggle('mf-wizard-on-review', isReview);
+            const progress = document.getElementById('log-match-wizard-progress');
+            if (progress) progress.textContent = `Step ${step + 1} of ${plan.length}`;
+            const titleEl = document.getElementById('log-match-title');
+            if (titleEl) titleEl.textContent = entry.stepTitle || 'Log Match';
+            const leftLabel = document.getElementById('log-match-header-left-label');
+            const iconClose = document.getElementById('log-match-header-left-icon-close');
+            const iconBack = document.getElementById('log-match-header-left-icon-back');
+            if (step === 0) {
+                if (leftLabel) leftLabel.textContent = 'Cancel';
+                iconClose?.classList.remove('hidden');
+                iconBack?.classList.add('hidden');
+            } else {
+                if (leftLabel) leftLabel.textContent = 'Back';
+                iconClose?.classList.add('hidden');
+                iconBack?.classList.remove('hidden');
+            }
+            if (isReview) mfRenderLogMatchReview();
+            const scrollEl = document.getElementById('log-match-scroll');
+            if (scrollEl) scrollEl.scrollTop = 0;
+        }
+
+        function mfSyncLogMatchWizardShell() {
+            const modal = document.getElementById('view-log-match');
+            if (!modal || modal.classList.contains('hidden')) return;
+            const useWizard = mfIsLogMatchWizardViewport();
+            modal.classList.toggle('mf-log-match-wizard', useWizard);
+            if (!useWizard) {
+                document.querySelectorAll('.log-match-step-panel').forEach(p => p.classList.remove('is-wizard-active'));
+                modal.classList.remove('mf-wizard-on-review');
+                const titleEl = document.getElementById('log-match-title');
+                const isEdit = !!window.editingMatchId;
+                if (titleEl) titleEl.textContent = isEdit ? 'Edit Match' : 'Log New Match';
+                return;
+            }
+            mfApplyLogMatchWizardStep();
+        }
+
+        function mfAfterLogMatchSlotsUpdated() {
+            document.querySelectorAll('#form-winners-container .winner-slot, #form-losers-container .loser-slot').forEach(el => {
+                el.classList.add('log-match-step-panel');
+            });
+            if (mfIsLogMatchWizardViewport()) {
+                const plan = mfBuildLogMatchWizardPlan();
+                if (window._logMatchWizardStep >= plan.length) {
+                    window._logMatchWizardStep = Math.max(0, plan.length - 1);
+                }
+                mfApplyLogMatchWizardStep();
+            }
+        }
+
+        window.mfLogMatchHeaderLeft = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            window.mfCloseStaticDropdowns();
+            const modal = document.getElementById('view-log-match');
+            if (modal?.classList.contains('mf-log-match-wizard') && window._logMatchWizardStep > 0) {
+                window._logMatchWizardStep--;
+                mfApplyLogMatchWizardStep();
+                return;
+            }
+            window.closeLogMatchModal();
+        };
+
+        window.mfLogMatchWizardNext = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            window.mfCloseStaticDropdowns();
+            if (!mfIsLogMatchWizardViewport()) return;
+            const plan = mfBuildLogMatchWizardPlan();
+            const step = window._logMatchWizardStep;
+            const validation = mfValidateLogMatchWizardStep(step);
+            if (!validation.ok) {
+                if (validation.firstInvalid && mfIsTouchDevice()) {
+                    try { validation.firstInvalid.focus({ preventScroll: true }); } catch (_) {}
+                }
+                if (validation.issues?.length) {
+                    window.mfToast(validation.issues[0], { title: 'Check this step', icon: '⚠️' });
+                }
+                return;
+            }
+            if (step >= plan.length - 1) return;
+            window._logMatchWizardStep = step + 1;
+            mfApplyLogMatchWizardStep();
+        };
+
+        function mfInitLogMatchWizard() {
+            window._logMatchWizardStep = 0;
+            mfSyncLogMatchWizardShell();
+        }
+
+        let mfLogMatchWizardResizeTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(mfLogMatchWizardResizeTimer);
+            mfLogMatchWizardResizeTimer = setTimeout(mfSyncLogMatchWizardShell, 120);
+        });
+
         function getMatchFirestoreId(match) {
             if (!match) return '';
             return String(match.firestoreId || match.id || '').trim();
@@ -3253,12 +3563,7 @@
         };
 
         window.mfCloseLogMatchHeader = function(e) {
-            if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            window.mfCloseStaticDropdowns();
-            window.closeLogMatchModal();
+            window.mfLogMatchHeaderLeft(e);
         };
 
         window.mfSaveMatchHeader = function(e) {
@@ -7663,6 +7968,7 @@
                 setTimeout(() => {
                     modal.classList.remove('translate-y-full');
                     window.mfSyncPageScroll();
+                    mfInitLogMatchWizard();
                 }, 10);
             }
         }
@@ -7734,6 +8040,7 @@
                 setTimeout(() => {
                     modal.classList.remove('translate-y-full');
                     window.mfSyncPageScroll();
+                    mfInitLogMatchWizard();
                 }, 10);
             }
         };
@@ -7769,7 +8076,12 @@
 
         window.closeLogMatchModal = function() {
             window.editingMatchId = null;
+            window._logMatchWizardStep = 0;
             mfSetLogMatchModalMode(false);
+            const modal = document.getElementById('view-log-match');
+            if (modal) {
+                modal.classList.remove('mf-log-match-wizard', 'mf-wizard-on-review');
+            }
             document.querySelectorAll('#view-log-match .input-slot-group').forEach((g) => {
                 mfReleaseSlotGroup(g, { hideNewMode: true });
                 delete g.dataset.confirmedNew;
@@ -7780,11 +8092,11 @@
             });
             document.querySelectorAll('#view-log-match .mf-slot-hint.show').forEach((el) => el.classList.remove('show'));
             mfReleaseLogMatchTouchState();
-            const modal = document.getElementById('view-log-match');
             if (modal) {
                 modal.classList.add('translate-y-full'); 
                 setTimeout(() => {
                     modal.classList.add('hidden');
+                    document.querySelectorAll('.log-match-step-panel').forEach(p => p.classList.remove('is-wizard-active'));
                     window.mfSyncPageScroll();
                 }, 300);
             } else {
@@ -7813,7 +8125,7 @@
             for (let i = 1; i <= winnerCount; i++) {
                 const title = winnerCount > 1 ? `👑 Co-Winner (${i})` : `👑 The Victor`;
                 wHtml += `
-                <div class="winner-slot glass p-5 rounded-2xl border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)] relative">
+                <div class="winner-slot log-match-step-panel glass p-5 rounded-2xl border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)] relative">
                     <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
                         <div class="absolute -right-6 -top-6 text-green-500/10">
                             <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
@@ -7830,7 +8142,7 @@
             const loserCount = podSize - winnerCount;
             for (let i = 1; i <= loserCount; i++) {
                 lHtml += `
-                <div class="loser-slot bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
+                <div class="loser-slot log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
                     <div class="absolute -right-4 -top-4 opacity-5 text-red-500 text-6xl font-black pointer-events-none" aria-hidden="true">💀</div>
                     <h3 class="text-xs text-red-400 font-bold mb-4 flex items-center gap-2 relative z-10">💀 The Fallen (${i})</h3>
                     <div class="space-y-4 relative z-10">${mfBuildPodSlotFields('loser')}</div>
@@ -7838,6 +8150,7 @@
             }
             lContainer.innerHTML = lHtml;
             mfClearLogMatchFieldDropdowns();
+            mfAfterLogMatchSlotsUpdated();
         }
 
         function slotUsesNewMode(group) {
@@ -8107,7 +8420,20 @@
             // and deck. Highlights the offending fields inline.
             const validation = window.mfValidateMatchForm();
             if (!validation.ok) {
-                if (validation.firstInvalid) mfScrollFieldIntoView(validation.firstInvalid);
+                if (validation.firstInvalid) {
+                    if (mfIsLogMatchWizardViewport()) {
+                        const plan = mfBuildLogMatchWizardPlan();
+                        for (let i = 0; i < plan.length; i++) {
+                            if (plan[i].el?.contains(validation.firstInvalid)) {
+                                window._logMatchWizardStep = i;
+                                mfApplyLogMatchWizardStep();
+                                break;
+                            }
+                        }
+                    } else {
+                        mfScrollFieldIntoView(validation.firstInvalid);
+                    }
+                }
                 const issues = validation.issues || [];
                 const maxList = 6;
                 const lines = issues.slice(0, maxList).map(s => '• ' + s);
