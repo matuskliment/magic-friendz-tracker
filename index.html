@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.5.0">
+    <meta name="mf-app-version" content="2.5.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -195,13 +195,13 @@
         /* Full-screen mobile sheets (modals / profiles) */
         .mf-mobile-sheet {
             position: fixed;
-            top: 0;
+            /* When iOS opens the keyboard, JS pins top + height to visualViewport
+               so the sheet tracks the visible band instead of leaving a gap that
+               reveals the dashboard underneath. */
+            top: var(--mf-sheet-top, 0);
             left: 0;
             right: 0;
             bottom: auto;
-            /* Defaults to the full dynamic viewport. When the on-screen keyboard
-               opens, JS shrinks --mf-sheet-h to the visible (visualViewport) height
-               so the scroll area ends at the keyboard and every field is reachable. */
             height: var(--mf-sheet-h, 100dvh);
             max-height: 100dvh;
             display: flex;
@@ -270,9 +270,14 @@
         .loser-slot:has(.mf-slot-active) {
             z-index: 5;
         }
-        html.mf-overlay-open #dashboard-view {
+        html.mf-overlay-open #dashboard-view,
+        html.mf-overlay-open #landing-page {
+            visibility: hidden !important;
             pointer-events: none !important;
             user-select: none;
+        }
+        html.mf-keyboard-open .mf-mobile-sheet {
+            transition: none !important;
         }
         html.mf-overlay-open #dashboard-bottom-nav,
         html.mf-overlay-open #log-match-fab {
@@ -3620,21 +3625,36 @@
             return Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
         }
 
+        function mfGetVisibleViewportRect() {
+            const vv = window.visualViewport;
+            if (!vv) {
+                return { top: 0, height: window.innerHeight, bottom: window.innerHeight };
+            }
+            return {
+                top: vv.offsetTop,
+                height: vv.height,
+                bottom: vv.offsetTop + vv.height
+            };
+        }
+
         /**
-         * Shrink the open sheet to the VISIBLE viewport height when the on-screen
-         * keyboard is open. On iOS a `position:fixed; height:100dvh` sheet stays full
-         * height behind the keyboard, so the scroll area can't reveal the last fields
-         * (e.g. game notes). Pinning the sheet height to the visible area ends the
-         * scroller right at the keyboard, making every field reachable. Cleared (back
-         * to 100dvh) when the keyboard closes.
+         * Pin the open sheet to the VISIBLE viewport when the on-screen keyboard
+         * opens. On iOS a fixed 100dvh sheet stays full-height behind the keyboard
+         * and leaves a gap where the dashboard bleeds through. Matching top + height
+         * to visualViewport keeps every field reachable and the overlay opaque.
          */
         function mfSyncSheetKeyboardPadding() {
             const inset = mfKeyboardInset();
             const root = document.documentElement;
-            if (inset > 80) {
-                root.style.setProperty('--mf-sheet-h', `${Math.max(240, window.innerHeight - inset)}px`);
+            const vv = window.visualViewport;
+            if (inset > 80 && vv) {
+                root.classList.add('mf-keyboard-open');
+                root.style.setProperty('--mf-sheet-h', `${Math.max(240, Math.round(vv.height))}px`);
+                root.style.setProperty('--mf-sheet-top', `${Math.max(0, Math.round(vv.offsetTop))}px`);
             } else {
+                root.classList.remove('mf-keyboard-open');
                 root.style.removeProperty('--mf-sheet-h');
+                root.style.removeProperty('--mf-sheet-top');
             }
         }
 
@@ -3652,23 +3672,38 @@
 
         /** Touch/mobile devices (coarse pointer). Desktop pointers are "fine". */
         function mfIsTouchDevice() {
-            try { return window.matchMedia('(pointer: coarse)').matches; } catch (_) { return false; }
+            try {
+                if (window.matchMedia('(pointer: coarse)').matches) return true;
+            } catch (_) {}
+            return (navigator.maxTouchPoints || 0) > 0;
         }
 
-        /** Native scroll-into-view; browser + dvh handle keyboard resize. */
+        /** Scroll a field into the visible band inside a sheet scroller (iOS-safe). */
         function mfScrollFieldIntoView(field) {
             if (!mfIsFocusableField(field)) return;
-            // Inside a Log Match sheet, bring the field to the upper part of the
-            // visible area (block:'start' + scroll-margin-top). Elsewhere, just
-            // nudge it into view to avoid unnecessary jumps.
             const inLogMatch = !!field.closest('#view-log-match');
-            try {
-                field.scrollIntoView({
-                    block: inLogMatch ? 'start' : 'nearest',
-                    inline: 'nearest',
-                    behavior: 'auto'
-                });
-            } catch (_) {}
+            const scroller = field.closest('.mf-sheet-scroll');
+
+            if (inLogMatch && scroller) {
+                const sheet = field.closest('.mf-mobile-sheet');
+                const header = sheet?.querySelector('.mf-sheet-header');
+                const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+                const desiredTop = headerBottom + 12;
+                const fieldRect = field.getBoundingClientRect();
+                const delta = fieldRect.top - desiredTop;
+                if (Math.abs(delta) > 4) {
+                    scroller.scrollTop += delta;
+                }
+            } else {
+                try {
+                    field.scrollIntoView({
+                        block: inLogMatch ? 'start' : 'nearest',
+                        inline: 'nearest',
+                        behavior: 'auto'
+                    });
+                } catch (_) {}
+            }
+
             const anchorId = field.dataset.mfInputAnchorId;
             if (anchorId) {
                 const dd = document.querySelector(`.mf-floating-dropdown[data-mf-anchor="${anchorId}"]`);
@@ -3708,7 +3743,9 @@
             const targetSheet = sheet || mfGetOpenOverlaySheetEl();
             mfCleanupFocusSideEffects();
             // Sheet is closing: restore full-height sheets (drop the keyboard shrink).
+            document.documentElement.classList.remove('mf-keyboard-open');
             document.documentElement.style.removeProperty('--mf-sheet-h');
+            document.documentElement.style.removeProperty('--mf-sheet-top');
             // Floating dropdowns are mounted on <body>, so clear them globally too.
             document.querySelectorAll('.mf-floating-dropdown').forEach((d) => d.remove());
             if (!targetSheet) return;
@@ -3866,17 +3903,18 @@
         }
 
         function mfPositionFloatingDropdown(input, dropdown) {
-            // getBoundingClientRect() and position:fixed share the same (layout)
-            // viewport, so we must NOT mix in visualViewport.offsetTop here.
             const rect = input.getBoundingClientRect();
             const gap = 6;
             const margin = 8;
-            const viewportH = window.innerHeight;
+            const visible = mfGetVisibleViewportRect();
 
             // Visible content band: below the sheet header, above the keyboard.
             const header = document.querySelector('#view-log-match .mf-sheet-header');
-            const bandTop = header ? header.getBoundingClientRect().bottom : 0;
-            const bandBottom = viewportH;
+            const bandTop = Math.max(
+                header ? header.getBoundingClientRect().bottom : 0,
+                visible.top + margin
+            );
+            const bandBottom = visible.bottom - margin;
 
             // Hide if the anchor field is scrolled out of the visible band.
             if (rect.bottom <= bandTop + 4 || rect.top >= bandBottom - 4) {
@@ -3890,11 +3928,12 @@
 
             let top;
             let maxH;
-            if (spaceBelow >= 120 || spaceBelow >= spaceAbove) {
-                maxH = Math.max(96, Math.min(240, spaceBelow));
+            const maxDropdownH = Math.min(280, Math.max(120, visible.height * 0.45));
+            if (spaceBelow >= 100 || spaceBelow >= spaceAbove) {
+                maxH = Math.max(96, Math.min(maxDropdownH, spaceBelow));
                 top = rect.bottom + gap;
             } else {
-                maxH = Math.max(96, Math.min(240, spaceAbove));
+                maxH = Math.max(96, Math.min(maxDropdownH, spaceAbove));
                 top = rect.top - gap - maxH;
             }
 
@@ -3937,13 +3976,43 @@
         }
 
         function mfBindDropdownPick(li, input, onPick) {
+            const MOVE_PX = 10;
+            let activePointer = null;
+            let startX = 0;
+            let startY = 0;
+            let moved = false;
+
             li.addEventListener('pointerdown', (evt) => {
+                if (evt.pointerType === 'mouse' && evt.button !== 0) return;
+                activePointer = evt.pointerId;
+                startX = evt.clientX;
+                startY = evt.clientY;
+                moved = false;
+            }, { passive: true });
+
+            li.addEventListener('pointermove', (evt) => {
+                if (evt.pointerId !== activePointer) return;
+                if (Math.hypot(evt.clientX - startX, evt.clientY - startY) > MOVE_PX) {
+                    moved = true;
+                }
+            }, { passive: true });
+
+            const finishPick = (evt) => {
+                if (evt.pointerId !== activePointer) return;
+                activePointer = null;
+                if (moved) return;
                 evt.preventDefault();
                 evt.stopPropagation();
                 mfDropdownPickPending = true;
                 onPick();
                 mfDismissFloatingDropdown(input);
                 requestAnimationFrame(() => { mfDropdownPickPending = false; });
+            };
+
+            li.addEventListener('pointerup', finishPick);
+            li.addEventListener('pointercancel', () => {
+                activePointer = null;
+                moved = false;
             });
         }
 
@@ -8814,10 +8883,16 @@
                 const inSheet = e.target.closest('.mf-mobile-sheet');
                 if (inSheet && mfIsSheetOpen(inSheet) && mfIsTouchDevice()) {
                     const target = e.target;
-                    mfScheduleFocusTimer(() => {
+                    const settleField = () => {
                         mfSyncSheetKeyboardPadding();
-                        requestAnimationFrame(() => mfScrollFieldIntoView(target));
-                    }, 0);
+                        requestAnimationFrame(() => {
+                            mfScrollFieldIntoView(target);
+                            mfRepositionFloatingDropdowns();
+                        });
+                    };
+                    mfScheduleFocusTimer(settleField, 0);
+                    // iOS keyboard animation finishes after focus — second pass keeps field visible.
+                    mfScheduleFocusTimer(settleField, 120);
                 } else if (e.target.closest('#dashboard-view, #landing-page, #view-group-modal, #feedback-modal')) {
                     mfScheduleFocusTimer(() => mfScrollFieldIntoView(e.target), 0);
                 }
@@ -8843,6 +8918,9 @@
             
             if (e.target && e.target.classList.contains('scryfall-input')) {
                 window.queueScryfallAutocomplete(e.target);
+            }
+            if (t && t.closest('#view-log-match') && mfIsTouchDevice()) {
+                mfScheduleFocusTimer(() => mfRepositionFloatingDropdowns(), 0);
             }
         });
 
