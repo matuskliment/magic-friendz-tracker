@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.4.0">
+    <meta name="mf-app-version" content="2.4.1">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -330,6 +330,40 @@
         .match-settings-grid > div {
             min-width: 0;
             max-width: 100%;
+        }
+        #cmd-view-deck-link-wrap.cmd-deck-link-editing {
+            align-items: stretch;
+            gap: 0.625rem;
+        }
+        #cmd-view-deck-link-wrap.cmd-deck-link-editing > span {
+            width: 100%;
+            text-align: center;
+        }
+        #cmd-view-deck-link-wrap.cmd-deck-link-editing #cmd-view-deck-link-content {
+            width: 100%;
+            flex: 1 1 100%;
+            justify-content: stretch;
+        }
+        #cmd-view-deck-link-wrap.cmd-deck-link-editing .cmd-deck-link-form {
+            width: 100%;
+            max-width: none;
+        }
+        @media (min-width: 768px) {
+            #cmd-view-deck-link-wrap.cmd-deck-link-editing {
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: flex-start;
+            }
+            #cmd-view-deck-link-wrap.cmd-deck-link-editing > span {
+                width: auto;
+                text-align: left;
+                padding-top: 0.625rem;
+            }
+            #cmd-view-deck-link-wrap.cmd-deck-link-editing #cmd-view-deck-link-content {
+                flex: 1 1 auto;
+                width: auto;
+                max-width: 28rem;
+            }
         }
         .match-settings-date-cell {
             min-width: 0;
@@ -1039,9 +1073,9 @@
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Pilots:</span>
                             <div id="cmd-view-pilots" class="flex flex-wrap gap-1.5 justify-center md:justify-start"></div>
                         </div>
-                        <div id="cmd-view-deck-link-wrap" class="hidden w-full flex flex-col sm:flex-row sm:items-center gap-2 justify-center md:justify-start">
+                        <div id="cmd-view-deck-link-wrap" class="hidden w-full flex flex-wrap items-center gap-x-2 gap-y-2 justify-center md:justify-start">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Deck list:</span>
-                            <div id="cmd-view-deck-link-content" class="min-w-0 w-full sm:w-auto"></div>
+                            <div id="cmd-view-deck-link-content" class="min-w-0 flex flex-wrap items-center gap-2 justify-center md:justify-start"></div>
                         </div>
                     </div>
 
@@ -1879,45 +1913,53 @@
 
             if (!hasLink && !canEdit) {
                 wrap.classList.add('hidden');
+                wrap.classList.remove('cmd-deck-link-editing');
                 content.innerHTML = '';
                 return;
             }
 
             wrap.classList.remove('hidden');
             const deckNameJs = cmd.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-            const linkBtnClass = 'inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border transition touch-manipulation';
+            const linkBtnClass = 'inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold px-3 py-2.5 sm:py-1.5 rounded-lg border transition touch-manipulation min-h-[44px] sm:min-h-0';
             const moxfieldBtn = `${linkBtnClass} text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 border-sky-500/30`;
             const archidektBtn = `${linkBtnClass} text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30`;
-            const editBtnClass = 'inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-500 hover:text-purple-300 hover:bg-purple-500/10 border border-transparent hover:border-purple-500/20 transition touch-manipulation';
+            const editBtnClass = 'inline-flex items-center justify-center w-9 h-9 sm:w-7 sm:h-7 rounded-lg sm:rounded-md text-slate-500 hover:text-purple-300 hover:bg-purple-500/10 border border-slate-700/50 sm:border-transparent hover:border-purple-500/20 transition touch-manipulation shrink-0';
+            const addLinkBtnClass = 'inline-flex items-center justify-center text-[11px] font-semibold text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 px-3 py-2.5 rounded-lg transition touch-manipulation min-h-[44px]';
 
             if (editing) {
+                wrap.classList.add('cmd-deck-link-editing');
                 content.innerHTML = `
-                    <div class="flex flex-col sm:flex-row gap-2 w-full sm:max-w-md">
-                        <input type="url" id="cmd-view-deck-link-input" value="${escapeHtml(linkRaw)}" placeholder="https://moxfield.com/decks/…" class="mf-touch-input flex-1 min-w-0 bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 transition" onkeydown="if(event.key==='Enter'){event.preventDefault();window.saveDeckLink('${deckNameJs}');}">
-                        <div class="flex gap-2 shrink-0">
-                            <button type="button" onclick="window.saveDeckLink('${deckNameJs}')" class="text-[11px] font-bold text-white bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded-lg transition min-h-[40px] touch-manipulation">Save</button>
-                            <button type="button" onclick="window.cancelDeckLinkEdit()" class="text-[11px] font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-lg transition min-h-[40px] touch-manipulation">Cancel</button>
-                            ${hasLink ? `<button type="button" onclick="window.removeDeckLink('${deckNameJs}')" class="text-[11px] font-semibold text-red-300 hover:text-red-200 px-3 py-2 rounded-lg transition min-h-[40px] touch-manipulation">Remove</button>` : ''}
-                        </div>
-                    </div>
-                    <p class="text-[10px] text-slate-500 mt-1.5 leading-snug">Public or unlisted decks work best so your group can view the list.</p>`;
+                    <div class="cmd-deck-link-form flex flex-col gap-2 w-full max-w-md">
+                        <input type="url" id="cmd-view-deck-link-input" value="${escapeHtml(linkRaw)}" placeholder="https://moxfield.com/decks/…" class="mf-touch-input w-full min-w-0 bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-3 sm:py-2 text-base sm:text-sm outline-none focus:border-purple-500 transition" onkeydown="if(event.key==='Enter'){event.preventDefault();window.saveDeckLink('${deckNameJs}');}">
+                        <button type="button" onclick="window.saveDeckLink('${deckNameJs}')" class="w-full text-sm font-bold text-white bg-purple-600 hover:bg-purple-500 px-4 py-3 sm:py-2 rounded-xl transition min-h-[48px] sm:min-h-[44px] touch-manipulation">Save link</button>
+                        ${hasLink ? `
+                        <div class="grid grid-cols-2 gap-2 w-full">
+                            <button type="button" onclick="window.cancelDeckLinkEdit()" class="text-[11px] font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2.5 rounded-xl transition min-h-[44px] touch-manipulation">Cancel</button>
+                            <button type="button" onclick="window.removeDeckLink('${deckNameJs}')" class="text-[11px] font-semibold text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 px-3 py-2.5 rounded-xl transition min-h-[44px] touch-manipulation">Remove</button>
+                        </div>` : `
+                        <button type="button" onclick="window.cancelDeckLinkEdit()" class="w-full text-[11px] font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2.5 rounded-xl transition min-h-[44px] touch-manipulation">Cancel</button>`}
+                        <p class="text-[10px] text-slate-500 leading-snug text-center sm:text-left">Public or unlisted decks work best so your group can view the list.</p>
+                    </div>`;
                 return;
             }
+
+            wrap.classList.remove('cmd-deck-link-editing');
 
             const parts = [];
             if (hasLink) {
                 const btnClass = parsed.provider === 'moxfield' ? moxfieldBtn : archidektBtn;
-                parts.push(`<a href="${escapeHtml(parsed.href)}" target="_blank" rel="noopener noreferrer" class="${btnClass}" title="Open deck on ${escapeHtml(parsed.label)}">View on ${escapeHtml(parsed.label)}<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`);
+                parts.push(`<a href="${escapeHtml(parsed.href)}" target="_blank" rel="noopener noreferrer" class="${btnClass}" title="Open deck on ${escapeHtml(parsed.label)}"><span>View on ${escapeHtml(parsed.label)}</span><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`);
             }
             if (canEdit) {
-                const editLabel = hasLink ? 'Edit deck list link' : 'Add deck list link';
-                parts.push(`<button type="button" onclick="window.startDeckLinkEdit('${deckNameJs}')" class="${editBtnClass}" title="${escapeHtml(editLabel)}" aria-label="${escapeHtml(editLabel)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>`);
-            }
-            if (!hasLink && canEdit) {
-                parts.unshift(`<span class="text-[11px] text-slate-500">No link yet</span>`);
+                if (hasLink) {
+                    const editLabel = 'Edit deck list link';
+                    parts.push(`<button type="button" onclick="window.startDeckLinkEdit('${deckNameJs}')" class="${editBtnClass}" title="${escapeHtml(editLabel)}" aria-label="${escapeHtml(editLabel)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>`);
+                } else {
+                    parts.push(`<button type="button" onclick="window.startDeckLinkEdit('${deckNameJs}')" class="${addLinkBtnClass}">Add deck list link</button>`);
+                }
             }
 
-            content.innerHTML = `<div class="flex flex-wrap items-center gap-2">${parts.join('')}</div>`;
+            content.innerHTML = `<div class="flex flex-wrap items-center justify-center md:justify-start gap-2">${parts.join('')}</div>`;
         }
 
         window.startDeckLinkEdit = function(deckName) {
