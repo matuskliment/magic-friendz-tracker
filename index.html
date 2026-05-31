@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.7.4">
+    <meta name="mf-app-version" content="2.7.5">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -459,6 +459,9 @@
         }
         #log-match-picker-list .mf-picker-row {
             touch-action: manipulation;
+        }
+        #log-match-picker-deck-extras.hidden {
+            display: none;
         }
         .mf-duration-stepper-btn {
             width: 2.75rem;
@@ -1488,7 +1491,25 @@
         <div id="log-match-picker" class="mf-sheet-scroll" aria-hidden="true">
             <div class="shrink-0 px-4 pt-3 pb-2 border-b border-slate-800 bg-slate-950">
                 <p id="log-match-picker-title" class="text-xs uppercase tracking-wider font-bold text-purple-400 mb-2">Pick player</p>
-                <input type="search" id="log-match-picker-search" enterkeyhint="search" autocomplete="off" placeholder="Search…" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                <div id="log-match-picker-search-wrap">
+                    <input type="search" id="log-match-picker-search" enterkeyhint="search" autocomplete="off" placeholder="Search…" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                </div>
+                <div id="log-match-picker-deck-extras" class="hidden space-y-3 mt-1">
+                    <div class="bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
+                        <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">Commander</p>
+                        <p id="log-match-picker-deck-name" class="text-white font-semibold text-sm truncate"></p>
+                    </div>
+                    <div>
+                        <label for="log-match-picker-deck-variant" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-0.5">Optional tag</label>
+                        <input type="text" id="log-match-picker-deck-variant" autocomplete="off" placeholder="e.g. Tokens" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm placeholder:text-slate-500">
+                    </div>
+                    <div>
+                        <label for="log-match-picker-deck-owner" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-0.5">Deck owner</label>
+                        <input type="text" id="log-match-picker-deck-owner" autocomplete="off" placeholder="Defaults to pilot" class="mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm placeholder:text-slate-500">
+                        <button type="button" id="log-match-picker-deck-owner-pick" class="mt-2 text-[11px] font-bold text-purple-400 hover:text-purple-300 touch-manipulation min-h-[44px] px-1">Choose from group</button>
+                    </div>
+                    <button type="button" id="log-match-picker-deck-confirm" class="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this commander</button>
+                </div>
             </div>
             <ul id="log-match-picker-list" class="p-2 space-y-0.5" role="listbox"></ul>
         </div>
@@ -3687,6 +3708,26 @@
                     mfCloseMobileFieldPicker();
                     return;
                 }
+                if (state?.mode === 'owner-pick') {
+                    state.mode = 'deck-extras';
+                    state._ownerPickReturn = true;
+                    const title = document.getElementById('log-match-picker-title');
+                    if (title) title.textContent = 'New commander deck';
+                    mfRenderMobilePickerList();
+                    return;
+                }
+                if (state?.mode === 'deck-extras') {
+                    state.mode = 'scryfall';
+                    const title = document.getElementById('log-match-picker-title');
+                    if (title) title.textContent = 'Search Scryfall';
+                    const searchEl = document.getElementById('log-match-picker-search');
+                    if (searchEl) {
+                        searchEl.value = state.scryfallName || '';
+                        searchEl.placeholder = 'Type 3+ characters…';
+                    }
+                    mfRenderMobilePickerList();
+                    return;
+                }
                 if (state?.mode === 'scryfall' || state?.mode === 'create') {
                     state.mode = 'list';
                     const title = document.getElementById('log-match-picker-title');
@@ -3846,10 +3887,35 @@
             modal?.classList.remove('mf-picker-open');
             const picker = document.getElementById('log-match-picker');
             if (picker) picker.setAttribute('aria-hidden', 'true');
+            document.getElementById('log-match-picker-search-wrap')?.classList.remove('hidden');
+            document.getElementById('log-match-picker-deck-extras')?.classList.add('hidden');
+            document.getElementById('log-match-picker-list')?.classList.remove('hidden');
+            const variantEl = document.getElementById('log-match-picker-deck-variant');
+            const ownerEl = document.getElementById('log-match-picker-deck-owner');
+            if (variantEl) variantEl.value = '';
+            if (ownerEl) ownerEl.value = '';
             window._logMatchPickerState = null;
             mfClearLogMatchFieldDropdowns();
             mfSyncMobilePickerLabels();
             mfSyncMobileCardPickerLabels();
+        }
+
+        function mfOpenPickerDeckExtras(state, cardName) {
+            if (!state?.group) return;
+            state.mode = 'deck-extras';
+            state.scryfallName = String(cardName || '').trim();
+            const title = document.getElementById('log-match-picker-title');
+            if (title) title.textContent = 'New commander deck';
+            const nameEl = document.getElementById('log-match-picker-deck-name');
+            if (nameEl) nameEl.textContent = state.scryfallName;
+            if (!state._ownerPickReturn) {
+                const variantEl = document.getElementById('log-match-picker-deck-variant');
+                const ownerEl = document.getElementById('log-match-picker-deck-owner');
+                if (variantEl) variantEl.value = '';
+                if (ownerEl) ownerEl.value = '';
+            }
+            state._ownerPickReturn = false;
+            mfRenderMobilePickerList();
         }
 
         function mfSyncMobileCardPickerLabels() {
@@ -3936,28 +4002,87 @@
             mfReleaseSlotGroup(group, { hideNewMode: true });
         }
 
-        function mfMobilePickerConfirmScryfallDeck(group, cardName) {
+        function mfMobilePickerConfirmScryfallDeck(group, cardName, extras = {}) {
             const local = group.querySelector('.local-deck-input');
             const newInput = group.querySelector('.new-deck-input');
+            const variantInput = group.querySelector('.new-deck-variant-input');
+            const ownerInput = group.querySelector('.local-owner-input');
             const n = String(cardName || '').trim();
             if (!n) return;
+            const variant = String(extras.variant || '').trim();
+            const owner = String(extras.owner || '').trim();
             if (newInput) {
                 newInput.value = n;
                 newInput.dataset.mfScryfallName = n;
             }
+            if (variantInput) variantInput.value = variant;
+            if (ownerInput) ownerInput.value = owner;
+            let display = n;
+            if (variant) display = `${n} (${variant})`;
             if (local) {
-                local.value = n;
+                local.value = display;
                 mfMarkFieldSelected(local);
             }
             group.dataset.confirmedNew = '1';
             mfReleaseSlotGroup(group, { hideNewMode: true });
         }
 
+        function mfRenderMobilePickerOwnerList(state, list, searchEl) {
+            const query = String(searchEl?.value || '').trim().toLowerCase();
+            list.innerHTML = '';
+            let filtered = window.appData.players || [];
+            if (query) {
+                filtered = filtered.filter((item) => item.name.toLowerCase().includes(query));
+            }
+            if (!filtered.length) {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-3 text-sm text-slate-500 italic';
+                li.textContent = query ? 'No pilots match your search' : 'No pilots in your group yet';
+                list.appendChild(li);
+                return;
+            }
+            filtered.forEach((item) => {
+                const row = document.createElement('li');
+                row.className = 'px-4 py-3 text-slate-200 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition truncate font-medium';
+                row.textContent = item.name;
+                mfPickerBindRow(row, () => {
+                    const ownerEl = document.getElementById('log-match-picker-deck-owner');
+                    if (ownerEl) ownerEl.value = item.name;
+                    state.mode = 'deck-extras';
+                    state._ownerPickReturn = true;
+                    const title = document.getElementById('log-match-picker-title');
+                    if (title) title.textContent = 'New commander deck';
+                    mfRenderMobilePickerList();
+                });
+                list.appendChild(row);
+            });
+        }
+
         function mfRenderMobilePickerList() {
             const state = window._logMatchPickerState;
             const list = document.getElementById('log-match-picker-list');
+            const searchWrap = document.getElementById('log-match-picker-search-wrap');
+            const extrasEl = document.getElementById('log-match-picker-deck-extras');
             const searchEl = document.getElementById('log-match-picker-search');
             if (!state || !list) return;
+
+            if (state.mode === 'deck-extras') {
+                searchWrap?.classList.add('hidden');
+                extrasEl?.classList.remove('hidden');
+                list.innerHTML = '';
+                list.classList.add('hidden');
+                return;
+            }
+
+            searchWrap?.classList.remove('hidden');
+            extrasEl?.classList.add('hidden');
+            list.classList.remove('hidden');
+
+            if (state.mode === 'owner-pick') {
+                mfRenderMobilePickerOwnerList(state, list, searchEl);
+                return;
+            }
+
             const query = String(searchEl?.value || '').trim().toLowerCase();
             list.innerHTML = '';
 
@@ -3996,10 +4121,10 @@
                             mfPickerBindRow(row, () => {
                                 if (state.kind === 'card') {
                                     mfMobilePickerConfirmCard(state.cardInputId, name);
+                                    mfCloseMobileFieldPicker();
                                 } else {
-                                    mfMobilePickerConfirmScryfallDeck(state.group, name);
+                                    mfOpenPickerDeckExtras(state, name);
                                 }
-                                mfCloseMobileFieldPicker();
                             });
                             list.appendChild(row);
                         });
@@ -4194,6 +4319,30 @@
             if (!searchEl || searchEl.dataset.mfBound) return;
             searchEl.dataset.mfBound = '1';
             searchEl.addEventListener('input', () => mfRenderMobilePickerList());
+
+            document.getElementById('log-match-picker-deck-confirm')?.addEventListener('click', () => {
+                const state = window._logMatchPickerState;
+                if (!state || state.mode !== 'deck-extras' || !state.group || !state.scryfallName) return;
+                const variant = document.getElementById('log-match-picker-deck-variant')?.value || '';
+                const owner = document.getElementById('log-match-picker-deck-owner')?.value || '';
+                mfMobilePickerConfirmScryfallDeck(state.group, state.scryfallName, { variant, owner });
+                mfCloseMobileFieldPicker();
+            });
+
+            document.getElementById('log-match-picker-deck-owner-pick')?.addEventListener('click', () => {
+                const state = window._logMatchPickerState;
+                if (!state || state.mode !== 'deck-extras') return;
+                state.mode = 'owner-pick';
+                state._ownerPickReturn = true;
+                const title = document.getElementById('log-match-picker-title');
+                if (title) title.textContent = 'Choose deck owner';
+                const searchEl = document.getElementById('log-match-picker-search');
+                if (searchEl) {
+                    searchEl.value = '';
+                    searchEl.placeholder = 'Search pilots…';
+                }
+                mfRenderMobilePickerList();
+            });
         })();
 
         let mfLogMatchWizardResizeTimer = null;
