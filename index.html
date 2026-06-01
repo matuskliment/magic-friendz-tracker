@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.8.13">
+    <meta name="mf-app-version" content="2.8.14">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -563,6 +563,42 @@
             }
             #log-match-step-review {
                 display: none !important;
+            }
+            /* Log match setup — compact desktop controls (mobile wizard keeps touch size) */
+            #view-log-match .mf-session-stepper-row {
+                padding: 0.5rem 0.625rem;
+                border-radius: 0.75rem;
+            }
+            #view-log-match .mf-session-stepper-label {
+                font-size: 0.75rem;
+            }
+            #view-log-match .mf-session-stepper-value {
+                width: 1.5rem;
+                font-size: 0.875rem;
+            }
+            #view-log-match .mf-session-stepper-btn {
+                width: 2rem;
+                height: 2rem;
+                font-size: 1rem;
+                border-radius: 0.5rem;
+            }
+            #view-log-match .mf-session-stepper-controls {
+                gap: 0.375rem;
+            }
+            #view-log-match #form-date.mf-date-input {
+                min-height: 2.5rem !important;
+                padding-top: 0.5rem !important;
+                padding-bottom: 0.5rem !important;
+            }
+            #view-log-match .static-dropdown-header {
+                min-height: 2.5rem !important;
+                padding-top: 0.5rem !important;
+                padding-bottom: 0.5rem !important;
+                font-size: 0.875rem !important;
+            }
+            #view-log-match #log-match-step-session,
+            #view-log-match #log-match-step-pod {
+                padding: 1rem 1.25rem;
             }
         }
         .match-settings-date-cell {
@@ -1650,71 +1686,73 @@
             <input type="hidden" id="form-duration-minutes" value="">
             <input type="hidden" id="form-round-count" value="">
 
-            <div id="log-match-step-session" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm min-w-0">
-                <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
+            <div id="log-match-step-session" class="log-match-step-panel bg-slate-900/50 p-5 md:p-4 rounded-2xl border border-slate-800 shadow-sm min-w-0">
+                <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-3 md:mb-2.5 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     Session
                 </h3>
-                <div class="match-settings-date-cell min-w-0 w-full max-w-xs">
-                    <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Date Played</label>
-                    <div class="date-input-shell focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-sm">
-                        <input type="date" id="form-date" class="mf-date-input mf-touch-input w-full min-w-0 min-h-[48px] outline-none">
+                <div class="mf-session-setup space-y-4 md:space-y-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3">
+                        <div class="match-settings-date-cell min-w-0">
+                            <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Date Played</label>
+                            <div class="date-input-shell focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all shadow-sm">
+                                <input type="date" id="form-date" class="mf-date-input mf-touch-input w-full min-w-0 min-h-[48px] md:min-h-0 outline-none">
+                            </div>
+                        </div>
+                        <div class="min-w-0">
+                            <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Rounds <span class="text-slate-500 font-semibold normal-case">(optional)</span></label>
+                            <div class="mf-session-stepper-row flex items-center justify-between gap-2 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
+                                <span class="mf-session-stepper-label text-sm md:text-xs text-slate-300 font-medium">Rounds</span>
+                                <div class="mf-session-stepper-controls flex items-center gap-3">
+                                    <button type="button" class="mf-duration-stepper-btn mf-session-stepper-btn" onclick="window.mfRoundsStep(-1)" aria-label="Decrease rounds">−</button>
+                                    <span id="form-round-count-display" class="mf-session-stepper-value w-8 text-center text-lg md:text-sm font-bold text-white tabular-nums">0</span>
+                                    <button type="button" class="mf-duration-stepper-btn mf-session-stepper-btn" onclick="window.mfRoundsStep(1)" aria-label="Increase rounds">+</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="mt-4 pt-4 border-t border-slate-800/80 space-y-4 max-w-xs">
-                    <div>
+                    <div class="pt-3 md:pt-0 border-t md:border-t-0 border-slate-800/80">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Game length <span class="text-slate-500 font-semibold normal-case">(optional)</span></label>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between gap-3 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
-                                <span class="text-sm text-slate-300 font-medium">Hours</span>
-                                <div class="flex items-center gap-3">
-                                    <button type="button" class="mf-duration-stepper-btn" onclick="window.mfDurationStep('hours', -1)" aria-label="Decrease hours">−</button>
-                                    <span id="form-duration-hours-display" class="w-8 text-center text-lg font-bold text-white tabular-nums">0</span>
-                                    <button type="button" class="mf-duration-stepper-btn" onclick="window.mfDurationStep('hours', 1)" aria-label="Increase hours">+</button>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                            <div class="mf-session-stepper-row flex items-center justify-between gap-2 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
+                                <span class="mf-session-stepper-label text-sm md:text-xs text-slate-300 font-medium">Hours</span>
+                                <div class="mf-session-stepper-controls flex items-center gap-3">
+                                    <button type="button" class="mf-duration-stepper-btn mf-session-stepper-btn" onclick="window.mfDurationStep('hours', -1)" aria-label="Decrease hours">−</button>
+                                    <span id="form-duration-hours-display" class="mf-session-stepper-value w-8 text-center text-lg md:text-sm font-bold text-white tabular-nums">0</span>
+                                    <button type="button" class="mf-duration-stepper-btn mf-session-stepper-btn" onclick="window.mfDurationStep('hours', 1)" aria-label="Increase hours">+</button>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between gap-3 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
-                                <span class="text-sm text-slate-300 font-medium">Minutes</span>
-                                <div class="flex items-center gap-3">
-                                    <button type="button" class="mf-duration-stepper-btn" onclick="window.mfDurationStep('minutes', -5)" aria-label="Decrease minutes">−</button>
-                                    <span id="form-duration-minutes-display" class="w-8 text-center text-lg font-bold text-white tabular-nums">0</span>
-                                    <button type="button" class="mf-duration-stepper-btn" onclick="window.mfDurationStep('minutes', 5)" aria-label="Increase minutes">+</button>
+                            <div class="mf-session-stepper-row flex items-center justify-between gap-2 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
+                                <span class="mf-session-stepper-label text-sm md:text-xs text-slate-300 font-medium">Minutes</span>
+                                <div class="mf-session-stepper-controls flex items-center gap-3">
+                                    <button type="button" class="mf-duration-stepper-btn mf-session-stepper-btn" onclick="window.mfDurationStep('minutes', -5)" aria-label="Decrease minutes">−</button>
+                                    <span id="form-duration-minutes-display" class="mf-session-stepper-value w-8 text-center text-lg md:text-sm font-bold text-white tabular-nums">0</span>
+                                    <button type="button" class="mf-duration-stepper-btn mf-session-stepper-btn" onclick="window.mfDurationStep('minutes', 5)" aria-label="Increase minutes">+</button>
                                 </div>
                             </div>
-                            <div class="flex flex-wrap gap-2 pt-1">
-                                <button type="button" onclick="window.mfDurationPreset(90)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">1.5h</button>
-                                <button type="button" onclick="window.mfDurationPreset(120)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">2h</button>
-                                <button type="button" onclick="window.mfDurationPreset(180)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">3h</button>
-                                <button type="button" onclick="window.mfDurationPreset(0)" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-500 touch-manipulation">Clear</button>
-                            </div>
                         </div>
-                        <p class="text-[10px] text-slate-500 mt-2 ml-1">Each player in the pod gets this time credited toward their hours played.</p>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Rounds played <span class="text-slate-500 font-semibold normal-case">(optional)</span></label>
-                        <div class="flex items-center justify-between gap-3 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
-                            <span class="text-sm text-slate-300 font-medium">Rounds</span>
-                            <div class="flex items-center gap-3">
-                                <button type="button" class="mf-duration-stepper-btn" onclick="window.mfRoundsStep(-1)" aria-label="Decrease rounds">−</button>
-                                <span id="form-round-count-display" class="w-8 text-center text-lg font-bold text-white tabular-nums">0</span>
-                                <button type="button" class="mf-duration-stepper-btn" onclick="window.mfRoundsStep(1)" aria-label="Increase rounds">+</button>
-                            </div>
+                        <div class="flex flex-wrap gap-1.5 md:gap-1 mt-2 md:mt-1.5">
+                            <button type="button" onclick="window.mfDurationPreset(90)" class="text-[11px] font-bold px-2.5 md:px-2 py-1.5 md:py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">1.5h</button>
+                            <button type="button" onclick="window.mfDurationPreset(120)" class="text-[11px] font-bold px-2.5 md:px-2 py-1.5 md:py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">2h</button>
+                            <button type="button" onclick="window.mfDurationPreset(180)" class="text-[11px] font-bold px-2.5 md:px-2 py-1.5 md:py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation">3h</button>
+                            <button type="button" onclick="window.mfDurationPreset(0)" class="text-[11px] font-bold px-2.5 md:px-2 py-1.5 md:py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-500 touch-manipulation">Clear</button>
                         </div>
+                        <p class="text-[10px] text-slate-500 mt-1.5 md:mt-1 ml-1 leading-snug">Each player in the pod gets this time credited toward their hours played.</p>
                     </div>
                 </div>
             </div>
 
-            <div id="log-match-step-pod" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm min-w-0">
-                <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
+            <div id="log-match-step-pod" class="log-match-step-panel bg-slate-900/50 p-5 md:p-4 rounded-2xl border border-slate-800 shadow-sm min-w-0">
+                <h3 class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-3 md:mb-2.5 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     Pod
                 </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3">
                     <div class="min-w-0">
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Pod Size</label>
                         <div class="relative custom-static-dropdown min-w-0">
                             <input type="hidden" id="form-pod-size" value="4">
-                            <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] touch-manipulation text-left">
+                            <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 md:px-3 py-3 md:py-2 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] md:min-h-0 touch-manipulation text-left text-sm">
                                 <span class="static-dropdown-display">4 Players</span>
                                 <svg class="text-slate-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                             </button>
@@ -1730,7 +1768,7 @@
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Winners (Tie)</label>
                         <div class="relative custom-static-dropdown min-w-0">
                             <input type="hidden" id="form-winner-count" value="1">
-                            <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] touch-manipulation text-left">
+                            <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 md:px-3 py-3 md:py-2 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] md:min-h-0 touch-manipulation text-left text-sm">
                                 <span class="static-dropdown-display">1 (Solo Win)</span>
                                 <svg class="text-slate-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                             </button>
@@ -3954,6 +3992,7 @@
             if (!mfIsLogMatchWizardViewport()) return;
             const plan = mfBuildLogMatchWizardPlan();
             const step = window._logMatchWizardStep;
+            const entry = plan[step];
             const validation = mfValidateLogMatchWizardStep(step);
             if (!validation.ok) {
                 if (validation.firstInvalid && mfIsTouchDevice()) {
@@ -3975,7 +4014,7 @@
                 return;
             }
             if (step >= plan.length - 1) return;
-            if (entry.type === 'pod') window.updatePlayerSlots();
+            if (entry?.type === 'pod') window.updatePlayerSlots();
             window._logMatchWizardStep = step + 1;
             mfApplyLogMatchWizardStep();
         };
