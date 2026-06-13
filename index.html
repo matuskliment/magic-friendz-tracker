@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.8.15">
+    <meta name="mf-app-version" content="2.8.16">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3490,14 +3490,6 @@
             }
             if (input) clearFieldError(input);
             try {
-                if (auth.currentUser && window.groupIdRaw) {
-                    const myEmail = normalizeEmail(auth.currentUser.email);
-                    if (window.groupAccess === 'owner') {
-                        await ensureMemberRecord(window.groupIdRaw, 'owner', myEmail, rosterEntry.name);
-                    } else if (window.groupAccess === 'editor') {
-                        await ensureMemberRecord(window.groupIdRaw, 'editor', myEmail, rosterEntry.name);
-                    }
-                }
                 const sentAt = Date.now();
                 await persistRosterInvite(rosterEntry, email, sentAt);
                 await sendInviteToEmail(email, rosterEntry.name);

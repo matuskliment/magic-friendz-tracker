@@ -139,7 +139,8 @@ service cloud.firestore {
           || (isOwnerMember(groupId)
             && request.auth.uid == uid
             && request.resource.data.role == 'owner');
-        allow update: if isGlobalAdmin() || isOwnerMember(groupId) || isGroupOwnerDoc(groupId);
+        allow update: if isGlobalAdmin() || isOwnerMember(groupId) || isGroupOwnerDoc(groupId)
+          || (isEditor(groupId) && request.auth.uid == uid);
         allow delete: if isGlobalAdmin() || isOwnerMember(groupId) || isGroupOwnerDoc(groupId);
       }
 
