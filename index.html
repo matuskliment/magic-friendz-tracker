@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.8.16">
+    <meta name="mf-app-version" content="2.8.17">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -3606,6 +3606,58 @@
             mfSyncMobilePickerLabels();
         }
 
+        function mfSnapshotPodSlots() {
+            const winners = [];
+            const losers = [];
+            document.querySelectorAll('#form-winners-container .winner-slot').forEach((slot) => {
+                const d = extractSlotData(slot);
+                if (d.player || d.deck) winners.push(d);
+            });
+            document.querySelectorAll('#form-losers-container .loser-slot').forEach((slot) => {
+                const d = extractSlotData(slot);
+                if (d.player || d.deck) losers.push(d);
+            });
+            return { winners, losers };
+        }
+
+        function mfRestorePodSlots(snapshot) {
+            let winners = snapshot?.winners || [];
+            let losers = snapshot?.losers || [];
+            if (!winners.length && !losers.length && window._logMatchEditSeed) {
+                winners = window._logMatchEditSeed.winners || [];
+                losers = window._logMatchEditSeed.losers || [];
+            }
+            document.querySelectorAll('#form-winners-container .winner-slot').forEach((slot, i) => {
+                const d = winners[i];
+                if (!d) return;
+                mfFillPodSlot(slot, { player: d.player, name: d.deck || d.name, commanders: d.commanders });
+            });
+            document.querySelectorAll('#form-losers-container .loser-slot').forEach((slot, i) => {
+                const d = losers[i];
+                if (!d) return;
+                mfFillPodSlot(slot, { player: d.player, name: d.deck || d.name, commanders: d.commanders });
+            });
+            mfSyncMobilePickerLabels();
+        }
+
+        function mfPodSlotCountsMatchForm() {
+            const podSizeEl = document.getElementById('form-pod-size');
+            const winnerCountEl = document.getElementById('form-winner-count');
+            if (!podSizeEl || !winnerCountEl) return true;
+            let podSize = parseInt(podSizeEl.value, 10) || 0;
+            let winnerCount = parseInt(winnerCountEl.value, 10) || 0;
+            if (winnerCount >= podSize) winnerCount = Math.max(0, podSize - 1);
+            const wSlots = document.querySelectorAll('#form-winners-container .winner-slot').length;
+            const lSlots = document.querySelectorAll('#form-losers-container .loser-slot').length;
+            return wSlots === winnerCount && wSlots + lSlots === podSize;
+        }
+
+        function mfRebuildPlayerSlotsPreservingData() {
+            const snap = mfSnapshotPodSlots();
+            window.updatePlayerSlots();
+            mfRestorePodSlots(snap);
+        }
+
         // --- Log Match mobile wizard (≤767px); desktop unchanged ---
         window._logMatchWizardStep = 0;
 
@@ -4006,7 +4058,9 @@
                 return;
             }
             if (step >= plan.length - 1) return;
-            if (entry?.type === 'pod') window.updatePlayerSlots();
+            if (entry?.type === 'pod' && !mfPodSlotCountsMatchForm()) {
+                mfRebuildPlayerSlotsPreservingData();
+            }
             window._logMatchWizardStep = step + 1;
             mfApplyLogMatchWizardStep();
         };
@@ -9694,6 +9748,7 @@
                 return;
             }
             window.editingMatchId = null;
+            window._logMatchEditSeed = null;
             mfSetLogMatchModalMode(false);
             const modal = document.getElementById('view-log-match');
             initFormDatePickers(new Date());
@@ -9748,15 +9803,18 @@
             }
 
             window.editingMatchId = getMatchFirestoreId(match);
+            const winners = match.winners || [];
+            const losers = match.losers || [];
+            window._logMatchEditSeed = {
+                winners: winners.map((w) => ({ ...w })),
+                losers: losers.map((l) => ({ ...l }))
+            };
             mfSetLogMatchModalMode(true);
             mfReleaseLogMatchTouchState();
             window.mfCloseStaticDropdowns();
 
             const sessionDate = parseMatchSessionDate(match) || new Date();
             initFormDatePickers(sessionDate);
-
-            const winners = match.winners || [];
-            const losers = match.losers || [];
             const podSize = Math.max(2, winners.length + losers.length);
             const winnerCount = Math.max(1, winners.length);
 
@@ -9804,6 +9862,7 @@
             }
             mfSyncDurationStepperDisplay();
             mfSyncRoundsDisplay();
+            mfSyncMobileCardPickerLabels();
             mfSyncAllClearableInputs(document.getElementById('view-log-match'));
 
             const modal = document.getElementById('view-log-match');
@@ -9848,6 +9907,7 @@
 
         window.closeLogMatchModal = function() {
             window.editingMatchId = null;
+            window._logMatchEditSeed = null;
             window._logMatchWizardStep = 0;
             mfSetLogMatchModalMode(false);
             const modal = document.getElementById('view-log-match');
@@ -10452,7 +10512,7 @@
                 list.classList.add('hidden');
 
                 if (hiddenInput.id === 'form-pod-size' || hiddenInput.id === 'form-winner-count') {
-                    window.updatePlayerSlots();
+                    mfRebuildPlayerSlotsPreservingData();
                 }
                 return;
             }
