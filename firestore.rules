@@ -57,6 +57,17 @@ service cloud.firestore {
       return isGlobalAdmin() || isEditor(groupId) || isGroupOwnerDoc(groupId);
     }
 
+    function memberPlayerName(groupId) {
+      return isMember(groupId) ? get(memberPath(groupId)).data.get('playerName', '') : '';
+    }
+
+    function canManageDeckFor(groupId, ownerName) {
+      return isGlobalAdmin()
+        || isOwnerMember(groupId)
+        || isGroupOwnerDoc(groupId)
+        || (isEditor(groupId) && ownerName == memberPlayerName(groupId));
+    }
+
     function canDeleteMatches(groupId) {
       return isGlobalAdmin() || isOwnerMember(groupId) || isGroupOwnerDoc(groupId);
     }
@@ -165,6 +176,14 @@ service cloud.firestore {
       match /settings/{docId} {
         allow read: if true;
         allow write: if canManageGroup(groupId);
+      }
+
+      match /decks/{deckId} {
+        allow read: if true;
+        allow create: if canManageDeckFor(groupId, request.resource.data.owner);
+        allow update: if canManageDeckFor(groupId, resource.data.owner)
+          && (canManageGroup(groupId) || request.resource.data.owner == resource.data.owner);
+        allow delete: if canManageDeckFor(groupId, resource.data.owner);
       }
     }
   }

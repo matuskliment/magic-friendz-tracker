@@ -138,6 +138,13 @@
                         <p id="partner-migrate-status" class="text-[11px] text-slate-500 mt-3 hidden"></p>
                     </div>
 
+                    <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-4 md:p-5">
+                        <h3 class="text-sm font-bold text-white mb-1">Deck entities</h3>
+                        <p class="text-xs text-slate-500 mb-3">One-time: create <code class="text-indigo-300">decks/{id}</code> docs for every deck seen in match history. Useful for unified edit/archive in the app — not required for correctness.</p>
+                        <button id="materialize-decks-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Materialize decks from history</button>
+                        <p id="materialize-decks-status" class="text-[11px] text-slate-500 mt-3 hidden"></p>
+                    </div>
+
                     <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-4 md:p-5">
                         <h3 class="text-sm font-bold text-white mb-3">Group Export</h3>
                         <div class="space-y-2">
@@ -203,6 +210,8 @@
             selectedGroupLabel: document.getElementById('selected-group-label'),
             ownershipList: document.getElementById('ownership-list'),
             partnerMigrateStatus: document.getElementById('partner-migrate-status'),
+            materializeDecksBtn: document.getElementById('materialize-decks-btn'),
+            materializeDecksStatus: document.getElementById('materialize-decks-status'),
             exportJsonBtn: document.getElementById('export-json-btn'),
             exportCsvBtn: document.getElementById('export-csv-btn'),
             wipeBtn: document.getElementById('wipe-btn'),
@@ -363,9 +372,71 @@
         }
 
         function setActionButtonsEnabled(enabled) {
-            [els.exportJsonBtn, els.exportCsvBtn, els.wipeBtn, els.importBtn, els.setOwnerBtn, els.deleteGroupBtn]
+            [els.exportJsonBtn, els.exportCsvBtn, els.wipeBtn, els.importBtn, els.setOwnerBtn, els.deleteGroupBtn, els.materializeDecksBtn]
                 .filter(Boolean)
                 .forEach(btn => btn.disabled = !enabled);
+        }
+
+        function setMaterializeDecksStatus(message, isError = false) {
+            if (!els.materializeDecksStatus) return;
+            if (!message) {
+                els.materializeDecksStatus.classList.add('hidden');
+                els.materializeDecksStatus.textContent = '';
+                return;
+            }
+            els.materializeDecksStatus.classList.remove('hidden');
+            els.materializeDecksStatus.textContent = message;
+            els.materializeDecksStatus.className = `text-[11px] mt-3 ${isError ? 'text-red-300' : 'text-emerald-300'}`;
+        }
+
+        async function materializeDecksFromHistory(groupId) {
+            const [matchesSnap, decksSnap, ownersSnap] = await Promise.all([
+                getDocs(collection(db, 'groups', groupId, 'matches')),
+                getDocs(collection(db, 'groups', groupId, 'decks')),
+                getDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners'))
+            ]);
+            const owners = ownersSnap.exists() ? ownersSnap.data() : {};
+            const existingNames = new Set(
+                decksSnap.docs.map((d) => normalizeName(d.data().name || '').toLowerCase()).filter(Boolean)
+            );
+            const deckOwners = {};
+
+            matchesSnap.docs.forEach((docSnap) => {
+                const m = docSnap.data();
+                const seats = [...(m.winners || []), ...(m.losers || [])];
+                if (m.winner && !m.winners?.length) seats.push(m.winner);
+                seats.forEach((seat) => {
+                    const name = normalizeName(seat?.name);
+                    if (!name) return;
+                    const key = name.toLowerCase();
+                    if (deckOwners[key]) return;
+                    const owner = normalizeName(owners[name] || seat.owner || seat.player || '');
+                    deckOwners[key] = { name, owner };
+                });
+            });
+
+            let created = 0;
+            let skipped = 0;
+            for (const entry of Object.values(deckOwners)) {
+                const key = entry.name.toLowerCase();
+                if (existingNames.has(key)) {
+                    skipped += 1;
+                    continue;
+                }
+                await addDoc(collection(db, 'groups', groupId, 'decks'), {
+                    name: entry.name,
+                    commanders: mfParseCommanderNamesFromDeckName(entry.name),
+                    owner: entry.owner || '',
+                    deckLink: '',
+                    status: 'active',
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    materializedFromHistory: true
+                });
+                existingNames.add(key);
+                created += 1;
+            }
+            return { created, skipped, total: Object.keys(deckOwners).length };
         }
 
         async function deleteCollectionDocs(colRef) {
@@ -379,6 +450,7 @@
             await deleteCollectionDocs(collection(db, 'groups', groupId, 'roster'));
             await deleteCollectionDocs(collection(db, 'groups', groupId, 'members'));
             await deleteCollectionDocs(collection(db, 'groups', groupId, 'memberEmails'));
+            await deleteCollectionDocs(collection(db, 'groups', groupId, 'decks'));
             await deleteDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners')).catch(() => {});
             await deleteDoc(groupRef);
         }
@@ -701,6 +773,7 @@
             setActionButtonsEnabled(true);
             if (els.ownerSetStatus) els.ownerSetStatus.textContent = '';
             setPartnerMigrateStatus('');
+            setMaterializeDecksStatus('');
             renderGroupsTable();
             await Promise.all([
                 loadOwnershipForSelectedGroup(group.id),
@@ -710,11 +783,12 @@
         }
 
         async function exportGroupJson(groupId) {
-            const [groupSnap, ownersSnap, rosterSnap, matchesSnap] = await Promise.all([
+            const [groupSnap, ownersSnap, rosterSnap, matchesSnap, decksSnap] = await Promise.all([
                 getDoc(doc(db, 'groups', groupId)),
                 getDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners')),
                 getDocs(collection(db, 'groups', groupId, 'roster')),
-                getDocs(collection(db, 'groups', groupId, 'matches'))
+                getDocs(collection(db, 'groups', groupId, 'matches')),
+                getDocs(collection(db, 'groups', groupId, 'decks'))
             ]);
             const payload = {
                 meta: {
@@ -725,6 +799,7 @@
                 group: groupSnap.exists() ? { id: groupSnap.id, ...groupSnap.data() } : null,
                 settings: { deckOwners: ownersSnap.exists() ? ownersSnap.data() : {} },
                 roster: rosterSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+                decks: decksSnap.docs.map(d => ({ id: d.id, ...d.data() })),
                 matches: matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }))
             };
 
@@ -1038,6 +1113,23 @@
         els.exportCsvBtn.addEventListener('click', async () => {
             if (!selectedGroup) return;
             await exportGroupCsv(selectedGroup.id);
+        });
+
+        els.materializeDecksBtn?.addEventListener('click', async () => {
+            if (!selectedGroup) return;
+            const ok = window.confirm(
+                `Create deck entity docs for every deck in "${selectedGroup.id}" match history?\n\nExisting deck docs are skipped. This is safe to run more than once.`
+            );
+            if (!ok) return;
+            els.materializeDecksBtn.disabled = true;
+            setMaterializeDecksStatus('Working…');
+            try {
+                const result = await materializeDecksFromHistory(selectedGroup.id);
+                setMaterializeDecksStatus(`Done — created ${result.created}, skipped ${result.skipped} existing (${result.total} unique decks in history).`);
+            } catch (e) {
+                setMaterializeDecksStatus('Failed: ' + e.message, true);
+            }
+            els.materializeDecksBtn.disabled = false;
         });
 
         els.wipeBtn.addEventListener('click', async () => {

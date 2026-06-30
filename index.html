@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.8.20">
+    <meta name="mf-app-version" content="2.9.0">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1568,6 +1568,27 @@
                     </div>
                 </button>
                 <div id="plr-view-owned" class="hidden px-4 pb-4 space-y-2 opacity-0 transition-opacity duration-300"></div>
+                <div id="plr-deck-register-wrap" class="hidden border-t border-slate-800/80">
+                    <button type="button" id="plr-toggle-register-btn" onclick="window.toggleProfileDeckRegisterForm()" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold text-purple-300 hover:bg-purple-500/10 transition touch-manipulation">
+                        <span>+ Register deck</span>
+                    </button>
+                    <div id="plr-deck-register-panel" class="hidden px-4 pb-4 space-y-3 border-t border-slate-800/50 pt-4">
+                        <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Add deck to arsenal</p>
+                        <div class="input-slot-group" data-type="deck" id="plr-register-deck-group">
+                            <div class="relative mf-search-wrap">
+                                <input type="text" class="mf-clearable new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)…" autocomplete="off">
+                            </div>
+                            <input type="text" class="mf-clearable new-deck-partner-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-500 shadow-sm" placeholder="Partner commander (optional)" autocomplete="off">
+                            <input type="text" class="mf-clearable new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-500 shadow-sm" placeholder="Optional tag if name exists, e.g. Tokens" autocomplete="off">
+                            <input type="url" id="plr-register-link" class="mf-clearable w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-500 shadow-sm" placeholder="Moxfield or Archidekt URL (optional)" autocomplete="off">
+                            <button type="button" onclick="window.submitProfileDeckRegister()" class="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Save deck</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="plr-view-archived-wrap" class="hidden px-4 pb-4 border-t border-slate-800/80 pt-3">
+                    <p class="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-2">Archived decks</p>
+                    <div id="plr-view-archived" class="space-y-2"></div>
+                </div>
             </div>
         </div>
         </div>
@@ -2042,6 +2063,7 @@
         let rosterUnsubscribe = null;
         let settingsUnsubscribe = null;
         let deckLinksUnsubscribe = null;
+        let decksUnsubscribe = null;
         let avatarsUnsubscribe = null;
         let memberUnsubscribe = null;
         window.publicAvatarMap = {};
@@ -2059,8 +2081,10 @@
         window.rosterInviteFlash = {};
         window.userHasAnyGroupAccess = null;
         window.accessibleGroups = [];
-        window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, deckLinkOverrides: {}, biggestUpset: null, playerH2H: {} };
+        window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, deckLinkOverrides: {}, deckEntities: {}, biggestUpset: null, playerH2H: {} };
         window.editingMatchId = null;
+        window._plrProfilePlayerName = '';
+        window._plrProfilePlayerIndex = -1;
         window._cmdProfileDeckName = '';
         window._cmdDeckLinkEditing = '';
 
@@ -2311,6 +2335,97 @@
             if (!ownerName) return false;
             return isCurrentUserRosterPlayer(ownerName);
         }
+
+        function getDeckEntitiesList() {
+            return Object.values(window.appData.deckEntities || {});
+        }
+
+        function getActiveDeckEntities() {
+            return getDeckEntitiesList().filter((d) => d.status !== 'archived');
+        }
+
+        function getArchivedDeckEntitiesForOwner(ownerName) {
+            const owner = normalizeName(ownerName).toLowerCase();
+            return getDeckEntitiesList().filter((d) =>
+                d.status === 'archived' && normalizeName(d.owner || '').toLowerCase() === owner
+            );
+        }
+
+        function findDeckEntityByName(name) {
+            const key = String(name || '').trim().toLowerCase();
+            if (!key) return null;
+            return getDeckEntitiesList().find((d) => String(d.name || '').trim().toLowerCase() === key) || null;
+        }
+
+        function getSelectableCommanders() {
+            const archivedNames = new Set(
+                getDeckEntitiesList().filter((d) => d.status === 'archived').map((d) => d.name)
+            );
+            return (window.appData.commanders || []).filter((c) => !archivedNames.has(c.name));
+        }
+
+        window.canManageDeckFor = function(ownerName) {
+            if (!window.canWrite()) return false;
+            if (window.canOwnerDelete()) return true;
+            return isCurrentUserRosterPlayer(ownerName);
+        };
+
+        window.createDeckEntity = async function({ name, commanders, owner, deckLink }) {
+            if (!window.groupIdRaw || !auth.currentUser) throw new Error('Sign in to add decks.');
+            const ownerNorm = normalizeName(owner);
+            const displayName = normalizeName(name);
+            if (!ownerNorm || !displayName) throw new Error('Owner and deck name are required.');
+            if (!window.canManageDeckFor(ownerNorm)) throw new Error('You can only manage your own decks.');
+            const dup = getActiveDeckEntities().some((d) =>
+                normalizeName(d.owner).toLowerCase() === ownerNorm.toLowerCase()
+                && String(d.name || '').trim().toLowerCase() === displayName.toLowerCase()
+            );
+            if (dup) throw new Error('This player already has an active deck with that name.');
+            const cmdList = Array.isArray(commanders)
+                ? commanders.map((c) => String(c || '').trim()).filter(Boolean)
+                : mfParseCommanderNamesFromDeckName(displayName);
+            await addDoc(collection(db, 'groups', window.groupIdRaw, 'decks'), {
+                name: displayName,
+                commanders: cmdList.length ? cmdList : [displayName],
+                owner: ownerNorm,
+                deckLink: String(deckLink || '').trim(),
+                status: 'active',
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                createdByUid: auth.currentUser.uid
+            });
+        };
+
+        window.archiveDeckEntity = async function(deckId) {
+            const ent = window.appData.deckEntities[deckId];
+            if (!ent) throw new Error('Deck not found.');
+            if (!window.canManageDeckFor(ent.owner)) throw new Error('Not allowed.');
+            await updateDoc(doc(db, 'groups', window.groupIdRaw, 'decks', deckId), {
+                status: 'archived',
+                updatedAt: Date.now()
+            });
+        };
+
+        window.restoreDeckEntity = async function(deckId) {
+            const ent = window.appData.deckEntities[deckId];
+            if (!ent) throw new Error('Deck not found.');
+            if (!window.canManageDeckFor(ent.owner)) throw new Error('Not allowed.');
+            await updateDoc(doc(db, 'groups', window.groupIdRaw, 'decks', deckId), {
+                status: 'active',
+                updatedAt: Date.now()
+            });
+        };
+
+        window.deleteDeckEntity = async function(deckId) {
+            const ent = window.appData.deckEntities[deckId];
+            if (!ent) throw new Error('Deck not found.');
+            if (!window.canManageDeckFor(ent.owner)) throw new Error('Not allowed.');
+            const cmd = (window.appData.commanders || []).find((c) => c.name === ent.name);
+            if ((cmd?.plays || 0) > 0) {
+                throw new Error('This deck has logged games — archive it instead of deleting.');
+            }
+            await deleteDoc(doc(db, 'groups', window.groupIdRaw, 'decks', deckId));
+        };
 
         function parseDeckLinkUrl(raw) {
             const trimmed = String(raw || '').trim();
@@ -3837,7 +3952,7 @@
             const pg = slot.querySelector('.input-slot-group[data-type="player"]');
             const dg = slot.querySelector('.input-slot-group[data-type="deck"]');
             const p = mfSlotFieldInfo(pg, window.appData.players, 'player');
-            const d = mfSlotFieldInfo(dg, window.appData.commanders, 'deck');
+            const d = mfSlotFieldInfo(dg, getSelectableCommanders(), 'deck');
             if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), copy.errPilotMissing);
             else if (!p.valid) addIssue(p.input, copy.errPilotInvalid);
             if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), copy.errCommanderMissing);
@@ -4621,7 +4736,7 @@
             }
 
             const isDeck = state.kind === 'deck';
-            const dataArray = isDeck ? (window.appData.commanders || []) : (window.appData.players || []);
+            const dataArray = isDeck ? getSelectableCommanders() : (window.appData.players || []);
             let filtered = dataArray;
             if (query) {
                 filtered = filtered.filter((item) => {
@@ -6425,6 +6540,7 @@
             if (rosterUnsubscribe) { rosterUnsubscribe(); rosterUnsubscribe = null; }
             if (settingsUnsubscribe) { settingsUnsubscribe(); settingsUnsubscribe = null; }
             if (deckLinksUnsubscribe) { deckLinksUnsubscribe(); deckLinksUnsubscribe = null; }
+            if (decksUnsubscribe) { decksUnsubscribe(); decksUnsubscribe = null; }
             if (avatarsUnsubscribe) { avatarsUnsubscribe(); avatarsUnsubscribe = null; }
             if (memberUnsubscribe) { memberUnsubscribe(); memberUnsubscribe = null; }
             window.publicAvatarMap = {};
@@ -6724,7 +6840,7 @@
             
             try { window.history.pushState({}, '', '?group=' + formattedString); } catch(e) { console.warn("Sandbox prevented URL update"); }
             
-            window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, deckLinkOverrides: {}, biggestUpset: null, playerH2H: {} };
+            window.appData = { sessionData: [], commanders: [], players: [], matches: [], explicitRoster: [], ownerOverrides: {}, deckLinkOverrides: {}, deckEntities: {}, biggestUpset: null, playerH2H: {} };
             window.editingMatchId = null;
             window._cmdProfileDeckName = '';
             window._cmdDeckLinkEditing = '';
@@ -7379,15 +7495,45 @@
                 }
             });
 
+            const entityByDeckName = {};
+            getActiveDeckEntities().forEach((ent) => {
+                const name = String(ent.name || '').trim();
+                if (!name) return;
+                entityByDeckName[name] = ent;
+                if (!deckElo[name]) {
+                    deckElo[name] = SETTINGS.STARTING_ELO;
+                    deckStats[name] = {
+                        plays: 0, wins: 0, history: [], owner: ent.owner || '',
+                        pilots: new Set(), eloHistory: [SETTINGS.STARTING_ELO],
+                        matchups: {}, matchupsTotal: {}, peakRank: null
+                    };
+                    if (ent.deckLink) deckStats[name].deckLink = ent.deckLink;
+                }
+            });
+            getDeckEntitiesList().forEach((ent) => {
+                const name = String(ent.name || '').trim();
+                if (!name || !deckStats[name]) return;
+                entityByDeckName[name] = ent;
+                if (ent.owner) deckStats[name].owner = ent.owner;
+                if (ent.deckLink) deckStats[name].deckLink = ent.deckLink;
+            });
+
+            const archivedDeckNames = new Set(
+                getDeckEntitiesList().filter((e) => e.status === 'archived').map((e) => e.name)
+            );
+
             (window.appData.explicitRoster || []).forEach(playerObj => {
                 if (!playerStats[playerObj.name]) { playerStats[playerObj.name] = { wins: 0, plays: 0, minutesPlayed: 0, decks: {} }; }
             });
 
-            window.appData.commanders = sortDecksByElo(deckElo).map((name, index) => {
+            window.appData.commanders = sortDecksByElo(deckElo)
+                .filter((name) => !archivedDeckNames.has(name))
+                .map((name, index) => {
                 const s = deckStats[name];
                 const rank = index + 1;
                 const playedEloHistory = (s.eloHistory || []).slice(1);
                 const hasPlayedGames = playedEloHistory.length > 0;
+                const ent = entityByDeckName[name];
                 
                 let nemesis = MATCHUP_INSUFFICIENT_LABEL, prey = MATCHUP_INSUFFICIENT_LABEL;
                 let minScore = 0, maxScore = 0;
@@ -7414,9 +7560,12 @@
                     highestElo: hasPlayedGames ? Math.max(...playedEloHistory) : SETTINGS.STARTING_ELO,
                     isBaselineOnlyElo: !hasPlayedGames,
                     peakRank: s.peakRank || rank,
-                    winRate: ((s.wins / s.plays) * 100).toFixed(1) + "%",
+                    winRate: s.plays > 0 ? ((s.wins / s.plays) * 100).toFixed(1) + "%" : "—",
                     owner: s.owner,
                     deckLink: s.deckLink || '',
+                    deckEntityId: ent?.id || '',
+                    isRegistered: !!ent,
+                    commanders: ent?.commanders?.length ? ent.commanders : undefined,
                     pilots: Array.from(s.pilots),
                     form: buildRecentForm(s.history),
                     plays: s.plays,
@@ -7510,6 +7659,7 @@
             if (rosterUnsubscribe) { rosterUnsubscribe(); }
             if (settingsUnsubscribe) { settingsUnsubscribe(); }
             if (deckLinksUnsubscribe) { deckLinksUnsubscribe(); }
+            if (decksUnsubscribe) { decksUnsubscribe(); }
 
             settingsUnsubscribe = onSnapshot(doc(db, "groups", window.groupIdRaw, "settings", "deckOwners"), (docSnap) => {
                 window.appData.ownerOverrides = docSnap.exists() ? docSnap.data() : {};
@@ -7526,6 +7676,22 @@
                     initApp();
                 }
                 refreshOpenCommanderDeckLinkUI();
+            });
+
+            decksUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "decks"), (snapshot) => {
+                const entities = {};
+                snapshot.forEach((docSnap) => {
+                    entities[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
+                });
+                window.appData.deckEntities = entities;
+                if (window.appData.matches) {
+                    recalculateEverything(window.appData.matches);
+                    initApp();
+                    if (typeof window._plrProfilePlayerIndex === 'number') {
+                        const plr = window.appData.players[window._plrProfilePlayerIndex];
+                        if (plr) refreshPlayerProfileOwnedSection(plr);
+                    }
+                }
             });
 
             // Public, PII-free avatar store so view-only (signed-out) users can see profile photos.
@@ -7566,6 +7732,184 @@
             const el = document.getElementById(id);
             if (el) el.innerHTML = html;
         }
+
+        function getRankedCommanders() {
+            return (window.appData.commanders || []).filter((c) => (c.plays || 0) > 0);
+        }
+
+        function getRegisteredUnplayedCommanders() {
+            return (window.appData.commanders || []).filter((c) => (c.plays || 0) === 0 && c.isRegistered);
+        }
+
+        function renderCommanderLeaderboardHtml() {
+            const ranked = getRankedCommanders();
+            const unplayed = getRegisteredUnplayedCommanders();
+            if (!ranked.length && !unplayed.length) {
+                return `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet — log a match or register a deck on a player profile.</div>`;
+            }
+            let html = ranked.map((cmd) => generateCommanderRow(cmd, window.appData.commanders.indexOf(cmd))).join('');
+            if (unplayed.length) {
+                html += `<div class="mt-6 pt-4 border-t border-slate-800"><p class="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-3">Registered · not played yet</p><div class="space-y-3">${unplayed.map((cmd) => generateCommanderRow(cmd, window.appData.commanders.indexOf(cmd))).join('')}</div></div>`;
+            }
+            return html;
+        }
+
+        function renderOwnedDeckRow(c, playerName, options = {}) {
+            const idx = window.appData.commanders.indexOf(c);
+            const openCmd = idx >= 0 ? `window.closePlayerProfile(); setTimeout(() => window.openCommanderProfile(${idx}), 300);` : '';
+            const playsLabel = (c.plays || 0) === 0 ? '<span class="text-[9px] text-slate-500 font-bold uppercase">Unplayed</span>' : `<span class="text-xs text-yellow-500 font-bold bg-yellow-500/10 px-2 py-1 rounded">Elo: ${c.elo}</span>`;
+            const manage = options.manageHtml || '';
+            return `<div class="flex justify-between items-center gap-2 bg-slate-800/50 p-2 md:p-3 rounded-lg border border-slate-700/50 hover:bg-slate-700 transition group">
+                <button type="button" onclick="${openCmd}" class="flex items-center gap-3 min-w-0 flex-1 text-left touch-manipulation" ${idx < 0 ? 'disabled' : ''}>
+                    <div data-card="${escapeHtml(c.name)}" data-version="art_crop" class="set-bg w-8 h-8 rounded-full art-fallback bg-cover bg-center border border-slate-600 group-hover:border-purple-500/50 transition shrink-0"></div>
+                    <span class="text-sm text-white font-semibold truncate">${escapeHtml(c.name)}</span>
+                </button>
+                <div class="flex items-center gap-2 shrink-0">${playsLabel}${manage}</div>
+            </div>`;
+        }
+
+        function renderArchivedDeckRow(ent) {
+            const idJs = String(ent.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            return `<div class="flex justify-between items-center gap-2 bg-slate-900/60 p-2 md:p-3 rounded-lg border border-slate-800/80">
+                <div class="min-w-0"><p class="text-sm text-slate-400 font-medium truncate">${escapeHtml(ent.name)}</p><p class="text-[10px] text-slate-600 uppercase tracking-wide">Archived</p></div>
+                ${window.canManageDeckFor(ent.owner) ? `<button type="button" onclick="window.mfRestoreOwnedDeck('${idJs}')" class="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-lg touch-manipulation">Restore</button>` : ''}
+            </div>`;
+        }
+
+        function buildOwnedDeckManageHtml(c, playerName) {
+            if (!window.canManageDeckFor(playerName) || !c.deckEntityId) return '';
+            const idJs = String(c.deckEntityId).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            const plays = c.plays || 0;
+            if (plays > 0) {
+                return `<button type="button" onclick="event.stopPropagation(); window.mfArchiveOwnedDeck('${idJs}')" class="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-lg touch-manipulation">Archive</button>`;
+            }
+            return `<button type="button" onclick="event.stopPropagation(); window.mfDeleteOwnedDeck('${idJs}')" class="text-[10px] font-bold text-red-300 bg-red-500/10 border border-red-500/30 px-2 py-1 rounded-lg touch-manipulation">Delete</button>`;
+        }
+
+        function refreshPlayerProfileOwnedSection(player) {
+            if (!player) return;
+            const owned = (window.appData.commanders || []).filter((c) => c.owner === player.name);
+            const ownedHtml = owned.length
+                ? owned.map((c) => renderOwnedDeckRow(c, player.name, { manageHtml: buildOwnedDeckManageHtml(c, player.name) })).join('')
+                : `<p class="text-xs text-slate-500 italic text-center py-2">No decks registered yet.</p>`;
+            safeSetHTML('plr-view-owned', ownedHtml);
+
+            const archived = getArchivedDeckEntitiesForOwner(player.name);
+            const archivedWrap = document.getElementById('plr-view-archived-wrap');
+            const archivedEl = document.getElementById('plr-view-archived');
+            if (archivedWrap && archivedEl) {
+                if (archived.length) {
+                    archivedWrap.classList.remove('hidden');
+                    safeSetHTML('plr-view-archived', archived.map(renderArchivedDeckRow).join(''));
+                } else {
+                    archivedWrap.classList.add('hidden');
+                    archivedEl.innerHTML = '';
+                }
+            }
+
+            const registerWrap = document.getElementById('plr-deck-register-wrap');
+            if (registerWrap) {
+                if (window.canManageDeckFor(player.name)) registerWrap.classList.remove('hidden');
+                else registerWrap.classList.add('hidden');
+            }
+            window.processArtQueue();
+        }
+
+        window.toggleProfileDeckRegisterForm = function() {
+            const panel = document.getElementById('plr-deck-register-panel');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+        };
+
+        window.submitProfileDeckRegister = async function() {
+            const playerName = window._plrProfilePlayerName;
+            if (!playerName) return;
+            const group = document.getElementById('plr-register-deck-group');
+            const primaryInput = group?.querySelector('.new-deck-input');
+            if (!primaryInput || !mfDeckPickedFromScryfall(primaryInput)) {
+                window.showAppAlert('Pick the commander from the Scryfall list.', 'Commander required', '⚠️');
+                primaryInput?.focus();
+                return;
+            }
+            const commanders = [primaryInput.dataset.mfScryfallName];
+            const partnerInput = group.querySelector('.new-deck-partner-input');
+            const partnerPick = partnerInput?.dataset.mfScryfallName || String(partnerInput?.value || '').trim();
+            if (partnerPick) commanders.push(partnerPick);
+            const variant = String(group.querySelector('.new-deck-variant-input')?.value || '').trim();
+            const displayName = mfBuildDeckDisplayName(commanders, variant);
+            const deckLink = String(document.getElementById('plr-register-link')?.value || '').trim();
+            if (deckLink) {
+                const parsed = parseDeckLinkUrl(deckLink);
+                if (!parsed.valid) {
+                    window.showAppAlert(parsed.error, 'Deck link', '⚠️');
+                    return;
+                }
+            }
+            try {
+                await window.createDeckEntity({ name: displayName, commanders, owner: playerName, deckLink });
+                group.querySelectorAll('input').forEach((inp) => {
+                    inp.value = '';
+                    delete inp.dataset.mfScryfallName;
+                });
+                document.getElementById('plr-deck-register-panel')?.classList.add('hidden');
+                const idx = window._plrProfilePlayerIndex;
+                if (typeof idx === 'number' && window.appData.players[idx]) {
+                    refreshPlayerProfileOwnedSection(window.appData.players[idx]);
+                }
+                window.mfToast('Deck registered on profile.', { title: 'Saved', type: 'success', icon: '✅' });
+            } catch (err) {
+                window.showAppAlert(err.message || 'Could not save deck.', 'Error', '❌');
+            }
+        };
+
+        window.mfArchiveOwnedDeck = function(deckId) {
+            window.showAppConfirm(
+                'Archive this deck? It will be hidden from match logging and leaderboards.',
+                async () => {
+                    try {
+                        await window.archiveDeckEntity(deckId);
+                        const idx = window._plrProfilePlayerIndex;
+                        if (typeof idx === 'number') refreshPlayerProfileOwnedSection(window.appData.players[idx]);
+                        window.mfToast('Deck archived.', { title: 'Archived', type: 'success', icon: '📦' });
+                    } catch (err) {
+                        window.showAppAlert(err.message, 'Error', '❌');
+                    }
+                },
+                'Archive deck',
+                '📦',
+                { confirmLabel: 'Archive', confirmClass: 'bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition' }
+            );
+        };
+
+        window.mfDeleteOwnedDeck = function(deckId) {
+            window.showAppConfirm(
+                'Delete this unplayed deck? This cannot be undone.',
+                async () => {
+                    try {
+                        await window.deleteDeckEntity(deckId);
+                        const idx = window._plrProfilePlayerIndex;
+                        if (typeof idx === 'number') refreshPlayerProfileOwnedSection(window.appData.players[idx]);
+                        window.mfToast('Deck deleted.', { title: 'Deleted', type: 'success', icon: '🗑️' });
+                    } catch (err) {
+                        window.showAppAlert(err.message, 'Error', '❌');
+                    }
+                },
+                'Delete deck',
+                '🗑️',
+                { confirmLabel: 'Delete', confirmClass: 'bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-red-500/30' }
+            );
+        };
+
+        window.mfRestoreOwnedDeck = async function(deckId) {
+            try {
+                await window.restoreDeckEntity(deckId);
+                const idx = window._plrProfilePlayerIndex;
+                if (typeof idx === 'number') refreshPlayerProfileOwnedSection(window.appData.players[idx]);
+                window.mfToast('Deck restored.', { title: 'Restored', type: 'success', icon: '✅' });
+            } catch (err) {
+                window.showAppAlert(err.message, 'Error', '❌');
+            }
+        };
 
         function getRankColor(rank) {
             if(rank === 1) return 'text-yellow-500';
@@ -8030,7 +8374,8 @@
 
         function generateCommanderRow(cmd, index) {
             const ownerName = cmd.owner || (cmd.pilots && cmd.pilots[0]) || '—';
-            const topThree = cmd.rank <= 3;
+            const topThree = cmd.rank <= 3 && (cmd.plays || 0) > 0;
+            const rankDisplay = (cmd.plays || 0) === 0 && cmd.isRegistered ? '—' : cmd.rank;
             const winStrong = parseFloat(cmd.winRate) >= 50;
             const eloStyle = getRankEloChipStyle(cmd.rank);
             const artName = mfPrimaryCommanderArtName(cmd.name);
@@ -8048,7 +8393,7 @@
                     <div class="relative z-10 p-3 sm:p-4">
                         <div class="flex items-center gap-3">
                             <div class="w-6 md:w-8 flex items-center justify-center shrink-0 self-center">
-                                <div class="text-center font-black text-xl md:text-2xl ${getRankColor(cmd.rank)} leading-none">${cmd.rank}</div>
+                                <div class="text-center font-black text-xl md:text-2xl ${getRankColor(cmd.rank)} leading-none">${rankDisplay}</div>
                             </div>
                             ${avatarHtml}
                             <div class="flex-grow min-w-0">
@@ -8352,7 +8697,7 @@
                     safeSetHTML('analytics-upset', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Biggest upsets show up once you have match history.</p></div>`);
                     safeSetHTML('analytics-rivalry', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Rivalries need a few logged games first.</p></div>`);
                     safeSetHTML('analytics-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Deck builder rankings appear once games are logged.</p></div>`);
-                    safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet — log a match to track decks.</div>`);
+                    safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet — log a match or register a deck on a player profile.</div>`);
                     safeSetHTML('home-top-commanders', '');
                     safeSetHTML('roster-list', renderPlayerListHtml());
                     if (window.appData.players.length > 0) {
@@ -8364,7 +8709,7 @@
                 }
 
                 setHomeLeaderboardBlocksVisible(true);
-                safeSetHTML('home-top-commanders', window.appData.commanders.slice(0, 5).map((cmd, i) => generateCommanderRow(cmd, i)).join(''));
+                safeSetHTML('home-top-commanders', getRankedCommanders().slice(0, 5).map((cmd) => generateCommanderRow(cmd, window.appData.commanders.indexOf(cmd))).join(''));
                 safeSetHTML('home-top-players', window.appData.players.slice(0, 5).map((p, i) => generatePlayerRow(p, i)).join(''));
                 
                 const latestSessionDate = window.appData.matches.length > 0 ? window.appData.matches[0].date : "";
@@ -8594,7 +8939,7 @@
 
                 renderDeckBuilders();
 
-                safeSetHTML('commander-view', window.appData.commanders.map((cmd, i) => generateCommanderRow(cmd, i)).join(''));
+                safeSetHTML('commander-view', renderCommanderLeaderboardHtml());
                 safeSetHTML('player-view', window.appData.players.map((p, i) => generatePlayerRow(p, i)).join(''));
 
                 const groupedMatches = {};
@@ -8747,7 +9092,16 @@
             if (!searchInput) return;
             const query = searchInput.value.toLowerCase().trim();
             const activeView = currentLeaderboardView === 'commander' ? 'commander-view' : 'player-view';
-            const rows = document.querySelectorAll(`#${activeView} > div`);
+            const rows = document.querySelectorAll(`#${activeView} [data-deck-name], #${activeView} > div[data-deck-name]`);
+            if (activeView === 'player-view') {
+                const playerRows = document.querySelectorAll('#player-view > div');
+                playerRows.forEach((row) => {
+                    if (!query) { row.style.display = ''; return; }
+                    const deckName = row.dataset.deckName || row.innerText;
+                    row.style.display = deckName.toLowerCase().includes(query) ? '' : 'none';
+                });
+                return;
+            }
             rows.forEach((row) => {
                 if (!query) {
                     row.style.display = '';
@@ -9011,6 +9365,8 @@
 
         window.openPlayerProfile = function(index) {
             const player = window.appData.players[index];
+            window._plrProfilePlayerIndex = index;
+            window._plrProfilePlayerName = player.name;
             const view = document.getElementById('view-player-detail');
             if (view) {
                 view.classList.remove('hidden');
@@ -9048,23 +9404,12 @@
                 safeSetHTML('plr-view-armory', `<div class="col-span-2 bg-slate-900 p-4 rounded-xl border border-slate-800"><p class="text-sm text-slate-500 italic text-center">No decks piloted yet.</p></div>`);
             }
 
-            const owned = window.appData.commanders.filter(c => c.owner === player.name);
-            if(owned.length > 0) {
-                safeSetHTML('plr-view-owned', owned.map(c => `
-                    <div onclick="window.closePlayerProfile(); setTimeout(() => window.openCommanderProfile(${window.appData.commanders.indexOf(c)}), 300);" class="flex justify-between items-center bg-slate-800/50 p-2 md:p-3 rounded-lg border border-slate-700/50 hover:bg-slate-700 transition cursor-pointer group">
-                        <div class="flex items-center gap-3">
-                            <div data-card="${c.name}" data-version="art_crop" class="set-bg w-8 h-8 rounded-full art-fallback bg-cover bg-center border border-slate-600 group-hover:border-purple-500/50 transition"></div>
-                            <span class="text-sm text-white font-semibold truncate max-w-[140px] sm:max-w-[200px]">${c.name}</span>
-                        </div>
-                        <span class="text-xs text-yellow-500 font-bold bg-yellow-500/10 px-2 py-1 rounded">Elo: ${c.elo}</span>
-                    </div>
-                `).join(''));
-            } else {
-                safeSetHTML('plr-view-owned', `<p class="text-xs text-slate-500 italic text-center py-2">No decks registered as owner.</p>`);
-            }
+            refreshPlayerProfileOwnedSection(player);
 
             const ownedDetails = document.getElementById('plr-view-owned');
             const ownedChevron = document.getElementById('owned-decks-chevron');
+            const registerPanel = document.getElementById('plr-deck-register-panel');
+            if (registerPanel) registerPanel.classList.add('hidden');
             if (ownedDetails) {
                 ownedDetails.classList.add('hidden', 'opacity-0');
             }
@@ -9200,19 +9545,23 @@
                 const deckLinksRef = doc(db, "groups", groupId, "settings", "deckLinks");
                 const rosterRef = collection(db, "groups", groupId, "roster");
                 const matchesRef = collection(db, "groups", groupId, "matches");
+                const decksRef = collection(db, "groups", groupId, "decks");
 
-                const [groupSnap, ownersSnap, deckLinksSnap, rosterSnap, matchesSnap] = await Promise.all([
+                const [groupSnap, ownersSnap, deckLinksSnap, rosterSnap, matchesSnap, decksSnap] = await Promise.all([
                     getDoc(groupRef),
                     getDoc(ownersRef),
                     getDoc(deckLinksRef),
                     getDocs(rosterRef),
-                    getDocs(matchesRef)
+                    getDocs(matchesRef),
+                    getDocs(decksRef)
                 ]);
 
                 const roster = rosterSnap.docs.map(d => ({ id: d.id, ...d.data() }))
                     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
                 const matches = matchesSnap.docs.map(d => normalizeLoadedMatch(d))
                     .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                const decks = decksSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
 
                 const payload = {
                     meta: {
@@ -9226,6 +9575,7 @@
                         deckLinks: deckLinksSnap.exists() ? deckLinksSnap.data() : {}
                     },
                     roster,
+                    decks,
                     matches
                 };
 
@@ -10310,7 +10660,7 @@
                 const pg = slot.querySelector('.input-slot-group[data-type="player"]');
                 const dg = slot.querySelector('.input-slot-group[data-type="deck"]');
                 const p = mfSlotFieldInfo(pg, window.appData.players, 'player');
-                const d = mfSlotFieldInfo(dg, window.appData.commanders, 'deck');
+                const d = mfSlotFieldInfo(dg, getSelectableCommanders(), 'deck');
                 if (!p.filled && !d.filled) return;
 
                 if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), copy.errPilotMissing);
@@ -10329,7 +10679,7 @@
                 const pg = slot.querySelector('.input-slot-group[data-type="player"]');
                 const dg = slot.querySelector('.input-slot-group[data-type="deck"]');
                 const p = mfSlotFieldInfo(pg, window.appData.players, 'player');
-                const d = mfSlotFieldInfo(dg, window.appData.commanders, 'deck');
+                const d = mfSlotFieldInfo(dg, getSelectableCommanders(), 'deck');
                 if (!p.filled && !d.filled) return;
 
                 if (!p.filled) addIssue(p.input || pg?.querySelector('.local-player-input'), copy.errPilotMissing);
@@ -10874,7 +11224,7 @@
             }
             if (mfSuppressAutoDropdown) return;
             if (e.target && e.target.classList.contains('local-player-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
-            if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, window.appData.commanders, true); }
+            if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, getSelectableCommanders(), true); }
             if (e.target && e.target.classList.contains('local-owner-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
             if (e.target && e.target.classList.contains('scryfall-input')) { window.queueScryfallAutocomplete(e.target); }
         });
@@ -10888,7 +11238,7 @@
                 if (grp) delete grp.dataset.confirmedNew;
             }
             if (e.target && e.target.classList.contains('local-player-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
-            if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, window.appData.commanders, true); }
+            if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, getSelectableCommanders(), true); }
             if (e.target && e.target.classList.contains('local-owner-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
             
             if (e.target && e.target.classList.contains('scryfall-input')) {
