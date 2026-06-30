@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.5">
+    <meta name="mf-app-version" content="2.9.6">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -6067,12 +6067,60 @@
         function getBuiltDecksForPlayer(playerName) {
             const owner = normalizeName(playerName);
             if (!owner) return [];
+            const ownerKey = owner.toLowerCase();
             const archivedNames = new Set(
                 getDeckEntitiesList().filter((d) => d.status === 'archived').map((d) => d.name)
             );
-            return (window.appData.commanders || []).filter(
-                (c) => normalizeName(c.owner) === owner && !archivedNames.has(c.name)
-            );
+            const commandersByName = {};
+            (window.appData.commanders || []).forEach((c) => {
+                const name = String(c.name || '').trim();
+                if (name) commandersByName[name.toLowerCase()] = c;
+            });
+
+            const built = [];
+            const seen = new Set();
+
+            getActiveDeckEntities().forEach((ent) => {
+                if (normalizeName(ent.owner).toLowerCase() !== ownerKey) return;
+                const name = String(ent.name || '').trim();
+                if (!name || archivedNames.has(name)) return;
+                const key = name.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                const existing = commandersByName[key];
+                built.push(existing ? {
+                    ...existing,
+                    owner: ent.owner || existing.owner,
+                    commanders: ent.commanders?.length ? ent.commanders : existing.commanders,
+                    deckEntityId: ent.id || existing.deckEntityId
+                } : {
+                    name,
+                    owner: ent.owner,
+                    commanders: ent.commanders,
+                    deckEntityId: ent.id,
+                    plays: 0,
+                    wins: 0,
+                    pilots: []
+                });
+            });
+
+            (window.appData.commanders || []).forEach((c) => {
+                if (normalizeName(c.owner).toLowerCase() !== ownerKey) return;
+                const name = String(c.name || '').trim();
+                if (!name || archivedNames.has(name)) return;
+                const key = name.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                built.push(c);
+            });
+
+            return built;
+        }
+
+        function mfRefreshPlayerProfileColorUI(player) {
+            if (!player) return;
+            renderPlayerInsights(player);
+            renderPlayerColorProfile(player);
         }
 
         function mfComputeColorProfileStats(decks) {
@@ -6198,7 +6246,9 @@
             if (stats.pending && !stats.total) {
                 return [card('Signature combo', '<span class="text-slate-400">Loading…</span>', 'text-slate-300', 'Built deck colors')];
             }
-            if (!stats.total) return [];
+            if (!stats.total) {
+                return [card('Signature combo', '—', 'text-slate-400', 'No commander color data yet')];
+            }
 
             const cards = [];
             if (stats.topCombo) {
@@ -6213,7 +6263,7 @@
                     sub
                 ));
             }
-            if (stats.dominantColor && stats.deckCount > 1 && stats.dominantPercent > 0) {
+            if (stats.dominantColor && stats.dominantPercent > 0) {
                 const pip = mfRenderColorIdentityPip(stats.dominantColor, 'w-4 h-4');
                 cards.push(card(
                     'Top color',
@@ -6226,16 +6276,18 @@
         }
 
         function mfPrefetchBuiltDeckColors(player, builtDecks, builtStats) {
-            if (!builtStats.pending) return;
             const missing = mfCollectMissingColorCommanders(builtDecks);
+            if (!builtStats.pending) return;
+            if (!missing.length) {
+                mfRefreshPlayerProfileColorUI(player);
+                return;
+            }
             const playerName = player.name;
-            mfPrefetchCommanderColorIdentities(missing).then((didFetch) => {
-                if (!didFetch) return;
+            mfPrefetchCommanderColorIdentities(missing).then(() => {
                 const idx = window._plrProfilePlayerIndex;
                 const current = typeof idx === 'number' ? window.appData.players[idx] : null;
                 if (!current || current.name !== playerName) return;
-                renderPlayerInsights(current);
-                renderPlayerColorProfile(current);
+                mfRefreshPlayerProfileColorUI(current);
             });
         }
         function mfColorProfileFootnote(stats) {
@@ -6732,10 +6784,10 @@
                 visibleElements.forEach(el => {
                     const rawName = el.getAttribute('data-card');
                     if (!rawName || seen.has(rawName)) return;
+                    seen.add(rawName);
                     const cached = window.artCache[rawName];
-                    if (!cached || cached.art_crop === 'error') {
+                    if (!cached || cached.art_crop === 'error' || !Array.isArray(cached.colorIdentity)) {
                         if (cached?.art_crop === 'error') delete window.artCache[rawName];
-                        seen.add(rawName);
                         neededNames.push(rawName);
                     }
                 });
@@ -6773,10 +6825,10 @@
                             }
                             if (typeof window._plrProfilePlayerIndex === 'number') {
                                 const plr = window.appData.players[window._plrProfilePlayerIndex];
-                                if (plr) renderPlayerColorProfile(plr);
+                                if (plr) mfRefreshPlayerProfileColorUI(plr);
                             }
                         } else {
-                            window.artCache[rawName] = { art_crop: 'error', normal: 'error' };
+                            window.artCache[rawName] = { art_crop: 'error', normal: 'error', colorIdentity: [] };
                             collectArtElements().forEach(el => {
                                 if (el.getAttribute('data-card') === rawName && isElementVisibleForArt(el)) {
                                     window.applyArtToElement(el);
@@ -6784,7 +6836,7 @@
                             });
                         }
                     } catch(e) { 
-                        window.artCache[rawName] = { art_crop: 'error', normal: 'error' };
+                        window.artCache[rawName] = { art_crop: 'error', normal: 'error', colorIdentity: [] };
                         collectArtElements().forEach(el => {
                             if (el.getAttribute('data-card') === rawName && isElementVisibleForArt(el)) {
                                 window.applyArtToElement(el);
