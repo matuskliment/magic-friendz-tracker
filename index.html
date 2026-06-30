@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.8.19">
+    <meta name="mf-app-version" content="2.8.20">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -4596,7 +4596,7 @@
                         err.textContent = 'Could not reach Scryfall — try again';
                         list.appendChild(err);
                     }
-                }, 280);
+                }, 200);
                 return;
             }
 
@@ -4789,6 +4789,7 @@
             document.getElementById('log-match-picker-deck-confirm')?.addEventListener('click', () => {
                 const state = window._logMatchPickerState;
                 if (!state || state.mode !== 'deck-extras' || !state.group) return;
+                state._deckExtrasConfirmed = true;
                 const variant = document.getElementById('log-match-picker-deck-variant')?.value || '';
                 const owner = document.getElementById('log-match-picker-deck-owner')?.value || '';
                 const commanders = state.commanders?.length
@@ -5769,34 +5770,36 @@
             return 'Search partner commander…';
         }
 
-        async function mfAfterFirstCommanderSelected(state, cardName) {
+        function mfAfterFirstCommanderSelected(state, cardName) {
             if (!state) return;
-            state.primaryCommander = String(cardName || '').trim();
+            const primary = String(cardName || '').trim();
+            state.primaryCommander = primary;
             state.partnerCommander = '';
             state.partnerSuggestions = [];
             state.partnerType = null;
-            state.commanders = [state.primaryCommander];
+            state.commanders = [primary];
+            state._deckExtrasConfirmed = false;
+            const fetchGen = (state._partnerFetchGen = (state._partnerFetchGen || 0) + 1);
 
             if (state.kind !== 'deck') {
                 mfOpenPickerDeckExtras(state, state.commanders);
                 return;
             }
 
-            try {
-                const card = await fetchCardFromScryfall(state.primaryCommander);
-                const info = mfAnalyzePartnerCapability(card);
-                if (info.canPartner) {
-                    state.partnerType = info.partnerType;
-                    state.partnerSuggestions = info.suggestedPartners || [];
-                    state.mode = 'partner-pick';
-                    const title = document.getElementById('log-match-picker-title');
-                    if (title) title.textContent = mfPartnerPickTitle(state.partnerType);
-                    mfRenderMobilePickerList();
-                    return;
-                }
-            } catch (_) {}
-
             mfOpenPickerDeckExtras(state, state.commanders);
+
+            fetchCardFromScryfall(primary).then((card) => {
+                if (!state || state._partnerFetchGen !== fetchGen || state.primaryCommander !== primary) return;
+                if (state._deckExtrasConfirmed || state.mode !== 'deck-extras') return;
+                const info = mfAnalyzePartnerCapability(card);
+                if (!info.canPartner) return;
+                state.partnerType = info.partnerType;
+                state.partnerSuggestions = info.suggestedPartners || [];
+                state.mode = 'partner-pick';
+                const title = document.getElementById('log-match-picker-title');
+                if (title) title.textContent = mfPartnerPickTitle(state.partnerType);
+                mfRenderMobilePickerList();
+            }).catch(() => {});
         }
 
         function mfMobilePickerConfirmPartnerChoice(state, partnerName) {
@@ -5807,7 +5810,7 @@
             mfOpenPickerDeckExtras(state, state.commanders);
         }
 
-        async function mfDesktopHandlePrimaryCommanderPick(group, cardName) {
+        function mfDesktopHandlePrimaryCommanderPick(group, cardName) {
             if (!group) return;
             const primary = String(cardName || '').trim();
             mfWriteCommandersToDeckGroup(group, [primary]);
@@ -5832,37 +5835,34 @@
                 delete partnerInput.dataset.mfScryfallName;
             }
             if (searchWrap) searchWrap.classList.add('hidden');
-
-            try {
-                const card = await fetchCardFromScryfall(primary);
-                const info = mfAnalyzePartnerCapability(card);
-                if (info.canPartner && panel) {
-                    panel.classList.remove('hidden');
-                    if (searchBtn) {
-                        searchBtn.textContent = info.partnerType === 'background'
-                            ? 'Search for background'
-                            : info.partnerType === 'companion'
-                                ? 'Search for companion'
-                                : 'Search for partner';
-                    }
-                    if (partnerInput) {
-                        partnerInput.placeholder = mfPartnerSearchPlaceholder(info.partnerType);
-                    }
-                    if (suggestionsEl && info.suggestedPartners.length) {
-                        info.suggestedPartners.forEach((name) => {
-                            const btn = document.createElement('button');
-                            btn.type = 'button';
-                            btn.className = 'text-[11px] font-bold px-3 py-1.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-200 touch-manipulation';
-                            btn.textContent = name;
-                            btn.addEventListener('click', () => mfDesktopSelectPartner(group, name));
-                            suggestionsEl.appendChild(btn);
-                        });
-                    }
-                    return;
-                }
-            } catch (_) {}
-
             if (panel) panel.classList.add('hidden');
+
+            fetchCardFromScryfall(primary).then((card) => {
+                if (group.dataset.mfPrimaryCommander !== primary) return;
+                const info = mfAnalyzePartnerCapability(card);
+                if (!info.canPartner || !panel) return;
+                panel.classList.remove('hidden');
+                if (searchBtn) {
+                    searchBtn.textContent = info.partnerType === 'background'
+                        ? 'Search for background'
+                        : info.partnerType === 'companion'
+                            ? 'Search for companion'
+                            : 'Search for partner';
+                }
+                if (partnerInput) {
+                    partnerInput.placeholder = mfPartnerSearchPlaceholder(info.partnerType);
+                }
+                if (suggestionsEl && info.suggestedPartners.length) {
+                    info.suggestedPartners.forEach((name) => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'text-[11px] font-bold px-3 py-1.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-200 touch-manipulation';
+                        btn.textContent = name;
+                        btn.addEventListener('click', () => mfDesktopSelectPartner(group, name));
+                        suggestionsEl.appendChild(btn);
+                    });
+                }
+            }).catch(() => {});
         }
 
         function mfDesktopSelectPartner(group, partnerName) {
@@ -6137,22 +6137,37 @@
             mfRefreshListRowDeckMeta(onlyName);
         };
 
+        const mfScryfallCardByNameCache = new Map();
+
         async function fetchCardFromScryfall(loggedName) {
             const parts = mfParseCommanderNamesFromDeckName(loggedName);
             const tryFetch = async (query) => {
                 const q = String(query || '').trim();
                 if (!q) return null;
+                const cacheKey = q.toLowerCase();
+                if (mfScryfallCardByNameCache.has(cacheKey)) {
+                    return mfScryfallCardByNameCache.get(cacheKey);
+                }
                 let res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(q)}`, { headers: SCRYFALL_FETCH_HEADERS });
                 if (res.status === 429) return { rateLimited: true };
-                if (res.ok) return await res.json();
+                if (res.ok) {
+                    const card = await res.json();
+                    mfScryfallCardByNameCache.set(cacheKey, card);
+                    return card;
+                }
                 if (res.status === 404) {
                     res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&unique=cards&order=released`, { headers: SCRYFALL_FETCH_HEADERS });
                     if (res.status === 429) return { rateLimited: true };
                     if (res.ok) {
                         const searchData = await res.json();
-                        if (searchData.data && searchData.data.length > 0) return searchData.data[0];
+                        if (searchData.data && searchData.data.length > 0) {
+                            const card = searchData.data[0];
+                            mfScryfallCardByNameCache.set(cacheKey, card);
+                            return card;
+                        }
                     }
                 }
+                mfScryfallCardByNameCache.set(cacheKey, null);
                 return null;
             };
 
@@ -10835,7 +10850,7 @@
                         appendScryfallDropdownMessage(ul, 'Could not reach Scryfall — try again', 'dropdown-empty text-amber-300/90');
                     });
                 }
-            }, 300);
+            }, 200);
         };
 
         document.addEventListener('focusin', function(e) {
