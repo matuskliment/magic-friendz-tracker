@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.8.18">
+    <meta name="mf-app-version" content="2.8.19">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -863,7 +863,7 @@
                                 </div>
                             </div>
                             <div class="flex flex-col gap-2 pt-2 border-t border-slate-700/50">
-                                <button type="button" onclick="window.sendSignInLink({ fromLanding: true, resend: true })" class="w-full text-sm font-bold text-emerald-200 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-4 py-3 rounded-xl transition min-h-[44px] touch-manipulation">Send again</button>
+                                <button type="button" id="landing-sign-in-resend-btn" onclick="window.sendSignInLink({ fromLanding: true, resend: true })" class="w-full text-sm font-bold text-emerald-200 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-4 py-3 rounded-xl transition min-h-[44px] touch-manipulation disabled:opacity-60 disabled:pointer-events-none">Send again</button>
                                 <button type="button" onclick="window.resetSignInPanel({ fromLanding: true })" class="w-full text-sm font-bold text-slate-300 bg-slate-800/80 hover:bg-slate-700 border border-slate-600 px-4 py-3 rounded-xl transition min-h-[44px] touch-manipulation">Use a different email</button>
                             </div>
                         </div>
@@ -1225,7 +1225,7 @@
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2 pt-1 border-t border-slate-700/50">
-                                <button type="button" onclick="window.sendSignInLink({ resend: true })" class="flex-1 text-xs font-bold text-emerald-200 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-3 py-2.5 rounded-lg transition min-h-[40px] touch-manipulation">Send again</button>
+                                <button type="button" id="group-sign-in-resend-btn" onclick="window.sendSignInLink({ resend: true })" class="flex-1 text-xs font-bold text-emerald-200 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-3 py-2.5 rounded-lg transition min-h-[40px] touch-manipulation disabled:opacity-60 disabled:pointer-events-none">Send again</button>
                                 <button type="button" onclick="window.resetSignInPanel({})" class="flex-1 text-xs font-bold text-slate-300 bg-slate-800/80 hover:bg-slate-700 border border-slate-600 px-3 py-2.5 rounded-lg transition min-h-[40px] touch-manipulation">Use a different email</button>
                             </div>
                         </div>
@@ -1902,7 +1902,7 @@
                         </div>
                     </div>
                     <div class="flex flex-col gap-2 pt-2 border-t border-slate-700/50">
-                        <button type="button" onclick="window.resendCreateGroupLink()" class="w-full text-sm font-bold text-emerald-200 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-4 py-3 rounded-xl transition min-h-[44px] touch-manipulation">Send again</button>
+                        <button type="button" id="create-group-resend-btn" onclick="window.resendCreateGroupLink()" class="w-full text-sm font-bold text-emerald-200 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-4 py-3 rounded-xl transition min-h-[44px] touch-manipulation disabled:opacity-60 disabled:pointer-events-none">Send again</button>
                         <button type="button" onclick="window.resetCreateGroupPanel()" class="w-full text-sm font-bold text-slate-300 bg-slate-800/80 hover:bg-slate-700 border border-slate-600 px-4 py-3 rounded-xl transition min-h-[44px] touch-manipulation">Use a different email</button>
                         <button type="button" onclick="window.closeGroupModal()" class="w-full text-sm font-semibold text-slate-500 hover:text-slate-300 py-2 touch-manipulation">Close</button>
                     </div>
@@ -2986,11 +2986,31 @@
             updateLandingAuthUI();
         };
 
+        function mfSetResendButtonState(btn, state) {
+            if (!btn) return;
+            if (!btn.dataset.mfResendLabel) btn.dataset.mfResendLabel = btn.textContent.trim();
+            const label = btn.dataset.mfResendLabel;
+            if (state === 'loading') {
+                btn.disabled = true;
+                btn.textContent = 'Sending…';
+            } else if (state === 'sent') {
+                btn.disabled = true;
+                btn.textContent = 'Sent!';
+                setTimeout(() => mfSetResendButtonState(btn, 'idle'), 2200);
+            } else {
+                btn.disabled = false;
+                btn.textContent = label;
+            }
+        }
+
         window.sendSignInLink = async function(options = {}) {
             const fromLanding = !!options.fromLanding;
             const input = document.getElementById(fromLanding ? 'landing-sign-in-email' : 'sign-in-email');
             const status = document.getElementById(fromLanding ? 'landing-sign-in-status' : 'sign-in-status');
             const btn = document.getElementById(fromLanding ? 'landing-sign-in-send-btn' : 'sign-in-send-btn');
+            const resendBtn = options.resend
+                ? document.getElementById(fromLanding ? 'landing-sign-in-resend-btn' : 'group-sign-in-resend-btn')
+                : null;
             let email = normalizeEmail(input?.value);
             if (options.resend) {
                 const stored = window.localStorage.getItem(AUTH_EMAIL_KEY);
@@ -3046,7 +3066,9 @@
                 return;
             }
             if (btn) btn.disabled = true;
-            if (status) {
+            if (options.resend && resendBtn) {
+                mfSetResendButtonState(resendBtn, 'loading');
+            } else if (status) {
                 status.textContent = 'Sending link…';
                 status.classList.remove('hidden');
                 status.classList.remove('text-red-400/90');
@@ -3059,15 +3081,32 @@
                     handleCodeInApp: true
                 });
                 showSignInLinkSent(fromLanding, email);
+                if (options.resend) {
+                    if (resendBtn) mfSetResendButtonState(resendBtn, 'sent');
+                    window.mfToast('We sent another sign-in link. Check your inbox and spam folder.', {
+                        title: 'Link sent again',
+                        type: 'success',
+                        icon: '✅'
+                    });
+                }
             } catch (e) {
                 console.error(e);
-                window.resetSignInPanel({ fromLanding, keepEmail: true, focus: false });
-                if (status) {
-                    status.textContent = 'Could not send link: ' + e.message;
-                    status.classList.remove('hidden', 'text-slate-400');
-                    status.classList.add('text-red-400/90');
+                if (options.resend) {
+                    if (resendBtn) mfSetResendButtonState(resendBtn, 'idle');
+                    window.mfToast(getFriendlyAuthLinkError(e) || e.message, {
+                        title: 'Could not send link',
+                        type: 'error',
+                        icon: '❌'
+                    });
+                } else {
+                    window.resetSignInPanel({ fromLanding, keepEmail: true, focus: false });
+                    if (status) {
+                        status.textContent = 'Could not send link: ' + e.message;
+                        status.classList.remove('hidden', 'text-slate-400');
+                        status.classList.add('text-red-400/90');
+                    }
+                    if (btn) btn.disabled = false;
                 }
-                if (btn) btn.disabled = false;
             }
         };
 
@@ -3131,18 +3170,31 @@
         window.resendCreateGroupLink = async function() {
             const email = normalizeEmail(document.getElementById('create-group-sent-email')?.textContent);
             const slug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
+            const resendBtn = document.getElementById('create-group-resend-btn');
             if (!email || !slug) {
                 window.showAppAlert('Could not resend. Start create again.', 'Error', '❌');
                 return;
             }
+            mfSetResendButtonState(resendBtn, 'loading');
             try {
                 window.localStorage.setItem(AUTH_EMAIL_KEY, email);
                 await sendSignInLinkToEmail(auth, email, {
                     url: getAuthContinueUrl(slug, email),
                     handleCodeInApp: true
                 });
+                mfSetResendButtonState(resendBtn, 'sent');
+                window.mfToast('We sent another sign-in link. Check your inbox and spam folder.', {
+                    title: 'Link sent again',
+                    type: 'success',
+                    icon: '✅'
+                });
             } catch (e) {
-                window.showAppAlert('Could not send link: ' + e.message, 'Error', '❌');
+                mfSetResendButtonState(resendBtn, 'idle');
+                window.mfToast(getFriendlyAuthLinkError(e) || e.message, {
+                    title: 'Could not send link',
+                    type: 'error',
+                    icon: '❌'
+                });
             }
         };
 
