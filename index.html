@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.8.17">
+    <meta name="mf-app-version" content="2.8.18">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -4310,7 +4310,19 @@
             let startX = 0;
             let startY = 0;
             let moved = false;
+            let pickLock = false;
             const MOVE_PX = 10;
+
+            const runPick = (evt) => {
+                if (pickLock || moved) return;
+                pickLock = true;
+                if (evt) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                }
+                onPick();
+                setTimeout(() => { pickLock = false; }, 350);
+            };
 
             li.addEventListener('pointerdown', (evt) => {
                 if (evt.pointerType === 'mouse' && evt.button !== 0) return;
@@ -4329,8 +4341,7 @@
                 if (evt.pointerId !== activePointer) return;
                 activePointer = null;
                 if (moved) return;
-                evt.preventDefault();
-                onPick();
+                runPick(evt);
             };
 
             li.addEventListener('pointerup', finishPick);
@@ -4338,6 +4349,8 @@
                 activePointer = null;
                 moved = false;
             });
+            // Firefox Android: pointerup can be dropped after list scroll; click is a safe fallback.
+            li.addEventListener('click', (evt) => runPick(evt));
         }
 
         function mfMobilePickerConfirmNewPlayer(group, name) {
@@ -4476,7 +4489,8 @@
             list.innerHTML = '';
 
             if (state.mode === 'scryfall' || state.mode === 'scryfall-partner') {
-                if (query.length < 3) {
+                const scryQuery = String(searchEl?.value || '').trim();
+                if (scryQuery.length < 3) {
                     const li = document.createElement('li');
                     li.className = 'px-4 py-3 text-sm text-slate-500 italic';
                     li.textContent = 'Type at least 3 characters to search Scryfall';
@@ -4490,13 +4504,15 @@
                 const reqId = ++mfPickerScryfallReqId;
                 clearTimeout(mfPickerScryfallTimer);
                 mfPickerScryfallTimer = setTimeout(async () => {
+                    const liveQuery = String(searchEl?.value || '').trim();
+                    if (reqId !== mfPickerScryfallReqId) return;
+                    if (liveQuery.length < 3) return;
                     try {
-                        const res = await fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(query)}`);
-                        const data = await res.json();
+                        const names = await mfFetchScryfallAutocomplete(liveQuery);
                         const mode = window._logMatchPickerState?.mode;
                         if (reqId !== mfPickerScryfallReqId || (mode !== 'scryfall' && mode !== 'scryfall-partner')) return;
+                        if (String(searchEl?.value || '').trim() !== liveQuery) return;
                         list.innerHTML = '';
-                        const names = data.data || [];
                         if (!names.length) {
                             const empty = document.createElement('li');
                             empty.className = 'px-4 py-3 text-sm text-slate-500 italic';
@@ -5505,6 +5521,18 @@
             'Accept': 'application/json',
             'User-Agent': `MagicFriendzTracker/${MF_APP_VERSION} (playgroup-stat-tracker)`
         };
+
+        async function mfFetchScryfallAutocomplete(query) {
+            const q = String(query || '').trim();
+            if (q.length < 3) return [];
+            const res = await fetch(
+                'https://api.scryfall.com/cards/autocomplete?q=' + encodeURIComponent(q),
+                { headers: SCRYFALL_FETCH_HEADERS }
+            );
+            if (!res.ok) throw new Error('Scryfall autocomplete HTTP ' + res.status);
+            const data = await res.json();
+            return Array.isArray(data.data) ? data.data : [];
+        }
 
         function purgeLegacyArtCaches() {
             ['mf_art_cache', 'mf_art_cache_v6', 'mf_art_cache_v7'].forEach(key => {
@@ -10716,14 +10744,13 @@
                 if (String(input.value || '').trim() !== query) return;
 
                 try {
-                    const res = await fetch('https://api.scryfall.com/cards/autocomplete?q=' + encodeURIComponent(query), { headers: SCRYFALL_FETCH_HEADERS });
+                    const names = await mfFetchScryfallAutocomplete(query);
                     if (requestId !== scryfallRequestId) return;
                     if (String(input.value || '').trim() !== query) return;
 
-                    const data = await res.json();
                     showScryfallDropdown(input, (ul, activeInput) => {
-                        if (data.data && data.data.length > 0) {
-                            data.data.forEach(name => {
+                        if (names.length > 0) {
+                            names.forEach(name => {
                                 const li = document.createElement('li');
                                 li.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 last:border-0 truncate';
                                 li.innerText = name;
