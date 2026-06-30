@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.7">
+    <meta name="mf-app-version" content="2.9.8">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1570,16 +1570,10 @@
             <div id="plr-view-color-profile" class="space-y-3 mb-4 hidden"></div>
             
             <h3 class="font-bold text-white mb-3 text-sm flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-                Piloted Decks
-            </h3>
-            <div id="plr-view-armory" class="grid grid-cols-2 gap-3 mb-6"></div>
-
-            <h3 class="font-bold text-white mb-3 text-sm flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                Unplayed Decks
+                Decks
             </h3>
-            <div id="plr-view-unplayed" class="grid grid-cols-2 gap-3 mb-6"></div>
+            <div id="plr-view-decks" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-2 mb-6"></div>
 
             <div id="plr-view-archived-wrap" class="hidden">
                 <h3 class="font-bold text-white mb-3 text-sm flex items-center gap-2">
@@ -8059,32 +8053,94 @@
             return html;
         }
 
-        function renderPilotedDeckCard(c) {
-            const idx = window.appData.commanders.indexOf(c);
-            return `<div onclick="window.closePlayerProfile(); setTimeout(() => window.openCommanderProfile(${idx}), 300);" class="relative aspect-[5/7] bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group shadow-md">
-                <div data-card="${escapeHtml(c.name)}" data-version="art_crop" class="set-bg absolute inset-0 art-fallback bg-cover bg-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
-                <div class="absolute inset-x-0 bottom-0 p-3 z-10">
-                    <h4 class="font-bold text-sm text-white leading-snug line-clamp-2 drop-shadow-md" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</h4>
-                    <p class="text-[10px] text-yellow-400 font-bold mt-1.5 uppercase tracking-wider drop-shadow">${c.elo} Elo</p>
-                </div>
-            </div>`;
+        function isPlayerDeckOwner(cmd, playerName) {
+            const ownerKey = normalizeName(playerName).toLowerCase();
+            if (!ownerKey) return false;
+            return normalizeName(cmd?.owner || '').toLowerCase() === ownerKey;
         }
 
-        function renderUnplayedDeckCard(c, playerName) {
+        function isPlayerDeckPilot(cmd, playerName) {
+            if (!cmd?.pilots || !(cmd.plays || 0)) return false;
+            return cmd.pilots.includes(playerName);
+        }
+
+        function mfPlayerDeckLabels(cmd, playerName) {
+            const owned = isPlayerDeckOwner(cmd, playerName);
+            const globalPlays = cmd.plays || 0;
+            const piloted = isPlayerDeckPilot(cmd, playerName);
+            const unplayed = owned && globalPlays === 0;
+            const notOwned = piloted && !owned;
+            return { owned, piloted, unplayed, notOwned };
+        }
+
+        function mfPlayerDeckSortRank(labels) {
+            if (labels.piloted && labels.owned) return 0;
+            if (labels.piloted && labels.notOwned) return 1;
+            if (labels.unplayed) return 2;
+            if (labels.owned) return 3;
+            return 4;
+        }
+
+        function getPlayerProfileDecks(playerName) {
+            const archivedNames = new Set(
+                getDeckEntitiesList().filter((d) => d.status === 'archived').map((d) => d.name)
+            );
+            const byKey = new Map();
+
+            getBuiltDecksForPlayer(playerName).forEach((c) => {
+                const key = String(c.name || '').trim().toLowerCase();
+                if (key && !archivedNames.has(c.name)) byKey.set(key, c);
+            });
+
+            (window.appData.commanders || []).forEach((c) => {
+                if (archivedNames.has(c.name)) return;
+                if (!isPlayerDeckPilot(c, playerName)) return;
+                const key = String(c.name || '').trim().toLowerCase();
+                if (key && !byKey.has(key)) byKey.set(key, c);
+            });
+
+            return [...byKey.values()]
+                .map((deck) => ({ deck, labels: mfPlayerDeckLabels(deck, playerName) }))
+                .sort((a, b) => {
+                    const rankDiff = mfPlayerDeckSortRank(a.labels) - mfPlayerDeckSortRank(b.labels);
+                    if (rankDiff !== 0) return rankDiff;
+                    return (b.deck.elo || SETTINGS.STARTING_ELO) - (a.deck.elo || SETTINGS.STARTING_ELO);
+                });
+        }
+
+        function renderPlayerDeckCard(entry, playerName) {
+            const c = entry.deck;
+            const { owned, piloted, unplayed, notOwned } = entry.labels;
             const idx = window.appData.commanders.indexOf(c);
-            const openCmd = idx >= 0 ? `window.closePlayerProfile(); setTimeout(() => window.openCommanderProfile(${idx}), 300);` : '';
-            const idJs = c.deckEntityId ? String(c.deckEntityId).replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
-            const deleteBtn = (window.canManageDeckFor(playerName) && c.deckEntityId)
-                ? `<button type="button" onclick="event.stopPropagation(); window.mfDeleteOwnedDeck('${idJs}')" class="absolute top-2 right-2 z-20 text-[10px] font-bold text-red-200 bg-red-950/80 hover:bg-red-900 border border-red-500/40 px-2 py-1 rounded-lg touch-manipulation backdrop-blur-sm">Delete</button>`
+            const openCmd = idx >= 0
+                ? `window.closePlayerProfile(); setTimeout(() => window.openCommanderProfile(${idx}), 300);`
                 : '';
-            return `<div onclick="${openCmd}" class="relative aspect-[5/7] bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group shadow-md">
+            const idJs = c.deckEntityId ? String(c.deckEntityId).replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
+            const canDelete = unplayed && c.deckEntityId && window.canManageDeckFor(playerName);
+            const deleteBtn = canDelete
+                ? `<button type="button" onclick="event.stopPropagation(); window.mfDeleteOwnedDeck('${idJs}')" class="absolute top-2 right-2 z-20 text-[9px] font-bold text-red-200 bg-red-950/80 hover:bg-red-900 border border-red-500/40 px-1.5 py-0.5 rounded-md touch-manipulation backdrop-blur-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">Delete</button>`
+                : '';
+
+            const badge = (text, cls) => `<span class="text-[8px] md:text-[7px] font-bold uppercase tracking-wide px-1 py-0.5 rounded border backdrop-blur-sm ${cls}">${text}</span>`;
+            const badges = [
+                owned ? badge('Owned', 'text-emerald-300 bg-emerald-950/80 border-emerald-500/40') : '',
+                piloted ? badge('Piloted', 'text-sky-300 bg-sky-950/80 border-sky-500/40') : '',
+                notOwned ? badge('Not owned', 'text-amber-300 bg-amber-950/80 border-amber-500/40') : '',
+                unplayed ? badge('Unplayed', 'text-slate-300 bg-slate-900/90 border-slate-600/60') : ''
+            ].filter(Boolean).join('');
+
+            const elo = c.elo ?? SETTINGS.STARTING_ELO;
+            const footerCls = (piloted || (c.plays || 0) > 0) ? 'text-yellow-400' : 'text-slate-400';
+            const footerText = `${elo} Elo`;
+
+            return `<div onclick="${openCmd}" class="relative aspect-[5/7] w-full md:max-w-[7.5rem] md:justify-self-start bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group shadow-md">
                 ${deleteBtn}
+                ${badges ? `<div class="absolute top-1.5 left-1.5 z-20 flex flex-wrap gap-0.5 max-w-[calc(100%-2.5rem)]">${badges}</div>` : ''}
                 <div data-card="${escapeHtml(c.name)}" data-version="art_crop" class="set-bg absolute inset-0 art-fallback bg-cover bg-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
-                <div class="absolute inset-x-0 bottom-0 p-3 z-10">
-                    <h4 class="font-bold text-sm text-white leading-snug line-clamp-2 drop-shadow-md" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</h4>
-                    <p class="text-[10px] text-slate-400 font-bold mt-1.5 uppercase tracking-wider drop-shadow">Unplayed · ${SETTINGS.STARTING_ELO} Elo</p>
+                <div class="absolute inset-x-0 bottom-0 p-2 md:p-1.5 z-10">
+                    <h4 class="font-bold text-sm md:text-[11px] text-white leading-snug line-clamp-2 drop-shadow-md" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</h4>
+                    <p class="text-[10px] md:text-[9px] ${footerCls} font-bold mt-1 uppercase tracking-wider drop-shadow">${footerText}</p>
                 </div>
             </div>`;
         }
@@ -8108,19 +8164,10 @@
         function refreshPlayerProfileDecksSection(player) {
             if (!player) return;
 
-            const piloted = (window.appData.commanders || []).filter(
-                (c) => c.pilots && c.pilots.includes(player.name) && (c.plays || 0) > 0
-            );
-            safeSetHTML('plr-view-armory', piloted.length
-                ? piloted.map(renderPilotedDeckCard).join('')
-                : `<div class="col-span-2 bg-slate-900 p-4 rounded-xl border border-slate-800"><p class="text-sm text-slate-500 italic text-center">No decks piloted yet.</p></div>`);
-
-            const unplayed = (window.appData.commanders || []).filter(
-                (c) => c.owner === player.name && (c.plays || 0) === 0
-            );
-            safeSetHTML('plr-view-unplayed', unplayed.length
-                ? unplayed.map((c) => renderUnplayedDeckCard(c, player.name)).join('')
-                : `<div class="col-span-2 bg-slate-900 p-4 rounded-xl border border-slate-800"><p class="text-sm text-slate-500 italic text-center">No unplayed decks yet.</p></div>`);
+            const decks = getPlayerProfileDecks(player.name);
+            safeSetHTML('plr-view-decks', decks.length
+                ? decks.map((entry) => renderPlayerDeckCard(entry, player.name)).join('')
+                : `<div class="col-span-2 sm:col-span-3 md:col-span-4 bg-slate-900 p-4 rounded-xl border border-slate-800"><p class="text-sm text-slate-500 italic text-center">No decks yet — owned or piloted.</p></div>`);
 
             const archived = getArchivedDeckEntitiesForOwner(player.name);
             const archivedWrap = document.getElementById('plr-view-archived-wrap');
