@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.4">
+    <meta name="mf-app-version" content="2.9.5">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1568,8 +1568,6 @@
             <div id="plr-view-extra" class="grid grid-cols-2 gap-3 mb-6"></div>
 
             <div id="plr-view-color-profile" class="space-y-3 mb-4 hidden"></div>
-
-            <div id="plr-view-color-insights" class="hidden mb-6"></div>
             
             <h3 class="font-bold text-white mb-3 text-sm flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
@@ -6188,47 +6186,58 @@
             return fetched;
         }
 
-        function mfColorInsightBulletsForStats(stats) {
-            if (!stats?.total || stats.pending) return [];
-            const bullets = [];
+        function mfColorInsightCardsFromStats(stats) {
+            if (!stats.deckCount) return [];
+            const card = (label, valueHtml, valueCls, sub) => `
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">${escapeHtml(label)}</p>
+                    <div class="text-base font-black ${valueCls} mt-1 truncate">${valueHtml}</div>
+                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
+                </div>`;
 
+            if (stats.pending && !stats.total) {
+                return [card('Signature combo', '<span class="text-slate-400">Loading…</span>', 'text-slate-300', 'Built deck colors')];
+            }
+            if (!stats.total) return [];
+
+            const cards = [];
             if (stats.topCombo) {
-                if (stats.total === 1) {
-                    const { pips, label } = mfFormatComboDisplay(stats.topCombo.key);
-                    bullets.push(`<span class="inline-flex items-center gap-1.5 flex-wrap">Only deck: <span class="inline-flex items-center gap-0.5">${pips}</span><span class="text-white font-semibold">${escapeHtml(label)}</span></span>`);
-                } else if (stats.tiedCombos.length > 1) {
-                    const tiedLabels = stats.tiedCombos.map((key) => {
-                        const { pips, label } = mfFormatComboDisplay(key);
-                        return `<span class="inline-flex items-center gap-0.5">${pips}<span class="text-white font-semibold">${escapeHtml(label)}</span></span>`;
-                    }).join('<span class="text-slate-500 mx-1">·</span>');
-                    bullets.push(`<span class="inline-flex items-center gap-1.5 flex-wrap">Top combo (tied): ${tiedLabels} <span class="text-slate-400">— ${stats.topCombo.count} decks each (${stats.topCombo.percent}%)</span></span>`);
-                } else {
-                    const { pips, label } = mfFormatComboDisplay(stats.topCombo.key);
-                    bullets.push(`<span class="inline-flex items-center gap-1.5 flex-wrap">Signature combo: <span class="inline-flex items-center gap-0.5">${pips}</span><span class="text-white font-semibold">${escapeHtml(label)}</span><span class="text-slate-400">— ${stats.topCombo.count} of ${stats.total} decks (${stats.topCombo.percent}%)</span></span>`);
-                    if (stats.runnerUp && stats.runnerUp.count > 0) {
-                        const runner = mfFormatComboDisplay(stats.runnerUp.key);
-                        bullets.push(`<span class="inline-flex items-center gap-1.5 flex-wrap">Runner-up: <span class="inline-flex items-center gap-0.5">${runner.pips}</span><span class="text-slate-200 font-medium">${escapeHtml(runner.label)}</span><span class="text-slate-400">— ${stats.runnerUp.count} deck${stats.runnerUp.count === 1 ? '' : 's'}</span></span>`);
-                    }
-                }
+                const { pips, label } = mfFormatComboDisplay(stats.topCombo.key);
+                const sub = stats.deckCount === 1
+                    ? 'Only built deck'
+                    : `${stats.topCombo.count} of ${stats.deckCount} built (${stats.topCombo.percent}%)`;
+                cards.push(card(
+                    'Signature combo',
+                    `<span class="inline-flex items-center gap-1.5">${pips}<span>${escapeHtml(label)}</span></span>`,
+                    'text-fuchsia-300',
+                    sub
+                ));
             }
-
-            if (stats.dominantColor && stats.total > 1 && stats.dominantPercent > 0) {
-                bullets.push(`Most common color: <span class="text-white font-semibold">${escapeHtml(MF_COLOR_NAMES[stats.dominantColor])}</span> <span class="text-slate-400">— in ${stats.dominantPercent}% of decks</span>`);
+            if (stats.dominantColor && stats.deckCount > 1 && stats.dominantPercent > 0) {
+                const pip = mfRenderColorIdentityPip(stats.dominantColor, 'w-4 h-4');
+                cards.push(card(
+                    'Top color',
+                    `<span class="inline-flex items-center gap-1.5">${pip}<span>${escapeHtml(MF_COLOR_NAMES[stats.dominantColor])}</span></span>`,
+                    'text-cyan-300',
+                    `in ${stats.dominantPercent}% of built decks`
+                ));
             }
-
-            if (stats.total >= 2) {
-                const multiPct = Math.round((stats.multiCount / stats.total) * 100);
-                const identityLabel = stats.uniqueCombos === 1 ? 'identity' : 'identities';
-                if (stats.uniqueCombos === stats.total) {
-                    bullets.push(`<span class="text-slate-300">Every deck has a different color identity</span> <span class="text-slate-500">(${stats.uniqueCombos} unique)</span>`);
-                } else {
-                    bullets.push(`<span class="text-slate-300">${multiPct}% multicolor</span> <span class="text-slate-500">· ${stats.uniqueCombos} unique ${identityLabel}</span>`);
-                }
-            }
-
-            return bullets.slice(0, 3);
+            return cards;
         }
 
+        function mfPrefetchBuiltDeckColors(player, builtDecks, builtStats) {
+            if (!builtStats.pending) return;
+            const missing = mfCollectMissingColorCommanders(builtDecks);
+            const playerName = player.name;
+            mfPrefetchCommanderColorIdentities(missing).then((didFetch) => {
+                if (!didFetch) return;
+                const idx = window._plrProfilePlayerIndex;
+                const current = typeof idx === 'number' ? window.appData.players[idx] : null;
+                if (!current || current.name !== playerName) return;
+                renderPlayerInsights(current);
+                renderPlayerColorProfile(current);
+            });
+        }
         function mfColorProfileFootnote(stats) {
             const builtTotal = stats.deckCount ?? stats.total;
             const analyzed = stats.total;
@@ -6237,25 +6246,6 @@
                 return `Based on ${analyzed} of ${builtTotal} built decks you own (loading commander colors for the rest).`;
             }
             return `Share of ${builtTotal} built ${builtTotal === 1 ? 'deck' : 'decks'} you own that include each color. Borrowed piloted decks aren’t counted here.`;
-        }
-
-        function mfRenderColorInsightsSection(builtStats) {
-            const bullets = mfColorInsightBulletsForStats(builtStats);
-
-            if (!bullets.length) {
-                if (builtStats.pending) {
-                    return `<div class="glass p-4 rounded-xl border border-slate-800">
-                        <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Color insights</p>
-                        <p class="text-xs text-slate-500 italic">Loading color insights…</p>
-                    </div>`;
-                }
-                return '';
-            }
-
-            return `<div class="glass p-4 rounded-xl border border-slate-800">
-                <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-3">Color insights</p>
-                <ul class="space-y-2">${bullets.map((b) => `<li class="text-xs text-slate-300 leading-relaxed">${b}</li>`).join('')}</ul>
-            </div>`;
         }
 
         function mfRenderColorProfileBlock(stats, label) {
@@ -6302,55 +6292,22 @@
 
         function renderPlayerColorProfile(player) {
             const host = document.getElementById('plr-view-color-profile');
-            const insightsHost = document.getElementById('plr-view-color-insights');
             if (!host || !player) return;
 
             const builtDecks = getBuiltDecksForPlayer(player.name);
             const builtStats = mfComputeColorProfileStats(builtDecks);
             const builtHtml = mfRenderColorProfileBlock(builtStats, 'Built · color identity');
-            const insightsHtml = mfRenderColorInsightsSection(builtStats);
-
             const showProfile = builtHtml || builtStats.pending || builtDecks.length > 0;
-            const showInsights = !!insightsHtml;
 
-            if (!showProfile && !showInsights) {
+            if (!showProfile) {
                 host.classList.add('hidden');
                 host.innerHTML = '';
-                if (insightsHost) {
-                    insightsHost.classList.add('hidden');
-                    insightsHost.innerHTML = '';
-                }
                 return;
             }
 
-            if (showProfile) {
-                host.classList.remove('hidden');
-                host.innerHTML = builtHtml || mfRenderColorProfileBlock({ ...builtStats, total: 0 }, 'Built · color identity');
-            } else {
-                host.classList.add('hidden');
-                host.innerHTML = '';
-            }
-
-            if (insightsHost) {
-                if (showInsights) {
-                    insightsHost.classList.remove('hidden');
-                    insightsHost.innerHTML = insightsHtml;
-                } else {
-                    insightsHost.classList.add('hidden');
-                    insightsHost.innerHTML = '';
-                }
-            }
-
-            if (builtStats.pending) {
-                const missing = mfCollectMissingColorCommanders(builtDecks);
-                const playerName = player.name;
-                mfPrefetchCommanderColorIdentities(missing).then((didFetch) => {
-                    if (!didFetch) return;
-                    const idx = window._plrProfilePlayerIndex;
-                    const current = typeof idx === 'number' ? window.appData.players[idx] : null;
-                    if (current && current.name === playerName) renderPlayerColorProfile(current);
-                });
-            }
+            host.classList.remove('hidden');
+            host.innerHTML = builtHtml || mfRenderColorProfileBlock({ ...builtStats, total: 0 }, 'Built · color identity');
+            mfPrefetchBuiltDeckColors(player, builtDecks, builtStats);
         }
 
         function mfRefreshCommanderProfileMeta(deckName, commanders) {
@@ -9712,6 +9669,8 @@
                 ? `${player.topDeckPlays} ${player.topDeckPlays === 1 ? 'play' : 'plays'}`
                 : 'No decks yet';
             const deckCount = player.deckCount || 0;
+            const builtDecks = getBuiltDecksForPlayer(player.name);
+            const builtStats = mfComputeColorProfileStats(builtDecks);
 
             const card = (label, value, valueCls, sub) => `
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
@@ -9724,8 +9683,11 @@
                 card('Favorite Deck', favDeck, 'text-sky-300', favDeckSub),
                 card('Decks Played', String(deckCount), 'text-purple-300', deckCount === 1 ? 'deck piloted' : 'decks piloted'),
                 card('Current Streak', streakLabel, streakColor, streakSub),
-                card('Last Played', lastPlayed, 'text-amber-300', results.length ? `${results.length} ${results.length === 1 ? 'game' : 'games'} logged` : 'No games yet')
+                card('Last Played', lastPlayed, 'text-amber-300', results.length ? `${results.length} ${results.length === 1 ? 'game' : 'games'} logged` : 'No games yet'),
+                ...mfColorInsightCardsFromStats(builtStats)
             ].join('');
+
+            mfPrefetchBuiltDeckColors(player, builtDecks, builtStats);
         }
 
         window.openPlayerProfile = function(index) {
