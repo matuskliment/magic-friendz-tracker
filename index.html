@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.6">
+    <meta name="mf-app-version" content="2.9.7">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -6119,7 +6119,6 @@
 
         function mfRefreshPlayerProfileColorUI(player) {
             if (!player) return;
-            renderPlayerInsights(player);
             renderPlayerColorProfile(player);
         }
 
@@ -6232,47 +6231,6 @@
                 await new Promise((r) => setTimeout(r, 150));
             }
             return fetched;
-        }
-
-        function mfColorInsightCardsFromStats(stats) {
-            if (!stats.deckCount) return [];
-            const card = (label, valueHtml, valueCls, sub) => `
-                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">${escapeHtml(label)}</p>
-                    <div class="text-base font-black ${valueCls} mt-1 truncate">${valueHtml}</div>
-                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
-                </div>`;
-
-            if (stats.pending && !stats.total) {
-                return [card('Signature combo', '<span class="text-slate-400">Loading…</span>', 'text-slate-300', 'Built deck colors')];
-            }
-            if (!stats.total) {
-                return [card('Signature combo', '—', 'text-slate-400', 'No commander color data yet')];
-            }
-
-            const cards = [];
-            if (stats.topCombo) {
-                const { pips, label } = mfFormatComboDisplay(stats.topCombo.key);
-                const sub = stats.deckCount === 1
-                    ? 'Only built deck'
-                    : `${stats.topCombo.count} of ${stats.deckCount} built (${stats.topCombo.percent}%)`;
-                cards.push(card(
-                    'Signature combo',
-                    `<span class="inline-flex items-center gap-1.5">${pips}<span>${escapeHtml(label)}</span></span>`,
-                    'text-fuchsia-300',
-                    sub
-                ));
-            }
-            if (stats.dominantColor && stats.dominantPercent > 0) {
-                const pip = mfRenderColorIdentityPip(stats.dominantColor, 'w-4 h-4');
-                cards.push(card(
-                    'Top color',
-                    `<span class="inline-flex items-center gap-1.5">${pip}<span>${escapeHtml(MF_COLOR_NAMES[stats.dominantColor])}</span></span>`,
-                    'text-cyan-300',
-                    `in ${stats.dominantPercent}% of built decks`
-                ));
-            }
-            return cards;
         }
 
         function mfPrefetchBuiltDeckColors(player, builtDecks, builtStats) {
@@ -9721,8 +9679,6 @@
                 ? `${player.topDeckPlays} ${player.topDeckPlays === 1 ? 'play' : 'plays'}`
                 : 'No decks yet';
             const deckCount = player.deckCount || 0;
-            const builtDecks = getBuiltDecksForPlayer(player.name);
-            const builtStats = mfComputeColorProfileStats(builtDecks);
 
             const card = (label, value, valueCls, sub) => `
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
@@ -9735,11 +9691,8 @@
                 card('Favorite Deck', favDeck, 'text-sky-300', favDeckSub),
                 card('Decks Played', String(deckCount), 'text-purple-300', deckCount === 1 ? 'deck piloted' : 'decks piloted'),
                 card('Current Streak', streakLabel, streakColor, streakSub),
-                card('Last Played', lastPlayed, 'text-amber-300', results.length ? `${results.length} ${results.length === 1 ? 'game' : 'games'} logged` : 'No games yet'),
-                ...mfColorInsightCardsFromStats(builtStats)
+                card('Last Played', lastPlayed, 'text-amber-300', results.length ? `${results.length} ${results.length === 1 ? 'game' : 'games'} logged` : 'No games yet')
             ].join('');
-
-            mfPrefetchBuiltDeckColors(player, builtDecks, builtStats);
         }
 
         window.openPlayerProfile = function(index) {
