@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.8">
+    <meta name="mf-app-version" content="2.9.9">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -127,12 +127,14 @@
         #analytics-synergy,
         #analytics-group-stats,
         #analytics-meta,
+        #analytics-color-meta,
         #analytics-upset,
         #analytics-rivalry,
         #analytics-synergy-rankings { width: 100%; max-width: 100%; min-width: 0; }
         #analytics-synergy > *,
         #analytics-group-stats > *,
         #analytics-meta > *,
+        #analytics-color-meta > *,
         #analytics-upset > *,
         #analytics-rivalry > *,
         #analytics-synergy-rankings > * { max-width: 100%; min-width: 0; }
@@ -1127,6 +1129,23 @@
                             </div>
                         </h2>
                         <div id="analytics-meta" class="space-y-2">
+                            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
+                        </div>
+                    </div>
+
+                    <!-- Pod Colors -->
+                    <div>
+                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <span class="text-violet-400">🎨</span> Pod Colors
+                            <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <span class="sr-only">What is Pod Colors?</span>
+                                <div role="tooltip" class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100">
+                                    Most played shows how often each color appeared at the table (multicolor decks count toward every pip in their identity). Best win rate ranks colors by wins when that pip was present — requires at least 10 appearances.
+                                </div>
+                            </div>
+                        </h2>
+                        <div id="analytics-color-meta">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
                     </div>
@@ -8312,6 +8331,164 @@
 
         const DECK_BUILDER_MIN_PLAYS = 3;
         const SYNERGY_MIN_PLAYS = 3;
+        const COLOR_META_WIN_MIN = 10;
+
+        function findCommanderByDeckName(deckName) {
+            const key = String(deckName || '').trim().toLowerCase();
+            if (!key) return null;
+            return (window.appData.commanders || []).find(
+                (c) => String(c.name || '').trim().toLowerCase() === key
+            ) || null;
+        }
+
+        function mfCommandersForDeckName(deckName) {
+            const cmd = findCommanderByDeckName(deckName);
+            if (cmd) return mfCommandersForDeck(cmd);
+            return mfParseCommanderNamesFromDeckName(deckName);
+        }
+
+        function mfCollectMissingColorCommandersFromMatches() {
+            const missing = new Set();
+            (window.appData.matches || []).forEach((m) => {
+                [...(m.winners || []), ...(m.losers || [])].forEach((entry) => {
+                    if (!entry?.name) return;
+                    mfCommandersForDeckName(entry.name).forEach((name) => {
+                        if (!mfDeckColorIdentityReady([name])) missing.add(name);
+                    });
+                });
+            });
+            return [...missing];
+        }
+
+        function computeGroupColorMetaStats() {
+            const played = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+            const winCounts = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+            let totalAppearances = 0;
+            let analyzedAppearances = 0;
+            let pending = false;
+
+            (window.appData.matches || []).forEach((m) => {
+                const slots = [
+                    ...(m.winners || []).map((w) => ({ name: w.name, won: true })),
+                    ...(m.losers || []).map((l) => ({ name: l.name, won: false }))
+                ];
+                slots.forEach((slot) => {
+                    if (!slot.name) return;
+                    totalAppearances++;
+                    const commanders = mfCommandersForDeckName(slot.name);
+                    if (!commanders.length) return;
+                    if (!mfDeckColorIdentityReady(commanders)) {
+                        pending = true;
+                        return;
+                    }
+                    analyzedAppearances++;
+                    const identity = mfUnionColorIdentity(commanders.map((n) => window.artCache[n]));
+                    identity.forEach((id) => {
+                        const key = MF_COLOR_ORDER.includes(id) ? id : 'C';
+                        played[key]++;
+                        if (slot.won) winCounts[key]++;
+                    });
+                });
+            });
+
+            const inclusionPct = {};
+            MF_COLOR_ORDER.forEach((c) => {
+                inclusionPct[c] = totalAppearances > 0 ? Math.round((played[c] / totalAppearances) * 100) : 0;
+            });
+            const colorSum = MF_COLOR_ORDER.reduce((sum, c) => sum + played[c], 0);
+
+            const winRateLeaders = MF_COLOR_ORDER
+                .map((c) => ({
+                    color: c,
+                    played: played[c],
+                    wins: winCounts[c],
+                    winRate: played[c] > 0 ? Math.round((winCounts[c] / played[c]) * 100) : 0
+                }))
+                .filter((r) => r.played >= COLOR_META_WIN_MIN)
+                .sort((a, b) => b.winRate - a.winRate || b.played - a.played || MF_COLOR_ORDER.indexOf(a.color) - MF_COLOR_ORDER.indexOf(b.color));
+
+            return {
+                played,
+                inclusionPct,
+                colorSum,
+                totalAppearances,
+                analyzedAppearances,
+                pending,
+                winRateLeaders
+            };
+        }
+
+        function renderGroupColorMeta() {
+            const stats = computeGroupColorMetaStats();
+
+            if (!stats.totalAppearances) {
+                safeSetHTML('analytics-color-meta', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Color meta appears after you log games.</p></div>`);
+                return;
+            }
+
+            if (stats.pending && !stats.analyzedAppearances) {
+                safeSetHTML('analytics-color-meta', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Loading commander colors from Scryfall…</p></div>`);
+                mfPrefetchGroupColorMeta();
+                return;
+            }
+
+            const activeColors = MF_COLOR_ORDER.filter((c) => stats.played[c] > 0);
+            const barSegments = activeColors.map((c) => {
+                const width = stats.colorSum > 0 ? (stats.played[c] / stats.colorSum) * 100 : 0;
+                const hex = MF_COLOR_HEX[c] || MF_COLOR_HEX.C;
+                return `<div class="h-full" style="width:${width}%;background:${hex}" title="${MF_COLOR_NAMES[c]}: in ${stats.inclusionPct[c]}% of games"></div>`;
+            }).join('');
+
+            const pipRow = activeColors.map((c) => `
+                <div class="flex items-center gap-1.5 min-w-0">
+                    ${mfRenderColorIdentityPip(c, 'w-4 h-4')}
+                    <span class="text-xs font-bold text-slate-300 tabular-nums">${stats.inclusionPct[c]}%</span>
+                </div>
+            `).join('');
+
+            const pendingNote = stats.pending && stats.analyzedAppearances < stats.totalAppearances
+                ? `<p class="text-[10px] text-amber-500/80 mt-2 italic">Based on ${stats.analyzedAppearances} of ${stats.totalAppearances} table appearances (still loading colors).</p>`
+                : `<p class="text-[10px] text-slate-600 mt-2 leading-snug">Share of ${stats.totalAppearances} table appearances that included each color. Multicolor decks count toward every pip in their identity.</p>`;
+
+            const winRows = stats.winRateLeaders.length
+                ? stats.winRateLeaders.map((r, i) => {
+                    const wrCls = r.winRate >= 50 ? 'text-green-400' : 'text-slate-300';
+                    return `<div class="flex items-center justify-between gap-2 py-1.5 ${i > 0 ? 'border-t border-slate-800/80' : ''}">
+                        <span class="inline-flex items-center gap-1.5 min-w-0">
+                            ${mfRenderColorIdentityPip(r.color, 'w-4 h-4')}
+                            <span class="text-xs font-bold text-slate-200">${escapeHtml(MF_COLOR_NAMES[r.color])}</span>
+                        </span>
+                        <span class="text-right shrink-0">
+                            <span class="text-sm font-black ${wrCls} tabular-nums">${r.winRate}%</span>
+                            <span class="block text-[9px] text-slate-500 font-semibold">${r.wins}W · ${r.played} apps</span>
+                        </span>
+                    </div>`;
+                }).join('')
+                : `<p class="text-xs text-slate-500 italic text-center py-2">Need at least ${COLOR_META_WIN_MIN} appearances per color to rank win rates.</p>`;
+
+            safeSetHTML('analytics-color-meta', `<div class="glass p-4 rounded-xl border border-slate-800 space-y-4">
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-3">Most played</p>
+                    <div class="h-3 rounded-full overflow-hidden flex bg-slate-800/80 border border-slate-700/50 shadow-inner">${barSegments || '<div class="h-full w-full bg-slate-700/50"></div>'}</div>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-3">${pipRow || '<span class="text-xs text-slate-500 italic">No color data yet.</span>'}</div>
+                    ${pendingNote}
+                </div>
+                <div class="pt-3 border-t border-slate-800/80">
+                    <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Best win rate</p>
+                    ${winRows}
+                </div>
+            </div>`);
+
+            if (stats.pending) mfPrefetchGroupColorMeta();
+        }
+
+        function mfPrefetchGroupColorMeta() {
+            const missing = mfCollectMissingColorCommandersFromMatches();
+            if (!missing.length) return;
+            mfPrefetchCommanderColorIdentities(missing).then(() => {
+                if (document.getElementById('analytics-color-meta')) renderGroupColorMeta();
+            });
+        }
 
         /** Pilot+deck pairs (min games) ranked by win-rate lift vs that pilot's overall win rate. */
         function computeSignatureSynergies() {
@@ -9073,6 +9250,7 @@
                     safeSetHTML('analytics-group-stats', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Log matches to see your group's story by the numbers.</p></div>`);
                     safeSetHTML('analytics-synergy-rankings', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Combo rankings appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-meta', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">The meta appears after you log games.</p></div>`);
+                    safeSetHTML('analytics-color-meta', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Pod color stats appear after you log games.</p></div>`);
                     safeSetHTML('analytics-upset', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Biggest upsets show up once you have match history.</p></div>`);
                     safeSetHTML('analytics-rivalry', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Rivalries need a few logged games first.</p></div>`);
                     safeSetHTML('analytics-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Deck builder rankings appear once games are logged.</p></div>`);
@@ -9210,6 +9388,7 @@
                 }
                 renderSignatureSynergyRankings(synergies);
                 renderGroupStats();
+                renderGroupColorMeta();
                 
                 const metaDecks = [...window.appData.commanders].sort((a,b) => b.plays - a.plays).slice(0, 3);
                 let metaHTML = '';
