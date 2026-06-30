@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.2">
+    <meta name="mf-app-version" content="2.9.3">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1567,7 +1567,9 @@
 
             <div id="plr-view-extra" class="grid grid-cols-2 gap-3 mb-6"></div>
 
-            <div id="plr-view-color-profile" class="space-y-3 mb-6 hidden"></div>
+            <div id="plr-view-color-profile" class="space-y-3 mb-4 hidden"></div>
+
+            <div id="plr-view-color-insights" class="hidden mb-6"></div>
             
             <h3 class="font-bold text-white mb-3 text-sm flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
@@ -6019,6 +6021,39 @@
 
         const MF_COLOR_ORDER = ['W', 'U', 'B', 'R', 'G', 'C'];
 
+        const MF_GUILD_NAMES = {
+            WU: 'Azorius', UB: 'Dimir', BR: 'Rakdos', RG: 'Gruul', GW: 'Selesnya',
+            WB: 'Orzhov', UR: 'Izzet', BG: 'Golgari', RW: 'Boros', GU: 'Simic'
+        };
+
+        const MF_COLOR_NAMES = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green', C: 'Colorless' };
+
+        function mfRenderColorIdentityPip(code, sizeCls) {
+            return renderManaSymbols(`{${code}}`, sizeCls || 'w-5 h-5');
+        }
+
+        function mfIdentityToComboKey(identity) {
+            const colors = (identity || []).filter((id) => id !== 'C' && MF_COLOR_ORDER.includes(id));
+            if (!colors.length) return 'C';
+            return MF_COLOR_ORDER.filter((c) => c !== 'C' && colors.includes(c)).join('');
+        }
+
+        function mfFormatComboDisplay(comboKey) {
+            const key = String(comboKey || 'C');
+            const pips = key === 'C'
+                ? mfRenderColorIdentityPip('C', 'w-4 h-4')
+                : key.split('').map((c) => mfRenderColorIdentityPip(c, 'w-4 h-4')).join('');
+            let label = '';
+            if (key === 'C') label = 'Colorless';
+            else if (key.length === 1) label = `Mono-${MF_COLOR_NAMES[key] || key}`;
+            else if (key.length === 2) label = MF_GUILD_NAMES[key] || key;
+            else if (key.length === 5) label = '5-Color';
+            else if (key.length === 4) label = '4-Color';
+            else if (key.length === 3) label = '3-Color';
+            else label = key;
+            return { pips, label };
+        }
+
         function mfCommandersForDeck(cmd) {
             if (cmd?.commanders?.length) return cmd.commanders.map(String);
             return mfParseCommanderNamesFromDeckName(cmd?.name || '');
@@ -6033,8 +6068,11 @@
 
         function mfComputeColorProfileStats(decks) {
             const counts = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+            const comboCounts = {};
             let total = 0;
             let pending = false;
+            let monoCount = 0;
+            let multiCount = 0;
 
             (decks || []).forEach((deck) => {
                 const commanders = mfCommandersForDeck(deck);
@@ -6045,7 +6083,11 @@
                 }
                 const caches = commanders.map((name) => window.artCache[name]);
                 const identity = mfUnionColorIdentity(caches);
+                const comboKey = mfIdentityToComboKey(identity);
                 total += 1;
+                comboCounts[comboKey] = (comboCounts[comboKey] || 0) + 1;
+                if (comboKey === 'C' || comboKey.length === 1) monoCount += 1;
+                else multiCount += 1;
                 identity.forEach((id) => {
                     const key = MF_COLOR_ORDER.includes(id) ? id : 'C';
                     counts[key] += 1;
@@ -6057,7 +6099,42 @@
                 percents[c] = total > 0 ? Math.round((counts[c] / total) * 100) : 0;
             });
             const colorSum = MF_COLOR_ORDER.reduce((sum, c) => sum + counts[c], 0);
-            return { total, counts, percents, pending, colorSum };
+
+            const combosSorted = Object.entries(comboCounts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+            const topEntry = combosSorted[0];
+            const topCombo = topEntry
+                ? { key: topEntry[0], count: topEntry[1], percent: total > 0 ? Math.round((topEntry[1] / total) * 100) : 0 }
+                : null;
+            const tiedCombos = topCombo
+                ? combosSorted.filter(([, n]) => n === topCombo.count).map(([k]) => k)
+                : [];
+            const runnerUp = combosSorted.find(([k, n]) => topCombo && k !== topCombo.key && n < topCombo.count);
+
+            let dominantColor = null;
+            let dominantCount = 0;
+            MF_COLOR_ORDER.forEach((c) => {
+                if (counts[c] > dominantCount) {
+                    dominantCount = counts[c];
+                    dominantColor = c;
+                }
+            });
+
+            return {
+                total,
+                counts,
+                percents,
+                pending,
+                colorSum,
+                comboCounts,
+                topCombo,
+                tiedCombos,
+                runnerUp: runnerUp ? { key: runnerUp[0], count: runnerUp[1], percent: total > 0 ? Math.round((runnerUp[1] / total) * 100) : 0 } : null,
+                monoCount,
+                multiCount,
+                uniqueCombos: Object.keys(comboCounts).length,
+                dominantColor,
+                dominantPercent: dominantColor ? percents[dominantColor] : 0
+            };
         }
 
         function mfCollectMissingColorCommanders(decks) {
@@ -6098,8 +6175,90 @@
             return fetched;
         }
 
-        function mfRenderColorIdentityPip(code, sizeCls) {
-            return renderManaSymbols(`{${code}}`, sizeCls || 'w-5 h-5');
+        function mfColorInsightBulletsForStats(stats) {
+            if (!stats?.total || stats.pending) return [];
+            const bullets = [];
+
+            if (stats.topCombo) {
+                if (stats.total === 1) {
+                    const { pips, label } = mfFormatComboDisplay(stats.topCombo.key);
+                    bullets.push(`<span class="inline-flex items-center gap-1.5 flex-wrap">Only deck: <span class="inline-flex items-center gap-0.5">${pips}</span><span class="text-white font-semibold">${escapeHtml(label)}</span></span>`);
+                } else if (stats.tiedCombos.length > 1) {
+                    const tiedLabels = stats.tiedCombos.map((key) => {
+                        const { pips, label } = mfFormatComboDisplay(key);
+                        return `<span class="inline-flex items-center gap-0.5">${pips}<span class="text-white font-semibold">${escapeHtml(label)}</span></span>`;
+                    }).join('<span class="text-slate-500 mx-1">·</span>');
+                    bullets.push(`<span class="inline-flex items-center gap-1.5 flex-wrap">Top combo (tied): ${tiedLabels} <span class="text-slate-400">— ${stats.topCombo.count} decks each (${stats.topCombo.percent}%)</span></span>`);
+                } else {
+                    const { pips, label } = mfFormatComboDisplay(stats.topCombo.key);
+                    bullets.push(`<span class="inline-flex items-center gap-1.5 flex-wrap">Signature combo: <span class="inline-flex items-center gap-0.5">${pips}</span><span class="text-white font-semibold">${escapeHtml(label)}</span><span class="text-slate-400">— ${stats.topCombo.count} of ${stats.total} decks (${stats.topCombo.percent}%)</span></span>`);
+                    if (stats.runnerUp && stats.runnerUp.count > 0) {
+                        const runner = mfFormatComboDisplay(stats.runnerUp.key);
+                        bullets.push(`<span class="inline-flex items-center gap-1.5 flex-wrap">Runner-up: <span class="inline-flex items-center gap-0.5">${runner.pips}</span><span class="text-slate-200 font-medium">${escapeHtml(runner.label)}</span><span class="text-slate-400">— ${stats.runnerUp.count} deck${stats.runnerUp.count === 1 ? '' : 's'}</span></span>`);
+                    }
+                }
+            }
+
+            if (stats.dominantColor && stats.total > 1 && stats.dominantPercent > 0) {
+                bullets.push(`Most common color: <span class="text-white font-semibold">${escapeHtml(MF_COLOR_NAMES[stats.dominantColor])}</span> <span class="text-slate-400">— in ${stats.dominantPercent}% of decks</span>`);
+            }
+
+            if (stats.total >= 2) {
+                const multiPct = Math.round((stats.multiCount / stats.total) * 100);
+                const identityLabel = stats.uniqueCombos === 1 ? 'identity' : 'identities';
+                if (stats.uniqueCombos === stats.total) {
+                    bullets.push(`<span class="text-slate-300">Every deck has a different color identity</span> <span class="text-slate-500">(${stats.uniqueCombos} unique)</span>`);
+                } else {
+                    bullets.push(`<span class="text-slate-300">${multiPct}% multicolor</span> <span class="text-slate-500">· ${stats.uniqueCombos} unique ${identityLabel}</span>`);
+                }
+            }
+
+            return bullets.slice(0, 3);
+        }
+
+        function mfRenderColorInsightsSection(builtStats, pilotedStats) {
+            const builtBullets = mfColorInsightBulletsForStats(builtStats);
+            const pilotedBullets = mfColorInsightBulletsForStats(pilotedStats);
+            const hasBuilt = builtStats.total > 0;
+            const hasPiloted = pilotedStats.total > 0;
+
+            let crossBullet = '';
+            if (hasBuilt && hasPiloted && builtStats.topCombo && pilotedStats.topCombo
+                && builtStats.topCombo.key !== pilotedStats.topCombo.key
+                && builtStats.tiedCombos.length <= 1 && pilotedStats.tiedCombos.length <= 1) {
+                const built = mfFormatComboDisplay(builtStats.topCombo.key);
+                const piloted = mfFormatComboDisplay(pilotedStats.topCombo.key);
+                crossBullet = `<li class="text-xs text-purple-200/90 leading-relaxed border-t border-slate-800/80 pt-3 mt-1">
+                    <span class="inline-flex items-center gap-1.5 flex-wrap">Builds <span class="inline-flex items-center gap-0.5">${built.pips}</span><span class="font-semibold text-white">${escapeHtml(built.label)}</span> most, but pilots <span class="inline-flex items-center gap-0.5">${piloted.pips}</span><span class="font-semibold text-white">${escapeHtml(piloted.label)}</span> most.</span>
+                </li>`;
+            }
+
+            if (!builtBullets.length && !pilotedBullets.length && !crossBullet) {
+                if (builtStats.pending || pilotedStats.pending) {
+                    return `<div class="glass p-4 rounded-xl border border-slate-800">
+                        <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Color insights</p>
+                        <p class="text-xs text-slate-500 italic">Loading color insights…</p>
+                    </div>`;
+                }
+                return '';
+            }
+
+            const renderGroup = (title, bullets) => {
+                if (!bullets.length) return '';
+                return `<div>
+                    <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">${escapeHtml(title)}</p>
+                    <ul class="space-y-2">${bullets.map((b) => `<li class="text-xs text-slate-300 leading-relaxed">${b}</li>`).join('')}</ul>
+                </div>`;
+            };
+
+            return `<div class="glass p-4 rounded-xl border border-slate-800">
+                <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-3">Color insights</p>
+                <div class="space-y-4">
+                    ${renderGroup('Built', builtBullets)}
+                    ${renderGroup('Piloted', pilotedBullets)}
+                </div>
+                ${crossBullet ? `<ul>${crossBullet}</ul>` : ''}
+            </div>`;
         }
 
         function mfRenderColorProfileBlock(stats, label) {
@@ -6142,6 +6301,7 @@
 
         function renderPlayerColorProfile(player) {
             const host = document.getElementById('plr-view-color-profile');
+            const insightsHost = document.getElementById('plr-view-color-insights');
             if (!host || !player) return;
 
             const archivedNames = new Set(
@@ -6158,16 +6318,39 @@
             const pilotedStats = mfComputeColorProfileStats(pilotedDecks);
             const builtHtml = mfRenderColorProfileBlock(builtStats, 'Built · color identity');
             const pilotedHtml = mfRenderColorProfileBlock(pilotedStats, 'Piloted · color identity');
-            const html = [builtHtml, pilotedHtml].filter(Boolean).join('');
+            const profileHtml = [builtHtml, pilotedHtml].filter(Boolean).join('');
+            const insightsHtml = mfRenderColorInsightsSection(builtStats, pilotedStats);
 
-            if (!html && !builtStats.pending && !pilotedStats.pending) {
+            const showProfile = profileHtml || builtStats.pending || pilotedStats.pending;
+            const showInsights = !!insightsHtml;
+
+            if (!showProfile && !showInsights) {
                 host.classList.add('hidden');
                 host.innerHTML = '';
+                if (insightsHost) {
+                    insightsHost.classList.add('hidden');
+                    insightsHost.innerHTML = '';
+                }
                 return;
             }
 
-            host.classList.remove('hidden');
-            host.innerHTML = html;
+            if (showProfile) {
+                host.classList.remove('hidden');
+                host.innerHTML = profileHtml;
+            } else {
+                host.classList.add('hidden');
+                host.innerHTML = '';
+            }
+
+            if (insightsHost) {
+                if (showInsights) {
+                    insightsHost.classList.remove('hidden');
+                    insightsHost.innerHTML = insightsHtml;
+                } else {
+                    insightsHost.classList.add('hidden');
+                    insightsHost.innerHTML = '';
+                }
+            }
 
             if (builtStats.pending || pilotedStats.pending) {
                 const missing = mfCollectMissingColorCommanders([...builtDecks, ...pilotedDecks]);
