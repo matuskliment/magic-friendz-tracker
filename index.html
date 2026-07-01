@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.20">
+    <meta name="mf-app-version" content="2.9.21">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Track Commander pod stats, Elo, win rates, deck lists, and match history for your MTG playgroup. Free EDH stats tracker with magic-link sign-in.">
     <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
@@ -4071,10 +4071,17 @@
 
         function mfGetKilledByCandidates(loserSlot) {
             const defeated = mfGetDefeatedPilotName(loserSlot);
-            const all = mfGetFilledPodPilotNames();
+            const names = new Set();
+            (window.appData.players || []).forEach((p) => {
+                const n = normalizeName(p.name);
+                if (n) names.add(n);
+            });
+            mfGetFilledPodPilotNames().forEach((n) => names.add(n));
             const candidates = [];
             if (defeated) candidates.push({ value: MF_KILL_SELF, label: 'Self' });
-            all.filter((n) => n !== defeated).forEach((n) => candidates.push({ value: n, label: n }));
+            [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+                .filter((n) => n !== defeated)
+                .forEach((n) => candidates.push({ value: n, label: n }));
             return candidates;
         }
 
@@ -5118,7 +5125,7 @@
                     li.className = 'px-4 py-3 text-sm text-slate-500 italic';
                     li.textContent = candidates.length
                         ? 'No players match your search'
-                        : 'Fill in pilots first, then pick who eliminated this player';
+                        : 'No players in your group yet';
                     list.appendChild(li);
                     return;
                 }
@@ -5299,7 +5306,7 @@
                 searchEl.placeholder = kind === 'deck'
                     ? 'Search commander decks…'
                     : kind === 'killed-by'
-                        ? 'Search pod players…'
+                        ? 'Search players…'
                         : kind === 'killed-via'
                             ? 'Search elimination type…'
                             : 'Search pilots…';
@@ -6040,7 +6047,7 @@
                                         <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                         </div>
-                                        <input type="text" class="mf-clearable local-killed-by-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search pod players…" autocomplete="off">
+                                        <input type="text" class="mf-clearable local-killed-by-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search players…" autocomplete="off">
                                     </div>
                                 </div>
                                 <input type="hidden" class="killed-by-input" value="">
@@ -12040,7 +12047,7 @@
                 li.className = 'dropdown-empty px-4 py-3 text-sm';
                 li.textContent = candidates.length
                     ? 'No players match your search'
-                    : 'Fill in pilots first, then pick who eliminated this player';
+                    : 'No players in your group yet';
                 dropdown.appendChild(li);
             } else {
                 filtered.forEach((c) => {
