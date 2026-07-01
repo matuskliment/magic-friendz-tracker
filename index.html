@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.18">
+    <meta name="mf-app-version" content="2.9.19">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Track Commander pod stats, Elo, win rates, deck lists, and match history for your MTG playgroup. Free EDH stats tracker with magic-link sign-in.">
     <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
@@ -436,6 +436,9 @@
             #view-log-match.mf-log-match-wizard .mf-mobile-field-picker {
                 display: block;
             }
+            #view-log-match.mf-log-match-wizard .mf-desktop-killed-by {
+                display: none !important;
+            }
             #view-log-match.mf-log-match-wizard .mf-desktop-card-search {
                 display: none !important;
             }
@@ -459,6 +462,9 @@
         }
         .mf-mobile-field-picker {
             display: none;
+        }
+        .mf-desktop-killed-by {
+            display: block;
         }
         .mf-mobile-card-picker {
             display: none;
@@ -3964,6 +3970,16 @@
             }
             const commanders = mfGetCommanderNamesFromSeat(entry);
             if (deckGroup && commanders.length) mfWriteCommandersToDeckGroup(deckGroup, commanders);
+            if (slotContainer.classList.contains('loser-slot')) {
+                if (entry.killedBy) {
+                    const defeated = entry.player || mfGetDefeatedPilotName(slotContainer);
+                    const kbVal = defeated && normalizeName(entry.killedBy) === normalizeName(defeated)
+                        ? MF_KILL_SELF
+                        : entry.killedBy;
+                    mfSetKilledByValue(slotContainer, kbVal);
+                }
+                if (entry.killedVia) mfSetKilledViaValue(slotContainer, entry.killedVia);
+            }
             mfSyncMobilePickerLabels();
         }
 
@@ -4021,6 +4037,144 @@
 
         // --- Log Match mobile wizard (≤767px); desktop unchanged ---
         window._logMatchWizardStep = 0;
+
+        const MF_KILL_SELF = '__self__';
+        const MF_KILL_VIA_OPTIONS = [
+            { value: 'commander_damage', label: 'Commander damage' },
+            { value: 'combat_damage', label: 'Combat damage' },
+            { value: 'non_combat_damage', label: 'Non-combat damage' },
+            { value: 'life_loss', label: 'Life loss' },
+            { value: 'poison_counters', label: 'Poison counters' },
+            { value: 'milled_out', label: 'Unable to draw (milled out)' },
+            { value: 'instant_loss', label: 'Card effect (instant game loss/end)' }
+        ];
+
+        function mfKillViaLabel(value) {
+            const opt = MF_KILL_VIA_OPTIONS.find((o) => o.value === value);
+            return opt ? opt.label : value || '';
+        }
+
+        function mfBuildKillViaDropdownOptionsHtml() {
+            return MF_KILL_VIA_OPTIONS.map((opt, i) => {
+                const border = i < MF_KILL_VIA_OPTIONS.length - 1 ? ' border-b border-slate-700/50' : '';
+                return `<li data-value="${opt.value}" class="static-dropdown-option px-4 py-3 text-sm text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition${border}">${opt.label}</li>`;
+            }).join('');
+        }
+
+        function mfGetDefeatedPilotName(slot) {
+            const pg = slot?.querySelector('.input-slot-group[data-type="player"]');
+            if (!pg) return '';
+            const isNew = slotUsesNewMode(pg);
+            const input = isNew ? pg.querySelector('.new-player-input') : pg.querySelector('.local-player-input');
+            return normalizeName(input?.value || '');
+        }
+
+        function mfGetFilledPodPilotNames() {
+            const names = new Set();
+            document.querySelectorAll('#form-winners-container .winner-slot, #form-losers-container .loser-slot').forEach((slot) => {
+                const pg = slot.querySelector('.input-slot-group[data-type="player"]');
+                if (!pg) return;
+                const isNew = slotUsesNewMode(pg);
+                const input = isNew ? pg.querySelector('.new-player-input') : pg.querySelector('.local-player-input');
+                const n = normalizeName(input?.value || '');
+                if (n) names.add(n);
+            });
+            return [...names];
+        }
+
+        function mfGetKilledByCandidates(loserSlot) {
+            const defeated = mfGetDefeatedPilotName(loserSlot);
+            const all = mfGetFilledPodPilotNames();
+            const candidates = [];
+            if (defeated) candidates.push({ value: MF_KILL_SELF, label: 'Self' });
+            all.filter((n) => n !== defeated).forEach((n) => candidates.push({ value: n, label: n }));
+            return candidates;
+        }
+
+        function mfSetKilledByValue(loserSlot, value) {
+            const group = loserSlot?.querySelector('.input-slot-group[data-type="killed-by"]');
+            if (!group) return;
+            const hidden = group.querySelector('.killed-by-input');
+            if (hidden) {
+                hidden.value = value || '';
+                hidden.classList.toggle('mf-field-valid', !!value);
+                hidden.classList.remove('mf-field-invalid');
+            }
+            const candidates = mfGetKilledByCandidates(loserSlot);
+            const match = candidates.find((c) => c.value === value);
+            const label = match?.label || (value && value !== MF_KILL_SELF ? value : '');
+            const display = group.querySelector('.static-dropdown-display');
+            if (display) {
+                display.textContent = label || 'Choose player…';
+                display.classList.toggle('text-slate-400', !label);
+                display.classList.toggle('text-white', !!label);
+            }
+            const pickerVal = group.querySelector('.mf-killed-by-picker .mf-mobile-picker-value');
+            const pickerBtn = group.querySelector('.mf-killed-by-picker');
+            if (pickerVal) {
+                pickerVal.textContent = label || 'Tap to choose player';
+                pickerVal.classList.toggle('text-slate-400', !label);
+                pickerVal.classList.toggle('text-white', !!label);
+            }
+            if (pickerBtn) pickerBtn.classList.toggle('border-purple-500/40', !!label);
+        }
+
+        function mfSetKilledViaValue(loserSlot, value) {
+            const group = loserSlot?.querySelector('.input-slot-group[data-type="killed-via"]');
+            if (!group) return;
+            const hidden = group.querySelector('.killed-via-input');
+            const label = mfKillViaLabel(value);
+            if (hidden) {
+                hidden.value = value || '';
+                hidden.classList.toggle('mf-field-valid', !!value);
+                hidden.classList.remove('mf-field-invalid');
+            }
+            const display = group.querySelector('.static-dropdown-display');
+            if (display) {
+                display.textContent = label || 'Choose elimination…';
+                display.classList.toggle('text-slate-400', !label);
+                display.classList.toggle('text-white', !!label);
+            }
+        }
+
+        function mfRefreshKilledByDropdowns() {
+            document.querySelectorAll('#form-losers-container .loser-slot').forEach((slot) => {
+                const group = slot.querySelector('.input-slot-group[data-type="killed-by"]');
+                if (!group) return;
+                const hidden = group.querySelector('.killed-by-input');
+                const current = hidden?.value || '';
+                const list = group.querySelector('.killed-by-options');
+                if (!list) return;
+                const candidates = mfGetKilledByCandidates(slot);
+                list.innerHTML = candidates.map((c, i) => {
+                    const border = i < candidates.length - 1 ? ' border-b border-slate-700/50' : '';
+                    return `<li data-value="${escapeHtml(c.value)}" class="static-dropdown-option px-4 py-3 text-sm text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition${border}">${escapeHtml(c.label)}</li>`;
+                }).join('');
+                const stillValid = !current || candidates.some((c) => c.value === current);
+                if (!stillValid) mfSetKilledByValue(slot, '');
+                else if (current) mfSetKilledByValue(slot, current);
+            });
+        }
+
+        function mfResolveKilledByForSave(loserSlot, rawValue, defeatedPlayer) {
+            const v = String(rawValue || '').trim();
+            if (!v) return '';
+            if (v === MF_KILL_SELF) return defeatedPlayer || '';
+            return normalizeName(v);
+        }
+
+        function mfKilledByDisplayLabel(loserPlayer, killedBy) {
+            if (!killedBy) return '';
+            if (loserPlayer && normalizeName(killedBy) === normalizeName(loserPlayer)) return 'Self';
+            return killedBy;
+        }
+
+        function mfFormatLoserElimSubline(l) {
+            if (!l?.killedBy && !l?.killedVia) return '';
+            const by = l.killedBy ? mfKilledByDisplayLabel(l.player, l.killedBy) : '—';
+            const via = l.killedVia ? mfKillViaLabel(l.killedVia) : '—';
+            return `<span class="text-[10px] text-slate-500 block truncate mt-0.5">${escapeHtml(by)} · ${escapeHtml(via)}</span>`;
+        }
 
         function mfGetWinnerCount() {
             return Math.max(1, parseInt(document.getElementById('form-winner-count')?.value || '1', 10) || 1);
@@ -4085,6 +4239,8 @@
                 errCommanderNotFound(name) {
                     return `"${name}" isn't a saved commander deck — pick from the list or search Scryfall.`;
                 },
+                errKilledByMissing: 'Choose who eliminated this player.',
+                errKilledViaMissing: 'Choose how they were eliminated.',
                 toastTitle: 'Almost there'
             };
         }
@@ -4154,6 +4310,20 @@
                 if (d.needsScryfall) addIssue(d.input, copy.errCommanderScryfall);
                 else addIssue(d.input, copy.errCommanderInvalid);
             }
+            if (role === 'defeated' && p.filled && d.filled && p.valid && d.valid) {
+                const kbGroup = slot.querySelector('.input-slot-group[data-type="killed-by"]');
+                const kvGroup = slot.querySelector('.input-slot-group[data-type="killed-via"]');
+                const kb = kbGroup?.querySelector('.killed-by-input')?.value?.trim();
+                const kv = kvGroup?.querySelector('.killed-via-input')?.value?.trim();
+                if (!kb) {
+                    const kbTarget = kbGroup?.querySelector('.mf-killed-by-picker') || kbGroup?.querySelector('.static-dropdown-header');
+                    addIssue(kbTarget, copy.errKilledByMissing);
+                }
+                if (!kv) {
+                    const kvTarget = kvGroup?.querySelector('.static-dropdown-header');
+                    addIssue(kvTarget, copy.errKilledViaMissing);
+                }
+            }
             return { ok: issues.length === 0, issues, firstInvalid, toastTitle: copy.toastTitle, toastMessage: issues[0] || '' };
         }
 
@@ -4220,7 +4390,10 @@
             document.querySelectorAll('.loser-slot').forEach((slot) => {
                 const d = extractSlotData(slot);
                 if (d.player && d.deck) {
-                    rows.push(`<div class="flex gap-2 items-start bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2"><span class="text-red-400/80 shrink-0">💀</span><div class="min-w-0"><p class="font-semibold text-slate-200 truncate">${escapeHtml(d.deck)}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(d.player)}</p></div></div>`);
+                    const elim = d.killedBy && d.killedVia
+                        ? `<p class="text-[10px] text-slate-500 mt-0.5 truncate">Killed by ${escapeHtml(mfKilledByDisplayLabel(d.player, d.killedBy))} · ${escapeHtml(mfKillViaLabel(d.killedVia))}</p>`
+                        : '';
+                    rows.push(`<div class="flex gap-2 items-start bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2"><span class="text-red-400/80 shrink-0">💀</span><div class="min-w-0"><p class="font-semibold text-slate-200 truncate">${escapeHtml(d.deck)}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(d.player)}</p>${elim}</div></div>`);
                 }
             });
             const cards = ['form-card-1', 'form-card-2', 'form-card-3']
@@ -4297,6 +4470,7 @@
             document.querySelectorAll('#form-winners-container .winner-slot, #form-losers-container .loser-slot').forEach(el => {
                 el.classList.add('log-match-step-panel');
             });
+            mfRefreshKilledByDropdowns();
             if (mfIsLogMatchWizardViewport()) {
                 const plan = mfBuildLogMatchWizardPlan();
                 if (window._logMatchWizardStep >= plan.length) {
@@ -4528,7 +4702,7 @@
         }
 
         function mfSyncMobilePickerLabels() {
-            document.querySelectorAll('#view-log-match .mf-mobile-field-picker:not(.mf-mobile-card-picker)').forEach((btn) => {
+            document.querySelectorAll('#view-log-match .mf-mobile-field-picker:not(.mf-mobile-card-picker):not(.mf-killed-by-picker)').forEach((btn) => {
                 const group = btn.closest('.input-slot-group');
                 const kind = btn.dataset.pickerKind;
                 const valueEl = btn.querySelector('.mf-mobile-picker-value');
@@ -4929,6 +5103,36 @@
                 return;
             }
 
+            if (state.kind === 'killed-by') {
+                const candidates = mfGetKilledByCandidates(state.slot);
+                let filtered = candidates;
+                if (query) {
+                    filtered = candidates.filter((c) =>
+                        c.label.toLowerCase().includes(query) || c.value.toLowerCase().includes(query)
+                    );
+                }
+                if (!filtered.length) {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 text-sm text-slate-500 italic';
+                    li.textContent = candidates.length
+                        ? 'No players match your search'
+                        : 'Fill in pilots first, then pick who eliminated this player';
+                    list.appendChild(li);
+                    return;
+                }
+                filtered.forEach((c) => {
+                    const row = document.createElement('li');
+                    row.className = 'px-4 py-3 text-slate-200 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition truncate font-medium';
+                    row.textContent = c.label;
+                    mfPickerBindRow(row, () => {
+                        mfSetKilledByValue(state.slot, c.value);
+                        mfCloseMobileFieldPicker();
+                    });
+                    list.appendChild(row);
+                });
+                return;
+            }
+
             const isDeck = state.kind === 'deck';
             const dataArray = isDeck ? getSelectableCommanders() : (window.appData.players || []);
             let filtered = dataArray;
@@ -5038,6 +5242,7 @@
                         mfWriteCommandersToDeckGroup(state.group, mfParseCommanderNamesFromDeckName(item.name));
                     }
                     delete state.group.dataset.confirmedNew;
+                    mfRefreshKilledByDropdowns();
                     mfCloseMobileFieldPicker();
                 });
                 list.appendChild(row);
@@ -5050,16 +5255,23 @@
             const group = btn.closest('.input-slot-group');
             const slot = btn.closest('.winner-slot, .loser-slot');
             if (!group || !slot) return;
-            const kind = btn.dataset.pickerKind === 'deck' ? 'deck' : 'player';
+            const pickerKind = btn.dataset.pickerKind || 'player';
+            const kind = pickerKind === 'deck' ? 'deck' : (pickerKind === 'killed-by' ? 'killed-by' : 'player');
             window._logMatchPickerState = { group, slot, kind, mode: 'list' };
             const modal = document.getElementById('view-log-match');
             const picker = document.getElementById('log-match-picker');
             const title = document.getElementById('log-match-picker-title');
             const searchEl = document.getElementById('log-match-picker-search');
-            if (title) title.textContent = kind === 'deck' ? 'Choose commander' : 'Choose pilot';
+            if (title) {
+                title.textContent = kind === 'deck'
+                    ? 'Choose commander'
+                    : (kind === 'killed-by' ? 'Killed by' : 'Choose pilot');
+            }
             if (searchEl) {
                 searchEl.value = '';
-                searchEl.placeholder = kind === 'deck' ? 'Search commander decks…' : 'Search pilots…';
+                searchEl.placeholder = kind === 'deck'
+                    ? 'Search commander decks…'
+                    : (kind === 'killed-by' ? 'Search pod players…' : 'Search pilots…');
             }
             modal?.classList.add('mf-picker-open');
             if (picker) picker.setAttribute('aria-hidden', 'false');
@@ -5777,6 +5989,41 @@
                                     <input type="text" class="local-owner-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm min-h-[48px] cursor-pointer" placeholder="Default to pilot" autocomplete="off" readonly tabindex="0">
                                 </div>
                                 <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this commander</button>
+                            </div>
+                        </div>`;
+        }
+
+        function mfBuildLoserElimFields() {
+            return `
+                        <div class="pt-3 mt-1 border-t border-slate-800/80 space-y-4">
+                            <p class="text-[10px] uppercase tracking-wider font-bold text-red-400/80">Elimination</p>
+                            <div class="input-slot-group" data-type="killed-by">
+                                <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Killed by</label>
+                                <button type="button" class="mf-mobile-field-picker mf-killed-by-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileFieldPicker(this)" data-picker-kind="killed-by">
+                                    <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to choose player</span>
+                                    <span class="block text-[10px] text-slate-500 mt-0.5">Pod member or Self</span>
+                                </button>
+                                <div class="mf-desktop-killed-by relative custom-static-dropdown min-w-0">
+                                    <input type="hidden" class="killed-by-input" value="">
+                                    <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] touch-manipulation text-left text-sm">
+                                        <span class="static-dropdown-display text-slate-400">Choose player…</span>
+                                        <svg class="text-slate-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </button>
+                                    <ul class="static-dropdown-list killed-by-options hidden absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto shadow-2xl"></ul>
+                                </div>
+                            </div>
+                            <div class="input-slot-group" data-type="killed-via">
+                                <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Killed via</label>
+                                <div class="relative custom-static-dropdown min-w-0">
+                                    <input type="hidden" class="killed-via-input" value="">
+                                    <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] touch-manipulation text-left text-sm">
+                                        <span class="static-dropdown-display text-slate-400">Choose elimination…</span>
+                                        <svg class="text-slate-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </button>
+                                    <ul class="static-dropdown-list hidden absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto shadow-2xl">
+                                        ${mfBuildKillViaDropdownOptionsHtml()}
+                                    </ul>
+                                </div>
                             </div>
                         </div>`;
         }
@@ -9289,9 +9536,12 @@
                             <div class="flex justify-between items-center bg-slate-800/30 p-2 md:p-3 rounded-lg border border-slate-700/30 mb-2">
                                 <div class="flex items-center gap-3 opacity-80 min-w-0">
                                     <div data-card="${l.name}" data-version="art_crop" class="set-bg w-8 h-8 rounded-full art-fallback bg-cover bg-center border border-slate-600 grayscale shrink-0"></div>
-                                    <span class="text-sm text-slate-300 font-semibold flex items-center gap-2 truncate">
-                                        <span class="text-red-500/50 shrink-0">💀</span> <span class="truncate">${l.name}</span> <span class="text-[10px] text-slate-500 hidden sm:inline shrink-0 normal-case">(${pilotDisplay}${ownerTag})</span>
-                                    </span>
+                                    <div class="min-w-0">
+                                        <span class="text-sm text-slate-300 font-semibold flex items-center gap-2 truncate">
+                                            <span class="text-red-500/50 shrink-0">💀</span> <span class="truncate">${l.name}</span> <span class="text-[10px] text-slate-500 hidden sm:inline shrink-0 normal-case">(${pilotDisplay}${ownerTag})</span>
+                                        </span>
+                                        ${mfFormatLoserElimSubline(l)}
+                                    </div>
                                 </div>
                                 <div class="text-right opacity-80 shrink-0">
                                     <span class="text-xs ${deltaColor} font-bold w-12 text-right">${delta > 0 ? '+'+delta : delta}</span>
@@ -9364,9 +9614,12 @@
                             <div class="flex justify-between items-center bg-slate-800/30 p-2 md:p-3 rounded-lg border border-slate-700/30 mb-2">
                                 <div class="flex items-center gap-3 opacity-80 min-w-0">
                                     <div data-card="${l.name}" data-version="art_crop" class="set-bg w-8 h-8 rounded-full art-fallback bg-cover bg-center border border-slate-600 grayscale shrink-0"></div>
-                                    <span class="text-sm text-slate-300 font-semibold flex items-center gap-2 truncate">
-                                        <span class="text-red-500/50 shrink-0">💀</span> <span class="truncate">${l.name}</span> <span class="text-[10px] text-slate-500 hidden sm:inline shrink-0">(${l.player})</span>
-                                    </span>
+                                    <div class="min-w-0">
+                                        <span class="text-sm text-slate-300 font-semibold flex items-center gap-2 truncate">
+                                            <span class="text-red-500/50 shrink-0">💀</span> <span class="truncate">${l.name}</span> <span class="text-[10px] text-slate-500 hidden sm:inline shrink-0">(${l.player})</span>
+                                        </span>
+                                        ${mfFormatLoserElimSubline(l)}
+                                    </div>
                                 </div>
                                 <div class="text-right opacity-80 shrink-0">
                                     <span class="text-xs ${lDeltaColor} font-bold w-12 text-right">${lDelta > 0 ? '+'+lDelta : lDelta}</span>
@@ -9485,7 +9738,10 @@
                         
                         const losersHtml = m.losers.map(l => {
                             const delta = m.eloChanges[l.name];
-                            return `<div class="flex items-center gap-2 bg-slate-900/40 p-2 rounded-lg border border-slate-800/50"><div data-card="${l.name}" data-version="art_crop" class="set-bg bg-cover bg-center w-7 h-7 rounded-full border border-red-500/30 grayscale art-fallback shrink-0"></div><div class="min-w-0 flex-grow"><p class="text-[11px] font-semibold text-slate-300 truncate"><span class="text-red-500/50 mr-1">💀</span>${l.player}</p><p class="text-[9px] text-slate-500 truncate">${l.name}</p></div><span class="text-xs text-red-400/80 font-bold shrink-0">${delta}</span></div>`;
+                            const elim = (l.killedBy || l.killedVia)
+                                ? `<p class="text-[9px] text-slate-500 truncate">${escapeHtml(l.killedBy ? mfKilledByDisplayLabel(l.player, l.killedBy) : '—')} · ${escapeHtml(l.killedVia ? mfKillViaLabel(l.killedVia) : '—')}</p>`
+                                : '';
+                            return `<div class="flex items-center gap-2 bg-slate-900/40 p-2 rounded-lg border border-slate-800/50"><div data-card="${l.name}" data-version="art_crop" class="set-bg bg-cover bg-center w-7 h-7 rounded-full border border-red-500/30 grayscale art-fallback shrink-0"></div><div class="min-w-0 flex-grow"><p class="text-[11px] font-semibold text-slate-300 truncate"><span class="text-red-500/50 mr-1">💀</span>${l.player}</p><p class="text-[9px] text-slate-500 truncate">${l.name}</p>${elim}</div><span class="text-xs text-red-400/80 font-bold shrink-0">${delta}</span></div>`;
                         }).join('');
 
                         const cardsHtml = (m.winningCards && m.winningCards.length > 0) 
@@ -11130,7 +11386,7 @@
                 <div class="loser-slot log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
                     <div class="absolute -right-4 -top-4 opacity-5 text-red-500 text-6xl font-black pointer-events-none" aria-hidden="true">💀</div>
                     <h3 class="text-xs text-red-400 font-bold mb-4 flex items-center gap-2 relative z-10">${copy.slotHeading}</h3>
-                    <div class="space-y-4 relative z-10">${mfBuildPodSlotFields('loser')}</div>
+                    <div class="space-y-4 relative z-10">${mfBuildPodSlotFields('loser')}${mfBuildLoserElimFields()}</div>
                 </div>`;
             }
             lContainer.innerHTML = lHtml;
@@ -11226,6 +11482,7 @@
                 }
                 if (localInput) localInput.value = name;
                 fieldToRefocus = localInput;
+                mfRefreshKilledByDropdowns();
             } else if (type === 'deck') {
                 const newInput = group.querySelector('.new-deck-input');
                 const variantInput = group.querySelector('.new-deck-variant-input');
@@ -11304,6 +11561,9 @@
             input.dataset.mfSelected = '1';
             input.classList.remove('mf-field-invalid');
             mfClearFieldError(input);
+            if (input.classList.contains('local-player-input') && input.closest('#view-log-match')) {
+                mfRefreshKilledByDropdowns();
+            }
         }
 
         function mfClearFieldSelected(input) {
@@ -11396,6 +11656,19 @@
                     if (d.needsScryfall) addIssue(d.input, copy.errCommanderScryfallNamed(d.value));
                     else addIssue(d.input, copy.errCommanderNotFound(d.value));
                 }
+
+                if (p.valid && d.valid) {
+                    const kb = slot.querySelector('.killed-by-input')?.value?.trim();
+                    const kv = slot.querySelector('.killed-via-input')?.value?.trim();
+                    if (!kb) {
+                        const kbTarget = slot.querySelector('.mf-killed-by-picker') || slot.querySelector('[data-type="killed-by"] .static-dropdown-header');
+                        addIssue(kbTarget, copy.errKilledByMissing);
+                    }
+                    if (!kv) {
+                        const kvTarget = slot.querySelector('[data-type="killed-via"] .static-dropdown-header');
+                        addIssue(kvTarget, copy.errKilledViaMissing);
+                    }
+                }
             });
             if (validWinners === 0 && issues.length === 0) {
                 issues.push('Add at least one winner with a pilot and commander deck.');
@@ -11437,7 +11710,7 @@
                 }
             }
 
-            return {
+            const result = {
                 player: playerVal,
                 deck: deckVal,
                 commanders: commanders.length ? commanders : undefined,
@@ -11445,6 +11718,15 @@
                 isNewPlayer: isNewPlayer,
                 isNewDeck: isNewDeck
             };
+
+            if (container.classList.contains('loser-slot')) {
+                const kbRaw = container.querySelector('.killed-by-input')?.value?.trim() || '';
+                const kv = container.querySelector('.killed-via-input')?.value?.trim() || '';
+                if (kbRaw) result.killedBy = mfResolveKilledByForSave(container, kbRaw, playerVal);
+                if (kv) result.killedVia = kv;
+            }
+
+            return result;
         }
 
         window.submitMatchForm = async function(event) {
@@ -11533,6 +11815,8 @@
                 const losers = losersData.map(lData => {
                     const seat = { name: lData.deck, player: lData.player, owner: lData.owner };
                     if (lData.commanders?.length) seat.commanders = lData.commanders;
+                    if (lData.killedBy) seat.killedBy = lData.killedBy;
+                    if (lData.killedVia) seat.killedVia = lData.killedVia;
                     return seat;
                 });
 
@@ -11667,6 +11951,13 @@
                 hiddenInput.value = option.getAttribute('data-value');
                 displaySpan.innerText = option.innerText;
                 list.classList.add('hidden');
+
+                const loserSlot = container.closest('.loser-slot');
+                if (hiddenInput.classList.contains('killed-by-input') && loserSlot) {
+                    mfSetKilledByValue(loserSlot, hiddenInput.value);
+                } else if (hiddenInput.classList.contains('killed-via-input') && loserSlot) {
+                    mfSetKilledViaValue(loserSlot, hiddenInput.value);
+                }
 
                 if (hiddenInput.id === 'form-pod-size' || hiddenInput.id === 'form-winner-count') {
                     mfRebuildPlayerSlotsPreservingData();
