@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.14">
+    <meta name="mf-app-version" content="2.9.15">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -1008,7 +1008,7 @@
         <div id="dashboard-nav-menu" class="hidden fixed top-[4.25rem] right-3 sm:right-4 z-[60] w-[min(100vw-1.5rem,16rem)] glass rounded-2xl border border-slate-700/80 shadow-2xl p-2" role="menu">
             <button type="button" onclick="window.closeDashboardNavMenu(); window.openGroupsHubForCurrentUser();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">My Groups</button>
             <button type="button" onclick="window.closeDashboardNavMenu(); window.switchTab('group');" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Group settings</button>
-            <button type="button" onclick="window.closeDashboardNavMenu(); window.authSignOut();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-red-300 hover:bg-red-950/30 transition touch-manipulation mt-1 border-t border-slate-700/60" role="menuitem">Sign out</button>
+            <button type="button" onclick="window.requestSignOut()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-red-300 hover:bg-red-950/30 transition touch-manipulation mt-1 border-t border-slate-700/60" role="menuitem">Sign out</button>
         </div>
 
         <div class="dashboard-main p-4 mx-auto mt-2 pb-20">
@@ -1358,9 +1358,10 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                 <span class="text-[10px] mt-1 font-semibold">Insights</span>
             </button>
-            <button id="nav-profile" onclick="window.openMyProfile()" class="hidden flex flex-col items-center hover:text-purple-400 transition w-14 relative" aria-label="My profile">
+            <button id="nav-profile" onclick="window.openMyProfile()" class="hidden flex flex-col items-center hover:text-purple-400 transition w-16 relative" aria-label="My profile">
                 <div id="nav-indicator-profile" class="absolute -top-1 w-8 h-1 bg-purple-500 rounded-full opacity-0 transition-opacity duration-300"></div>
-                <div id="nav-profile-avatar" class="w-[22px] h-[22px] rounded-full overflow-hidden border border-slate-600/60 bg-slate-800 flex items-center justify-center text-[9px] font-black text-slate-400 ring-2 ring-transparent transition-[box-shadow]"></div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span class="text-[9px] mt-1 font-semibold leading-tight text-center">My Profile</span>
             </button>
             <button id="nav-group" onclick="window.switchTab('group')" class="flex flex-col items-center hover:text-purple-400 transition w-14 relative">
                 <div id="nav-indicator-group" class="absolute -top-1 w-8 h-1 bg-purple-500 rounded-full opacity-0 transition-opacity duration-300"></div>
@@ -2215,22 +2216,36 @@
                 if (!navBtn) return;
                 const isActive = name === tabName;
                 const isVisible = !navBtn.classList.contains('hidden');
-                if (isVisible) {
-                    navBtn.classList.toggle('text-purple-400', isActive);
-                    if (isActive) navBtn.classList.remove('hover:text-purple-400');
-                    else if (!navBtn.classList.contains('hover:text-purple-400')) navBtn.classList.add('hover:text-purple-400');
-                    const navInd = document.getElementById(`nav-indicator-${name}`);
-                    if (navInd) navInd.classList.toggle('opacity-0', !isActive);
-                }
-                if (name === 'profile') {
-                    const avatarWrap = document.getElementById('nav-profile-avatar');
-                    if (avatarWrap) {
-                        avatarWrap.classList.toggle('ring-purple-500', isActive);
-                        avatarWrap.classList.toggle('ring-transparent', !isActive);
-                    }
-                }
+                if (!isVisible) return;
+                navBtn.classList.toggle('text-purple-400', isActive);
+                if (isActive) navBtn.classList.remove('hover:text-purple-400');
+                else if (!navBtn.classList.contains('hover:text-purple-400')) navBtn.classList.add('hover:text-purple-400');
+                const navInd = document.getElementById(`nav-indicator-${name}`);
+                if (navInd) navInd.classList.toggle('opacity-0', !isActive);
             });
             window._activeNavTab = tabName;
+        }
+
+        function resolvePlayerNameFromRoster(uid, email) {
+            const roster = window.appData?.explicitRoster || [];
+            if (uid) {
+                const byUid = roster.find(r => r.uid === uid);
+                if (byUid?.name) return normalizeName(byUid.name);
+            }
+            const normEmail = normalizeEmail(email);
+            if (normEmail) {
+                const byEmail = roster.find(r => normalizeEmail(r.email) === normEmail);
+                if (byEmail?.name) return normalizeName(byEmail.name);
+            }
+            return '';
+        }
+
+        function getMyLinkedPlayerName() {
+            if (auth.currentUser) {
+                const fromRoster = resolvePlayerNameFromRoster(auth.currentUser.uid, auth.currentUser.email);
+                if (fromRoster) return fromRoster;
+            }
+            return normalizeName(window.linkedPlayerName || '');
         }
 
         function findPlayerIndexByName(playerName) {
@@ -2239,29 +2254,10 @@
             return (window.appData?.players || []).findIndex(p => normalizeName(p.name).toLowerCase() === target);
         }
 
-        function refreshNavProfileAvatar() {
-            const avatarEl = document.getElementById('nav-profile-avatar');
-            if (!avatarEl) return;
-            const linkedName = window.linkedPlayerName || '';
-            const index = findPlayerIndexByName(linkedName);
-            const player = index >= 0 ? window.appData.players[index] : null;
-            if (player) {
-                avatarEl.innerHTML = renderPlayerAvatar(player, 'w-full h-full', 'text-[9px]', 'border-0 shadow-none');
-                return;
-            }
-            if (linkedName) {
-                const color = getResolvedAvatarColor(linkedName);
-                const label = getPlayerInitials(linkedName);
-                avatarEl.innerHTML = `<div class="w-full h-full flex items-center justify-center font-black tracking-wide text-white text-[9px]" style="background:${color}">${label}</div>`;
-                return;
-            }
-            avatarEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-        }
-
         window.openMyProfile = function() {
             window.closeDashboardNavMenu();
-            const linkedName = window.linkedPlayerName || '';
-            if (!linkedName) {
+            const myName = getMyLinkedPlayerName();
+            if (!myName) {
                 window.showAppAlert(
                     'Your account is not linked to a player on the roster yet. Open Group settings from the menu to invite or link yourself.',
                     'No player linked',
@@ -2269,7 +2265,7 @@
                 );
                 return;
             }
-            const index = findPlayerIndexByName(linkedName);
+            const index = findPlayerIndexByName(myName);
             if (index < 0) {
                 window.showAppAlert(
                     'We could not find your player on the roster yet. Try logging a match or adding yourself under Group settings.',
@@ -2278,9 +2274,23 @@
                 );
                 return;
             }
+            const player = window.appData.players[index];
+            if (!player || !isCurrentUserRosterPlayer(player.name)) {
+                window.showAppAlert(
+                    'We could not verify your player profile for this account. Check that your email matches your roster entry under Group settings.',
+                    'Profile mismatch',
+                    '👤'
+                );
+                return;
+            }
             window._navTabBeforeProfile = window._activeNavTab;
             setNavHighlight('profile');
             window.openPlayerProfile(index);
+        };
+
+        window.requestSignOut = function() {
+            window.closeDashboardNavMenu();
+            setTimeout(() => window.authSignOut(), 0);
         };
 
         function getAuthContinueUrl(groupId, signInEmail = '', debugLinkId = '') {
@@ -2950,7 +2960,10 @@
                 navGroup.classList.toggle('hidden', canWrite);
                 navGroup.classList.toggle('flex', !canWrite);
             }
-            if (canWrite) refreshNavProfileAvatar();
+            if (canWrite && auth.currentUser) {
+                const resolvedName = getMyLinkedPlayerName();
+                if (resolvedName) window.linkedPlayerName = resolvedName;
+            }
             if (prevCanWrite !== canWrite && canWrite && window._activeNavTab === 'group') {
                 window.switchTab('home');
             }
@@ -3386,6 +3399,7 @@
                 '👋',
                 {
                     confirmLabel: 'Sign out',
+                    cancelLabel: 'Cancel',
                     confirmClass: 'bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-purple-500/30'
                 }
             );
@@ -7630,6 +7644,9 @@
                 confirmBtn.innerText = options.confirmLabel || 'Yes, Remove';
                 confirmBtn.className = options.confirmClass || 'bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-red-500/30';
             }
+            if (cancelBtn) {
+                cancelBtn.innerText = options.cancelLabel || 'Cancel';
+            }
             modalConfirmCallback = () => {
                 window.closeAppModal();
                 if(onConfirm) onConfirm();
@@ -9674,7 +9691,6 @@
                 console.error("Error drawing app UI: ", error);
             } finally {
                 hideAppBootLoader();
-                if (window.canWrite()) refreshNavProfileAvatar();
                 window.mfSyncPageScroll();
             }
         }
@@ -10056,11 +10072,13 @@
 
         window.openPlayerProfile = function(index) {
             const player = window.appData.players[index];
+            if (!player) return;
             window._plrProfilePlayerIndex = index;
             window._plrProfilePlayerName = player.name;
             const view = document.getElementById('view-player-detail');
             if (view) {
                 view.classList.remove('hidden');
+                view.classList.add('translate-x-full');
             }
             
             const iconEl = document.getElementById('plr-view-icon');
