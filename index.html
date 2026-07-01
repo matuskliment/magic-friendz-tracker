@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.9">
+    <meta name="mf-app-version" content="2.9.10">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -6286,29 +6286,14 @@
                 return '';
             }
 
-            const activeColors = MF_COLOR_ORDER.filter((c) => stats.counts[c] > 0);
-            const barSegments = activeColors.map((c) => {
-                const width = stats.colorSum > 0 ? (stats.counts[c] / stats.colorSum) * 100 : 0;
-                const hex = MF_COLOR_HEX[c] || MF_COLOR_HEX.C;
-                return `<div class="h-full" style="width:${width}%;background:${hex}" title="${c}: ${stats.percents[c]}% of decks"></div>`;
-            }).join('');
-
-            const pipRow = activeColors.map((c) => `
-                <div class="flex items-center gap-1.5 min-w-0">
-                    ${mfRenderColorIdentityPip(c, 'w-4 h-4')}
-                    <span class="text-xs font-bold text-slate-300 tabular-nums">${stats.percents[c]}%</span>
-                </div>
-            `).join('');
-
             const pendingNote = stats.pending && stats.total < (stats.deckCount || stats.total)
                 ? `<p class="text-[10px] text-amber-500/80 mt-2 italic">Still loading ${(stats.deckCount || 0) - stats.total} deck${(stats.deckCount || 0) - stats.total === 1 ? '' : 's'}…</p>`
                 : '';
 
             return `<div class="glass p-4 rounded-xl border border-slate-800">
                 <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-3">${escapeHtml(label)}</p>
-                <div class="h-3 rounded-full overflow-hidden flex bg-slate-800/80 border border-slate-700/50 shadow-inner">${barSegments}</div>
-                <div class="flex flex-wrap gap-x-4 gap-y-2 mt-3">${pipRow}</div>
-                <p class="text-[10px] text-slate-600 mt-2 leading-snug">${mfColorProfileFootnote(stats)}</p>
+                ${mfRenderColorInclusionBarChart(stats.percents, stats.counts)}
+                <p class="text-[10px] text-slate-600 mt-3 leading-snug">${mfColorProfileFootnote(stats)}</p>
                 ${pendingNote}
             </div>`;
         }
@@ -6503,6 +6488,43 @@
         }
 
         const MF_COLOR_HEX = { W: '#f3e3b3', U: '#4a90d9', B: '#5d5d6e', R: '#e2584f', G: '#3fae5a', C: '#9aa3b2' };
+
+        /** Per-color horizontal bars on a shared 0–100% scale (always WUBRGC including colorless). */
+        function mfRenderColorInclusionBarChart(percents, counts) {
+            const rows = MF_COLOR_ORDER.map((c) => {
+                const pct = Math.min(100, Math.max(0, percents[c] ?? 0));
+                const hex = MF_COLOR_HEX[c] || MF_COLOR_HEX.C;
+                const raw = counts ? (counts[c] ?? 0) : null;
+                const valueLabel = raw !== null
+                    ? `${pct}%<span class="text-slate-500 font-medium"> (${raw})</span>`
+                    : `${pct}%`;
+                return `<div class="flex items-center gap-2 min-h-[1.375rem]">
+                    <span class="shrink-0 w-5 flex justify-center">${mfRenderColorIdentityPip(c, 'w-4 h-4')}</span>
+                    <div class="relative flex-1 h-2.5 rounded bg-slate-800/60 border border-slate-700/40 overflow-hidden">
+                        <div class="absolute inset-0 flex pointer-events-none" aria-hidden="true">
+                            <div class="w-1/4 border-r border-slate-700/30"></div>
+                            <div class="w-1/4 border-r border-slate-700/30"></div>
+                            <div class="w-1/4 border-r border-slate-700/30"></div>
+                            <div class="w-1/4"></div>
+                        </div>
+                        <div class="absolute inset-y-0 left-0 rounded-sm min-w-[2px]" style="width:${pct}%;background:${hex}" title="${escapeHtml(MF_COLOR_NAMES[c])}: ${pct}%"></div>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-300 tabular-nums text-right shrink-0 w-[4.25rem] leading-tight">${valueLabel}</span>
+                </div>`;
+            }).join('');
+
+            return `<div class="space-y-2">
+                ${rows}
+                <div class="flex gap-2">
+                    <span class="shrink-0 w-5"></span>
+                    <div class="flex-1 flex justify-between text-[8px] text-slate-600 font-semibold tabular-nums">
+                        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                    </div>
+                    <span class="shrink-0 w-[4.25rem]"></span>
+                </div>
+            </div>`;
+        }
+
         function mfColorIdentityGradient(colorIdentity) {
             const ids = (Array.isArray(colorIdentity) && colorIdentity.length) ? colorIdentity : ['C'];
             const hexes = ids.map(c => MF_COLOR_HEX[c] || MF_COLOR_HEX.C);
@@ -8432,20 +8454,6 @@
                 return;
             }
 
-            const activeColors = MF_COLOR_ORDER.filter((c) => stats.played[c] > 0);
-            const barSegments = activeColors.map((c) => {
-                const width = stats.colorSum > 0 ? (stats.played[c] / stats.colorSum) * 100 : 0;
-                const hex = MF_COLOR_HEX[c] || MF_COLOR_HEX.C;
-                return `<div class="h-full" style="width:${width}%;background:${hex}" title="${MF_COLOR_NAMES[c]}: in ${stats.inclusionPct[c]}% of games"></div>`;
-            }).join('');
-
-            const pipRow = activeColors.map((c) => `
-                <div class="flex items-center gap-1.5 min-w-0">
-                    ${mfRenderColorIdentityPip(c, 'w-4 h-4')}
-                    <span class="text-xs font-bold text-slate-300 tabular-nums">${stats.inclusionPct[c]}%</span>
-                </div>
-            `).join('');
-
             const pendingNote = stats.pending && stats.analyzedAppearances < stats.totalAppearances
                 ? `<p class="text-[10px] text-amber-500/80 mt-2 italic">Based on ${stats.analyzedAppearances} of ${stats.totalAppearances} table appearances (still loading colors).</p>`
                 : `<p class="text-[10px] text-slate-600 mt-2 leading-snug">Share of ${stats.totalAppearances} table appearances that included each color. Multicolor decks count toward every pip in their identity.</p>`;
@@ -8469,8 +8477,7 @@
             safeSetHTML('analytics-color-meta', `<div class="glass p-4 rounded-xl border border-slate-800 space-y-4">
                 <div>
                     <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-3">Most played</p>
-                    <div class="h-3 rounded-full overflow-hidden flex bg-slate-800/80 border border-slate-700/50 shadow-inner">${barSegments || '<div class="h-full w-full bg-slate-700/50"></div>'}</div>
-                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-3">${pipRow || '<span class="text-xs text-slate-500 italic">No color data yet.</span>'}</div>
+                    ${mfRenderColorInclusionBarChart(stats.inclusionPct, stats.played)}
                     ${pendingNote}
                 </div>
                 <div class="pt-3 border-t border-slate-800/80">
