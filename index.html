@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.15">
+    <meta name="mf-app-version" content="2.9.16">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -995,9 +995,9 @@
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button type="button" onclick="window.openFeedbackModal()" class="hidden sm:inline-flex text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1.5 rounded-lg transition min-h-[32px] touch-manipulation whitespace-nowrap items-center">Contact</button>
                 <span id="group-header-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80 whitespace-nowrap">View only</span>
-                <button id="group-list-btn" onclick="window.openGroupsHubForCurrentUser()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-2.5 sm:px-3 py-2 rounded-lg items-center gap-1 transition touch-manipulation cursor-pointer whitespace-nowrap" aria-label="My groups">
+                <button id="group-list-btn" onclick="window.openGroupsHubForCurrentUser()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-2.5 sm:px-3 py-2 rounded-lg items-center gap-1 transition touch-manipulation cursor-pointer whitespace-nowrap" aria-label="All groups">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-                    <span class="hidden sm:inline">My Groups</span>
+                    <span class="hidden sm:inline">All Groups</span>
                 </button>
                 <button type="button" id="dashboard-menu-btn" onclick="window.toggleDashboardNavMenu()" class="hidden flex items-center justify-center w-10 h-10 rounded-xl border border-slate-600 bg-slate-800/80 text-slate-200 hover:text-white hover:border-slate-500 transition touch-manipulation" aria-label="Open menu" aria-expanded="false" aria-controls="dashboard-nav-menu">
                     <svg id="dashboard-menu-icon-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
@@ -1006,8 +1006,8 @@
             </div>
         </div>
         <div id="dashboard-nav-menu" class="hidden fixed top-[4.25rem] right-3 sm:right-4 z-[60] w-[min(100vw-1.5rem,16rem)] glass rounded-2xl border border-slate-700/80 shadow-2xl p-2" role="menu">
-            <button type="button" onclick="window.closeDashboardNavMenu(); window.openGroupsHubForCurrentUser();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">My Groups</button>
-            <button type="button" onclick="window.closeDashboardNavMenu(); window.switchTab('group');" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Group settings</button>
+            <button type="button" onclick="window.closeDashboardNavMenu(); window.openGroupsHubForCurrentUser();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">All Groups</button>
+            <button type="button" onclick="window.closeDashboardNavMenu(); window.switchTab('group');" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Group Settings</button>
             <button type="button" onclick="window.requestSignOut()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-red-300 hover:bg-red-950/30 transition touch-manipulation mt-1 border-t border-slate-700/60" role="menuitem">Sign out</button>
         </div>
 
@@ -1211,7 +1211,7 @@
             <div id="tab-group" class="tab-content hidden space-y-6">
                 <div class="flex justify-between items-end mt-4 mb-2">
                     <div>
-                        <h1 class="text-2xl md:text-3xl font-bold">Settings</h1>
+                        <h1 class="text-2xl md:text-3xl font-bold">Group Settings</h1>
                         <p class="text-xs text-slate-400">Players, access, and export</p>
                     </div>
                 </div>
@@ -1366,7 +1366,7 @@
             <button id="nav-group" onclick="window.switchTab('group')" class="flex flex-col items-center hover:text-purple-400 transition w-14 relative">
                 <div id="nav-indicator-group" class="absolute -top-1 w-8 h-1 bg-purple-500 rounded-full opacity-0 transition-opacity duration-300"></div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                <span class="text-[10px] mt-1 font-semibold">Settings</span>
+                <span class="text-[10px] mt-1 font-semibold">Group Settings</span>
             </button>
         </div>
     </div>
@@ -2259,7 +2259,7 @@
             const myName = getMyLinkedPlayerName();
             if (!myName) {
                 window.showAppAlert(
-                    'Your account is not linked to a player on the roster yet. Open Group settings from the menu to invite or link yourself.',
+                    'Your account is not linked to a player on the roster yet. Open Group Settings from the menu to invite or link yourself.',
                     'No player linked',
                     '👤'
                 );
@@ -2268,7 +2268,7 @@
             const index = findPlayerIndexByName(myName);
             if (index < 0) {
                 window.showAppAlert(
-                    'We could not find your player on the roster yet. Try logging a match or adding yourself under Group settings.',
+                    'We could not find your player on the roster yet. Try logging a match or adding yourself under Group Settings.',
                     'Player not found',
                     '👤'
                 );
@@ -2277,7 +2277,7 @@
             const player = window.appData.players[index];
             if (!player || !isCurrentUserRosterPlayer(player.name)) {
                 window.showAppAlert(
-                    'We could not verify your player profile for this account. Check that your email matches your roster entry under Group settings.',
+                    'We could not verify your player profile for this account. Check that your email matches your roster entry under Group Settings.',
                     'Profile mismatch',
                     '👤'
                 );

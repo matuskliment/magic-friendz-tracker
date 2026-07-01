@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>My Groups - Magic Friendz</title>
+    <title>All Groups - Magic Friendz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         input, textarea, select {
@@ -80,6 +80,18 @@
         </main>
     </div>
 
+    <div id="sign-out-modal" class="fixed inset-0 z-[300] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="sign-out-modal-title">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-transform duration-300 scale-95">
+            <div class="text-4xl mb-4" aria-hidden="true">👋</div>
+            <h2 id="sign-out-modal-title" class="text-xl font-black text-white mb-2">Sign out?</h2>
+            <p class="text-sm text-slate-400 mb-6">You will need to sign in again with your magic link to manage groups and log matches.</p>
+            <div class="flex gap-3 justify-end">
+                <button type="button" id="sign-out-cancel-btn" class="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition bg-slate-800 hover:bg-slate-700 rounded-xl min-h-[44px] touch-manipulation">Cancel</button>
+                <button type="button" id="sign-out-confirm-btn" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation">Sign out</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -110,6 +122,9 @@
         const createButton = document.getElementById('create-group-btn');
         const createInput = document.getElementById('new-group-name');
         const signOutButton = document.getElementById('sign-out-btn');
+        const signOutModal = document.getElementById('sign-out-modal');
+        const signOutCancelBtn = document.getElementById('sign-out-cancel-btn');
+        const signOutConfirmBtn = document.getElementById('sign-out-confirm-btn');
         const loadingTitle = document.getElementById('loading-title');
         const loadingSubtitle = document.getElementById('loading-subtitle');
         const retryGroupsBtn = document.getElementById('retry-groups-btn');
@@ -495,9 +510,45 @@
             await createGroupForCurrentUser(user);
         });
 
-        signOutButton.addEventListener('click', async () => {
+        function openSignOutModal() {
+            if (!signOutModal) return;
+            signOutModal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                signOutModal.classList.remove('opacity-0');
+                const panel = signOutModal.firstElementChild;
+                if (panel) {
+                    panel.classList.remove('scale-95');
+                    panel.classList.add('scale-100');
+                }
+            });
+        }
+
+        function closeSignOutModal() {
+            if (!signOutModal) return;
+            signOutModal.classList.add('opacity-0');
+            const panel = signOutModal.firstElementChild;
+            if (panel) {
+                panel.classList.remove('scale-100');
+                panel.classList.add('scale-95');
+            }
+            setTimeout(() => signOutModal.classList.add('hidden'), 300);
+        }
+
+        async function performSignOut() {
+            closeSignOutModal();
             await signOut(auth);
             window.location.replace(indexBasePath());
+        }
+
+        signOutButton.addEventListener('click', () => {
+            openSignOutModal();
+        });
+        signOutCancelBtn?.addEventListener('click', closeSignOutModal);
+        signOutConfirmBtn?.addEventListener('click', () => {
+            performSignOut().catch((e) => console.error(e));
+        });
+        signOutModal?.addEventListener('click', (e) => {
+            if (e.target === signOutModal) closeSignOutModal();
         });
 
         document.getElementById('brand-home-btn')?.addEventListener('click', goBrandHome);
