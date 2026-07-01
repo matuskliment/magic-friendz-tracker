@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.31">
+    <meta name="mf-app-version" content="2.9.32">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Per-playgroup Elo and stats for your Commander pod — your meta, not a global ladder. Log matches, win rates, deck lists, and history. Free EDH tracker with magic-link sign-in.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, per-group Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -77,8 +77,9 @@
     </script>
     <!-- Inline SVG Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a855f7'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3C/svg%3E">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif}</style>
+    <link rel="preload" href="/styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/styles.css"></noscript>
     <style>
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .hero-bg { background-image: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 1)), url('https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070&auto=format&fit=crop'); background-size: cover; background-position: center; }
@@ -10516,8 +10517,22 @@
         }
 
         let eloChartInstance = null;
+        let chartJsLoadPromise = null;
 
-        window.openCommanderProfile = function(index) {
+        function mfLoadChartJs() {
+            if (typeof Chart !== 'undefined') return Promise.resolve();
+            if (chartJsLoadPromise) return chartJsLoadPromise;
+            chartJsLoadPromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                script.onload = resolve;
+                script.onerror = () => reject(new Error('Failed to load Chart.js'));
+                document.head.appendChild(script);
+            });
+            return chartJsLoadPromise;
+        }
+
+        window.openCommanderProfile = async function(index) {
             const cmd = window.appData.commanders[index];
             const view = document.getElementById('view-commander-detail');
             if (view) {
@@ -10638,6 +10653,10 @@
                 preyDeck
             );
             
+            try {
+                await mfLoadChartJs();
+            } catch (_) {}
+
             if (typeof Chart !== 'undefined') {
                 const canvas = document.getElementById('eloChart');
                 if (canvas) {
