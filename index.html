@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.17">
+    <meta name="mf-app-version" content="2.9.18">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Track Commander pod stats, Elo, win rates, deck lists, and match history for your MTG playgroup. Free EDH stats tracker with magic-link sign-in.">
     <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
@@ -809,7 +809,7 @@
             <div class="flex items-center gap-1.5 shrink-0">
                 <button type="button" id="landing-login-btn" onclick="window.toggleLandingSignIn()" class="text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 transition min-h-[44px] touch-manipulation whitespace-nowrap">Log in</button>
                 <div class="hidden sm:flex items-center gap-2">
-                    <a href="#landing-how-it-works" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">How it works</a>
+                    <a href="#landing-how-it-works" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">See how it works</a>
                     <button type="button" onclick="window.openFeedbackModal()" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full border border-slate-700 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Contact</button>
                     <button type="button" onclick="window.openGroupModal()" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation whitespace-nowrap">Enter App</button>
                 </div>
@@ -820,7 +820,7 @@
             </div>
         </nav>
         <div id="landing-nav-menu" class="hidden sm:hidden fixed top-[4.25rem] left-3 right-3 z-[60] glass rounded-2xl border border-slate-700/80 shadow-2xl p-2" role="menu">
-            <a href="#landing-how-it-works" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">How it works</a>
+            <a href="#landing-how-it-works" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">See how it works</a>
             <button type="button" onclick="window.closeLandingNavMenu(); window.openFeedbackModal();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Contact &amp; feedback</button>
             <button type="button" onclick="window.closeLandingNavMenu(); window.openGroupModal();" class="w-full mt-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-xl text-sm font-bold transition min-h-[48px] touch-manipulation" role="menuitem">Enter App</button>
         </div>
@@ -833,13 +833,13 @@
                         <span class="text-gradient">Track every victory.</span>
                     </h1>
                     <p class="text-base md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto lg:mx-0 drop-shadow-md">
-                        The ultimate multiplayer stat tracker for your tabletop group. Anyone with the group name can view stats — sign in to log games.
+                        Magic Friendz is a free <strong class="font-semibold text-slate-200">EDH Commander playgroup stats tracker</strong> — log pod results, track Elo and win rates, and share match history with your tabletop group. Anyone with the group link can view stats; sign in to log games.
                     </p>
                     <div id="landing-hero-actions" class="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
                         <button type="button" id="landing-view-stats-btn" onclick="window.openGroupModal()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 active:scale-[0.98] shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 group min-h-[52px] w-full sm:w-auto touch-manipulation">
                             View Group Stats <span class="text-xl group-hover:translate-x-1 transition">→</span>
                         </button>
-                        <button type="button" id="landing-login-btn-hero" onclick="window.toggleLandingSignIn()" class="bg-slate-800/80 hover:bg-slate-700/80 text-white border border-slate-600 px-8 py-4 rounded-full font-bold text-lg transition min-h-[52px] w-full sm:w-auto touch-manipulation">Log in</button>
+                        <button type="button" id="landing-login-btn-hero" onclick="window.toggleLandingSignIn()" class="bg-slate-800/80 hover:bg-slate-700/80 text-white border border-slate-600 px-8 py-4 rounded-full font-bold text-lg transition min-h-[52px] w-full sm:w-auto touch-manipulation">Sign in</button>
                     </div>
                     <div id="landing-signed-in" class="hidden mt-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 max-w-md mx-auto lg:mx-0">
                         <p class="text-sm text-emerald-300/90 mb-3">Signed in as <span id="landing-signed-in-email" class="font-semibold text-white"></span></p>
@@ -940,7 +940,7 @@
                 <div class="text-center mb-10 md:mb-12">
                     <p class="text-xs uppercase tracking-widest text-purple-400 font-bold mb-2">Playgroup workflow</p>
                     <h2 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">How it works</h2>
-                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Built for kitchen-table Commander nights — fast to log, easy to share, and fun to revisit after the league.</p>
+                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Built for kitchen-table Commander nights — a simple EDH stats tracker to log games fast, share leaderboards, and revisit your playgroup&apos;s story after the league.</p>
                 </div>
 
                 <ol class="space-y-4 md:space-y-5">
@@ -976,10 +976,19 @@
 
                 <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
                     <button type="button" onclick="window.openGroupModal()" class="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-3.5 rounded-full text-sm font-bold transition shadow-lg shadow-purple-500/25 min-h-[48px] touch-manipulation">View group stats</button>
-                    <button type="button" onclick="window.toggleLandingSignIn()" class="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-700 text-white border border-slate-600 px-8 py-3.5 rounded-full text-sm font-bold transition min-h-[48px] touch-manipulation">Log in</button>
+                    <button type="button" onclick="window.toggleLandingSignIn()" class="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-700 text-white border border-slate-600 px-8 py-3.5 rounded-full text-sm font-bold transition min-h-[48px] touch-manipulation">Sign in</button>
                 </div>
             </div>
         </section>
+
+        <footer class="relative z-10 border-t border-slate-800/80 bg-slate-950 px-4 md:px-6 py-8">
+            <nav class="max-w-4xl mx-auto flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm" aria-label="Landing footer">
+                <a href="#landing-how-it-works" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">How it works</a>
+                <a href="/groups.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">All Groups</a>
+                <a href="#contact" onclick="window.openFeedbackModal(); return false;" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Contact</a>
+            </nav>
+            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz — EDH Commander playgroup stats tracker for Elo, win rates, deck lists, and match history.</p>
+        </footer>
 
         <div class="w-full overflow-hidden bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md py-3 z-30 shrink-0">
             <div class="flex w-[200%] animate-marquee">
@@ -1078,7 +1087,7 @@
             <!-- TAB 2: MATCHES -->
             <div id="tab-matches" class="tab-content hidden space-y-6">
                 <div class="mt-4 mb-6">
-                    <h1 class="text-2xl md:text-3xl font-bold">Match History</h1>
+                    <h2 class="text-2xl md:text-3xl font-bold">Match History</h2>
                     <p class="text-xs text-slate-400">Chronological feed of all games logged</p>
                 </div>
                 <div id="match-feed-container" class="space-y-4"></div>
@@ -1088,7 +1097,7 @@
             <div id="tab-ranks" class="tab-content hidden space-y-6">
                 <div class="flex flex-col gap-4 mt-4 mb-4">
                     <div>
-                        <h1 class="text-2xl md:text-3xl font-bold">Leaderboard</h1>
+                        <h2 class="text-2xl md:text-3xl font-bold">Leaderboard</h2>
                         <p class="text-xs text-slate-400">Ranked by Elo rating</p>
                     </div>
                     
@@ -1113,7 +1122,7 @@
             <!-- NEW TAB: INSIGHTS & ANALYTICS -->
             <div id="tab-analytics" class="tab-content hidden space-y-6 w-full min-w-0 max-w-full overflow-x-hidden">
                 <div class="mt-4 mb-6">
-                    <h1 class="text-2xl md:text-3xl font-bold">Global Insights</h1>
+                    <h2 class="text-2xl md:text-3xl font-bold">Global Insights</h2>
                     <p class="text-xs text-slate-400">Deep analytics from across the multiverse</p>
                 </div>
 
@@ -1236,7 +1245,7 @@
             <div id="tab-group" class="tab-content hidden space-y-6">
                 <div class="flex justify-between items-end mt-4 mb-2">
                     <div>
-                        <h1 class="text-2xl md:text-3xl font-bold">Group Settings</h1>
+                        <h2 class="text-2xl md:text-3xl font-bold">Group Settings</h2>
                         <p class="text-xs text-slate-400">Players, access, and export</p>
                     </div>
                 </div>
@@ -1446,7 +1455,7 @@
                     </div>
 
                 <div class="flex-1 text-center md:text-left w-full min-w-0 md:flex md:flex-col md:justify-center">
-                    <h1 id="cmd-view-name" class="text-2xl md:text-4xl font-black text-white drop-shadow-lg leading-tight">Name</h1>
+                    <h2 id="cmd-view-name" class="text-2xl md:text-4xl font-black text-white drop-shadow-lg leading-tight">Name</h2>
                     <span id="cmd-view-mana" class="mf-card-mana flex items-center justify-center md:justify-start gap-0.5 mt-1.5 empty:hidden"></span>
                     <p id="cmd-view-type" class="mf-card-type text-[11px] sm:text-xs text-slate-300/90 italic mt-1 empty:hidden"></p>
 
@@ -2008,9 +2017,9 @@
                 </div>
             </div>
 
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-2 leading-tight">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2 leading-tight">
                 This playgroup is <span class="text-gradient">exiled</span>
-            </h1>
+            </h2>
             <p class="text-sm sm:text-base text-slate-400 mb-5 leading-relaxed max-w-md mx-auto">
                 We searched the entire multiverse — no group matches that name. Maybe a typo, or the slug was never created.
             </p>
@@ -3089,7 +3098,7 @@
             if (!hasUser && loginNav && panel) {
                 const panelOpen = !panel.classList.contains('hidden');
                 loginNav.textContent = panelOpen ? 'Hide' : 'Log in';
-                if (loginHero) loginHero.textContent = panelOpen ? 'Hide' : 'Log in';
+                if (loginHero) loginHero.textContent = panelOpen ? 'Hide' : 'Sign in';
             }
         }
 
