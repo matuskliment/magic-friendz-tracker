@@ -3,20 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.22">
+    <meta name="mf-app-version" content="2.9.30">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Track Commander pod stats, Elo, win rates, deck lists, and match history for your MTG playgroup. Free EDH stats tracker with magic-link sign-in.">
+    <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, MTG Elo tracker, commander leaderboard, playgroup stats, match history">
     <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Magic Friendz">
     <meta property="og:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
     <meta property="og:description" content="Track Commander pod stats, Elo, win rates, and match history for your MTG playgroup.">
     <meta property="og:url" id="mf-og-url" content="https://edhstatstracker.xyz/">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&amp;w=1200&amp;h=630&amp;auto=format&amp;fit=crop">
+    <meta property="og:image" content="https://edhstatstracker.xyz/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
     <meta name="twitter:description" content="Track Commander pod stats, Elo, win rates, and match history for your MTG playgroup.">
-    <meta name="twitter:image" content="https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&amp;w=1200&amp;h=630&amp;auto=format&amp;fit=crop">
+    <meta name="twitter:image" content="https://edhstatstracker.xyz/og-image.png">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "WebApplication",
+                "name": "Magic Friendz",
+                "alternateName": "EDH Stats Tracker",
+                "url": "https://edhstatstracker.xyz/",
+                "description": "Free EDH Commander playgroup stats tracker — log pod results, Elo, win rates, deck lists, and match history.",
+                "applicationCategory": "GameApplication",
+                "operatingSystem": "Web",
+                "browserRequirements": "Requires JavaScript",
+                "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+                "author": { "@type": "Person", "name": "Mat Kliment", "sameAs": "https://github.com/matuskliment/magic-friendz-tracker" }
+            },
+            {
+                "@type": "Organization",
+                "name": "Magic Friendz",
+                "url": "https://edhstatstracker.xyz/",
+                "founder": { "@type": "Person", "name": "Mat Kliment", "sameAs": "https://github.com/matuskliment/magic-friendz-tracker" }
+            },
+            {
+                "@type": "Person",
+                "name": "Mat Kliment",
+                "url": "https://edhstatstracker.xyz/about.html",
+                "jobTitle": "Creator",
+                "sameAs": "https://github.com/matuskliment/magic-friendz-tracker",
+                "worksFor": { "@type": "Organization", "name": "Magic Friendz", "url": "https://edhstatstracker.xyz/" }
+            }
+        ]
+    }
+    </script>
     <script>
         (function mfSeoCanonical() {
             try {
@@ -798,6 +834,14 @@
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans antialiased overflow-x-hidden">
 
+    <noscript>
+        <div class="bg-slate-950 border-b border-purple-500/30 px-4 py-6 text-center text-sm text-slate-300 leading-relaxed">
+            <p><strong class="text-white">Magic Friendz</strong> is a free EDH Commander playgroup stats tracker by <strong class="text-white">Mat Kliment</strong>.
+            Track Elo, win rates, deck lists, and match history at <a href="https://edhstatstracker.xyz/" class="text-purple-400 underline">edhstatstracker.xyz</a>.
+            JavaScript is required to use the app. <a href="/about.html" class="text-purple-400 underline">Learn more</a>.</p>
+        </div>
+    </noscript>
+
     <div id="mf-app-boot-loader" role="status" aria-live="polite" aria-busy="true">
         <div class="mf-boot-spinner" aria-hidden="true"></div>
         <p id="mf-boot-loader-text" class="text-sm font-semibold text-slate-300 tracking-wide">Loading your playgroup…</p>
@@ -813,7 +857,9 @@
             <div class="flex items-center gap-1.5 shrink-0">
                 <button type="button" id="landing-login-btn" onclick="window.toggleLandingSignIn()" class="text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 transition min-h-[44px] touch-manipulation whitespace-nowrap">Log in</button>
                 <div class="hidden sm:flex items-center gap-2">
-                    <a href="#landing-how-it-works" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">See how it works</a>
+                    <a href="#landing-features" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">Features</a>
+                    <a href="#landing-how-it-works" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">How it works</a>
+                    <a href="/about.html" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full transition min-h-[44px] leading-[44px]">About</a>
                     <button type="button" onclick="window.openFeedbackModal()" class="text-sm font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-full border border-slate-700 hover:border-slate-500 transition min-h-[44px] touch-manipulation">Contact</button>
                     <button type="button" onclick="window.openGroupModal()" class="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 md:px-5 md:py-2 rounded-full font-semibold transition shadow-lg shadow-purple-500/30 min-h-[44px] touch-manipulation whitespace-nowrap">Enter App</button>
                 </div>
@@ -824,7 +870,9 @@
             </div>
         </nav>
         <div id="landing-nav-menu" class="hidden sm:hidden fixed top-[4.25rem] left-3 right-3 z-[60] glass rounded-2xl border border-slate-700/80 shadow-2xl p-2" role="menu">
-            <a href="#landing-how-it-works" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">See how it works</a>
+            <a href="#landing-features" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Features</a>
+            <a href="#landing-how-it-works" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">How it works</a>
+            <a href="/about.html" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">About</a>
             <button type="button" onclick="window.closeLandingNavMenu(); window.openFeedbackModal();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Contact &amp; feedback</button>
             <button type="button" onclick="window.closeLandingNavMenu(); window.openGroupModal();" class="w-full mt-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-xl text-sm font-bold transition min-h-[48px] touch-manipulation" role="menuitem">Enter App</button>
         </div>
@@ -985,13 +1033,83 @@
             </div>
         </section>
 
+        <section id="landing-features" class="relative z-10 bg-slate-900/50 border-t border-slate-800/80 px-4 md:px-6 py-14 md:py-20">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-10 md:mb-12">
+                    <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-2">Built for Commander pods</p>
+                    <h2 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">Features</h2>
+                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Everything your playgroup needs after game night — from quick match logging to long-running league stats.</p>
+                </div>
+                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 text-left">
+                    <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
+                        <h3 class="text-base font-bold text-white mb-2">Commander &amp; player Elo</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Leaderboards for decks and pilots with automatic Elo shifts after every logged match.</p>
+                    </li>
+                    <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
+                        <h3 class="text-base font-bold text-white mb-2">Match logging</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Record winners, losers, pilots, decks, game length, notes, and how each player was eliminated.</p>
+                    </li>
+                    <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
+                        <h3 class="text-base font-bold text-white mb-2">Session recaps &amp; history</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Browse match history by session, revisit last night&apos;s games, and share stats with anyone who has the group link.</p>
+                    </li>
+                    <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
+                        <h3 class="text-base font-bold text-white mb-2">Global insights</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Rivalries, top eliminators, how-we-lose breakdowns, pod color meta, signature synergies, and more.</p>
+                    </li>
+                    <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
+                        <h3 class="text-base font-bold text-white mb-2">Shareable group links</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">View-only access with no account. Editors sign in via magic link when it&apos;s time to log a game.</p>
+                    </li>
+                    <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
+                        <h3 class="text-base font-bold text-white mb-2">Export your data</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Download your group as JSON or CSV for backups, spreadsheets, or your own analysis.</p>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="landing-faq" class="relative z-10 bg-slate-950 border-t border-slate-800/80 px-4 md:px-6 py-14 md:py-20">
+            <div class="max-w-2xl mx-auto">
+                <div class="text-center mb-10">
+                    <p class="text-xs uppercase tracking-widest text-amber-400 font-bold mb-2">Common questions</p>
+                    <h2 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">FAQ</h2>
+                </div>
+                <div class="space-y-3">
+                    <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
+                        <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>What is Magic Friendz?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks Elo, win rates, deck lists, match history, and group insights so your table can focus on playing — not arguing about who&apos;s ahead.</p>
+                    </details>
+                    <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
+                        <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>How do group links work?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Your host shares a URL like <code class="text-purple-300 text-xs bg-slate-900 px-1 py-0.5 rounded">https://edhstatstracker.xyz/?group=your-group-name</code>. Anyone with the link can view stats immediately. Sign in with a magic link when you want to log matches or manage the roster.</p>
+                    </details>
+                    <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
+                        <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>Do I need an account?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email — we send a magic link, no password required.</p>
+                    </details>
+                    <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
+                        <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>Is Magic Friendz free?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Yes. Magic Friendz is free for Commander playgroups. It was built by Mat Kliment for kitchen-table EDH nights.</p>
+                    </details>
+                    <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
+                        <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>Who built Magic Friendz?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz was created by <strong class="text-slate-300">Mat Kliment</strong>. Read more on the <a href="/about.html" class="text-purple-400 hover:text-purple-300 underline">About page</a>.</p>
+                    </details>
+                </div>
+            </div>
+        </section>
+
         <footer class="relative z-10 border-t border-slate-800/80 bg-slate-950 px-4 md:px-6 py-8">
             <nav class="max-w-4xl mx-auto flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm" aria-label="Landing footer">
+                <a href="#landing-features" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Features</a>
                 <a href="#landing-how-it-works" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">How it works</a>
+                <a href="#landing-faq" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">FAQ</a>
+                <a href="/about.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">About</a>
                 <a href="/groups.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">All Groups</a>
                 <a href="#contact" onclick="window.openFeedbackModal(); return false;" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Contact</a>
             </nav>
-            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz — EDH Commander playgroup stats tracker for Elo, win rates, deck lists, and match history.</p>
+            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz by Mat Kliment — EDH Commander playgroup stats tracker for Elo, win rates, deck lists, and match history.</p>
         </footer>
 
         <div class="w-full overflow-hidden bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md py-3 z-30 shrink-0">

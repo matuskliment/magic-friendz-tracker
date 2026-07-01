@@ -3,4 +3,6 @@ Allow: /
 Disallow: /admin
 Disallow: /admin.html
 
+# LLM / AI crawler info: https://edhstatstracker.xyz/llms.txt
+
 Sitemap: https://edhstatstracker.xyz/sitemap.xml
