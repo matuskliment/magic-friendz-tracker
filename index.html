@@ -155,6 +155,7 @@
         #analytics-color-meta,
         #analytics-upset,
         #analytics-rivalry,
+        #analytics-kill-leaders,
         #analytics-synergy-rankings { width: 100%; max-width: 100%; min-width: 0; }
         #analytics-synergy > *,
         #analytics-group-stats > *,
@@ -162,6 +163,7 @@
         #analytics-color-meta > *,
         #analytics-upset > *,
         #analytics-rivalry > *,
+        #analytics-kill-leaders > *,
         #analytics-synergy-rankings > * { max-width: 100%; min-width: 0; }
         @keyframes mfGroupGlow {
             0%, 100% { opacity: 0.45; transform: scale(1); }
@@ -1213,6 +1215,22 @@
                         </div>
                     </div>
 
+                    <!-- Top Eliminators -->
+                    <div>
+                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <span class="text-orange-400">🗡️</span> Top Eliminators
+                            <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <div class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100">
+                                    Pilots ranked by how many opponents they've eliminated. Self-inflicted losses don't count. Requires elimination data when logging matches.
+                                </div>
+                            </div>
+                        </h2>
+                        <div id="analytics-kill-leaders" class="space-y-2">
+                            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
+                        </div>
+                    </div>
+
                     <!-- Top Deck Builders -->
                     <div>
                         <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
@@ -1633,6 +1651,8 @@
             </div>
 
             <div id="plr-view-extra" class="grid grid-cols-2 gap-3 mb-6"></div>
+
+            <div id="plr-view-elim" class="grid grid-cols-2 gap-3 mb-6 hidden"></div>
 
             <div id="plr-view-color-profile" class="space-y-3 mb-4 hidden"></div>
             
@@ -8485,6 +8505,7 @@
             
             window.appData.biggestUpset = biggestUpset;
             window.appData.playerH2H = playerH2H;
+            window.appData.eliminationStats = computeEliminationStats(sortedMatches);
             scheduleEnsureMatchPlayersOnRoster();
         }
 
@@ -8849,6 +8870,7 @@
 
         const DECK_BUILDER_MIN_PLAYS = 3;
         const SYNERGY_MIN_PLAYS = 3;
+        const KILLS_MIN_COUNT = 3;
         const COLOR_META_WIN_MIN = 10;
 
         function findCommanderByDeckName(deckName) {
@@ -9054,6 +9076,84 @@
             return `${days} days ago`;
         }
 
+        function mfTopCountEntry(countMap) {
+            let top = null;
+            Object.entries(countMap || {}).forEach(([key, count]) => {
+                if (!top || count > top.count) top = { key, count };
+            });
+            return top;
+        }
+
+        function computeEliminationStats(matches) {
+            const killsByPlayer = {};
+            const viaCounts = {};
+            const killerToVictim = {};
+            const killerViaCounts = {};
+            const eliminatedByCounts = {};
+            let losersTotal = 0;
+            let losersWithElimData = 0;
+
+            (matches || []).forEach(m => {
+                (m.losers || []).forEach(l => {
+                    losersTotal++;
+                    const victim = normalizeName(l.player);
+                    if (!l.killedBy && !l.killedVia) return;
+                    losersWithElimData++;
+
+                    if (l.killedVia) {
+                        viaCounts[l.killedVia] = (viaCounts[l.killedVia] || 0) + 1;
+                    }
+
+                    const killer = normalizeName(l.killedBy);
+                    if (!killer || !victim || killer === victim) return;
+
+                    killsByPlayer[killer] = (killsByPlayer[killer] || 0) + 1;
+                    if (!killerToVictim[killer]) killerToVictim[killer] = {};
+                    killerToVictim[killer][victim] = (killerToVictim[killer][victim] || 0) + 1;
+
+                    if (l.killedVia) {
+                        if (!killerViaCounts[killer]) killerViaCounts[killer] = {};
+                        killerViaCounts[killer][l.killedVia] = (killerViaCounts[killer][l.killedVia] || 0) + 1;
+                    }
+
+                    if (!eliminatedByCounts[victim]) eliminatedByCounts[victim] = {};
+                    eliminatedByCounts[victim][killer] = (eliminatedByCounts[victim][killer] || 0) + 1;
+                });
+            });
+
+            const topEliminator = mfTopCountEntry(killsByPlayer);
+            const mostCommonVia = mfTopCountEntry(viaCounts);
+
+            return {
+                killsByPlayer,
+                viaCounts,
+                killerToVictim,
+                killerViaCounts,
+                eliminatedByCounts,
+                losersTotal,
+                losersWithElimData,
+                topEliminator: topEliminator ? { name: topEliminator.key, kills: topEliminator.count } : null,
+                mostCommonVia: mostCommonVia ? { via: mostCommonVia.key, count: mostCommonVia.count } : null,
+            };
+        }
+
+        function getPlayerEliminationInsights(playerName, stats) {
+            const name = normalizeName(playerName);
+            if (!stats || !name) {
+                return { kills: 0, topVictim: null, favKillMethod: null, eliminatedBy: null };
+            }
+            const kills = stats.killsByPlayer[name] || 0;
+            const topVictim = mfTopCountEntry(stats.killerToVictim[name]);
+            const favKillMethod = mfTopCountEntry(stats.killerViaCounts[name]);
+            const eliminatedBy = mfTopCountEntry(stats.eliminatedByCounts[name]);
+            return {
+                kills,
+                topVictim: topVictim ? { name: topVictim.key, count: topVictim.count } : null,
+                favKillMethod: favKillMethod ? { via: favKillMethod.key, count: favKillMethod.count } : null,
+                eliminatedBy: eliminatedBy ? { name: eliminatedBy.key, count: eliminatedBy.count } : null,
+            };
+        }
+
         function computeGroupStats() {
             const matches = window.appData.matches || [];
             const players = window.appData.players || [];
@@ -9236,6 +9336,23 @@
                 ? `Among ${playersWith3Plus} players (3+ games)`
                 : 'Need more games';
 
+            const elimStats = window.appData.eliminationStats;
+            const topEliminator = elimStats?.topEliminator;
+            const topEliminatorIdx = topEliminator
+                ? window.appData.players.findIndex(p => p.name === topEliminator.name)
+                : -1;
+            const topEliminatorPlayer = topEliminator
+                ? window.appData.players.find(p => p.name === topEliminator.name)
+                : null;
+            const topEliminatorAvatar = topEliminatorPlayer
+                ? renderPlayerAvatar(topEliminatorPlayer, 'w-10 h-10', 'text-[10px]', 'shrink-0 border border-orange-500/40')
+                : '';
+            const mostCommonVia = elimStats?.mostCommonVia;
+            const mostCommonKillLabel = mostCommonVia ? mfKillViaLabel(mostCommonVia.via) : '—';
+            const mostCommonKillSub = mostCommonVia && elimStats.losersWithElimData > 0
+                ? `${mostCommonVia.count} of ${elimStats.losersWithElimData} eliminations (${Math.round((mostCommonVia.count / elimStats.losersWithElimData) * 100)}%)`
+                : (elimStats?.losersWithElimData ? 'No kill method logged' : 'Log elimination details when recording losses');
+
             safeSetHTML('analytics-group-stats', `
                 <div class="glass relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 shadow-[0_0_30px_rgba(34,211,238,0.06)] w-full max-w-full min-w-0">
                     <div class="mf-group-hero-glow absolute -top-16 -right-16 w-48 h-48 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none"></div>
@@ -9295,6 +9412,17 @@
                                     dedicatedPlayer ? dedicatedPlayer.name : '—',
                                     dedicatedPlayer ? `${dedicatedPlayer.plays} games · ${dedicatedPlayer.winRate} win rate` : 'No players yet',
                                     dedicatedPlayer ? `<div class="mb-2">${dedicatedIdx >= 0 ? `<button type="button" onclick="window.openPlayerProfile(${dedicatedIdx})" class="inline-flex touch-manipulation">${dedicatedAvatar}</button>` : dedicatedAvatar}</div>` : ''
+                                )}
+                                ${highlightCard(
+                                    'Top Eliminator',
+                                    topEliminator ? topEliminator.name : '—',
+                                    topEliminator ? `${topEliminator.kills} ${topEliminator.kills === 1 ? 'kill' : 'kills'} dealt` : 'No elimination data yet',
+                                    topEliminatorPlayer ? `<div class="mb-2">${topEliminatorIdx >= 0 ? `<button type="button" onclick="window.openPlayerProfile(${topEliminatorIdx})" class="inline-flex touch-manipulation">${topEliminatorAvatar}</button>` : topEliminatorAvatar}</div>` : ''
+                                )}
+                                ${highlightCard(
+                                    'Most Common Kill',
+                                    mostCommonKillLabel,
+                                    mostCommonKillSub
                                 )}
                             </div>
                         </div>
@@ -9429,6 +9557,44 @@
                     </div>`;
             }).join('');
             safeSetHTML('analytics-builders', html);
+        }
+
+        function renderKillLeaderboard() {
+            const stats = window.appData.eliminationStats;
+            const leaders = stats
+                ? Object.entries(stats.killsByPlayer || {})
+                    .map(([name, kills]) => ({ name, kills }))
+                    .filter(e => e.kills >= KILLS_MIN_COUNT)
+                    .sort((a, b) => b.kills - a.kills || a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+                : [];
+
+            if (!leaders.length) {
+                const hasAnyKills = stats && Object.keys(stats.killsByPlayer || {}).length > 0;
+                safeSetHTML('analytics-kill-leaders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">${hasAnyKills ? `Log elimination details on more matches — need at least ${KILLS_MIN_COUNT} kills per pilot to rank.` : 'Eliminator rankings appear once you log killed-by and killed-via on losses.'}</p></div>`);
+                return;
+            }
+
+            const medal = (i) => i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-200' : i === 2 ? 'text-orange-400' : 'text-slate-500';
+            const html = leaders.slice(0, 5).map((entry, i) => {
+                const player = (window.appData.players || []).find(p => p.name === entry.name);
+                const playerIdx = window.appData.players.findIndex(p => p.name === entry.name);
+                const avatar = player
+                    ? renderPlayerAvatar(player, 'w-10 h-10', 'text-xs', 'shrink-0')
+                    : `<div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 shrink-0"></div>`;
+                const clickAttr = playerIdx >= 0 ? ` onclick="window.openPlayerProfile(${playerIdx})" role="button" tabindex="0"` : '';
+                return `
+                    <div class="glass flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-orange-500/30' : 'border-slate-700/50'} w-full max-w-full min-w-0${playerIdx >= 0 ? ' cursor-pointer hover:bg-slate-800/80 transition' : ''}"${clickAttr}>
+                        <div class="w-5 text-center font-black text-lg ${medal(i)} shrink-0">${i + 1}</div>
+                        ${avatar}
+                        <div class="flex-grow min-w-0">
+                            <p class="font-bold text-white truncate">${escapeHtml(entry.name)}</p>
+                            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span class="text-[10px] font-bold text-orange-300 bg-orange-500/15 border border-orange-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${entry.kills} ${entry.kills === 1 ? 'kill' : 'kills'}</span>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            safeSetHTML('analytics-kill-leaders', html);
         }
 
         function generateCommanderRow(cmd, index) {
@@ -9764,6 +9930,7 @@
                     safeSetHTML('analytics-color-meta', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Pod color stats appear after you log games.</p></div>`);
                     safeSetHTML('analytics-upset', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Biggest upsets show up once you have match history.</p></div>`);
                     safeSetHTML('analytics-rivalry', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Rivalries need a few logged games first.</p></div>`);
+                    safeSetHTML('analytics-kill-leaders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Eliminator rankings appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Deck builder rankings appear once games are logged.</p></div>`);
                     safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet — log a match or register a deck on a player profile.</div>`);
                     safeSetHTML('home-top-commanders', '');
@@ -10005,6 +10172,7 @@
                 }
 
                 renderDeckBuilders();
+                renderKillLeaderboard();
 
                 safeSetHTML('commander-view', renderCommanderLeaderboardHtml());
                 safeSetHTML('player-view', window.appData.players.map((p, i) => generatePlayerRow(p, i)).join(''));
@@ -10415,6 +10583,53 @@
             ].join('');
         }
 
+        function renderPlayerElimInsights(player) {
+            const host = document.getElementById('plr-view-elim');
+            if (!host) return;
+
+            const stats = window.appData.eliminationStats;
+            const insights = getPlayerEliminationInsights(player.name, stats);
+            const hasData = stats && stats.losersWithElimData > 0;
+
+            if (!hasData) {
+                host.classList.add('hidden');
+                host.innerHTML = '';
+                return;
+            }
+
+            host.classList.remove('hidden');
+
+            const card = (label, value, valueCls, sub) => `
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">${label}</p>
+                    <p class="text-base font-black ${valueCls} mt-1 truncate" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</p>
+                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
+                </div>`;
+
+            const killsSub = insights.kills > 0
+                ? (insights.kills === 1 ? '1 opponent eliminated' : `${insights.kills} opponents eliminated`)
+                : 'No kills logged yet';
+            const topVictimLabel = insights.topVictim ? insights.topVictim.name : '—';
+            const topVictimSub = insights.topVictim
+                ? `${insights.topVictim.count}× eliminated`
+                : 'No victims yet';
+            const favKillLabel = insights.favKillMethod ? mfKillViaLabel(insights.favKillMethod.via) : '—';
+            const favKillSub = insights.favKillMethod
+                ? `${insights.favKillMethod.count}× via this method`
+                : 'No kill method logged';
+            const elimByLabel = insights.eliminatedBy ? insights.eliminatedBy.name : '—';
+            const elimBySub = insights.eliminatedBy
+                ? `${insights.eliminatedBy.count}× taken out by them`
+                : 'No losses with elimination data';
+
+            host.innerHTML = [
+                card('Kills Dealt', String(insights.kills), 'text-orange-300', killsSub),
+                card('Top Victim', topVictimLabel, 'text-red-300', topVictimSub),
+                card('Favorite Kill Method', favKillLabel, 'text-amber-300', favKillSub),
+                card('Eliminated By', elimByLabel, 'text-sky-300', elimBySub),
+            ].join('');
+        }
+
         window.openPlayerProfile = function(index) {
             const player = window.appData.players[index];
             if (!player) return;
@@ -10441,6 +10656,7 @@
             if(hoursEl) hoursEl.innerText = player.hoursPlayedLabel || '—';
 
             renderPlayerInsights(player);
+            renderPlayerElimInsights(player);
             refreshPlayerProfileDecksSection(player);
 
             document.getElementById('plr-deck-create-panel')?.classList.add('hidden');
