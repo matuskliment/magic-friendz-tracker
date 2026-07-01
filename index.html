@@ -4188,7 +4188,7 @@
             if (!l?.killedBy && !l?.killedVia) return '';
             const by = l.killedBy ? mfKilledByDisplayLabel(l.player, l.killedBy) : '—';
             const via = l.killedVia ? mfKillViaLabel(l.killedVia) : '—';
-            return `<span class="text-[10px] text-slate-500 block truncate mt-0.5">${escapeHtml(by)} · ${escapeHtml(via)}</span>`;
+            return `<span class="text-[10px] text-slate-500 block truncate mt-0.5 normal-case"><span class="uppercase tracking-wide text-[9px] font-bold text-slate-600">Killed by</span> <span class="text-slate-400 font-semibold">${escapeHtml(by)}</span><span class="text-slate-600"> · </span><span class="uppercase tracking-wide text-[9px] font-bold text-slate-600">via</span> <span class="text-slate-400">${escapeHtml(via)}</span></span>`;
         }
 
         function mfFormatSessionLoserRow(l, m) {
@@ -4420,9 +4420,7 @@
             document.querySelectorAll('.loser-slot').forEach((slot) => {
                 const d = extractSlotData(slot);
                 if (d.player && d.deck) {
-                    const elim = d.killedBy && d.killedVia
-                        ? `<p class="text-[10px] text-slate-500 mt-0.5 truncate">Killed by ${escapeHtml(mfKilledByDisplayLabel(d.player, d.killedBy))} · ${escapeHtml(mfKillViaLabel(d.killedVia))}</p>`
-                        : '';
+                    const elim = d.killedBy || d.killedVia ? mfFormatLoserElimSubline(d) : '';
                     rows.push(`<div class="flex gap-2 items-start bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2"><span class="text-red-400/80 shrink-0">💀</span><div class="min-w-0"><p class="font-semibold text-slate-200 truncate">${escapeHtml(d.deck)}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(d.player)}</p>${elim}</div></div>`);
                 }
             });
