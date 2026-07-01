@@ -2,7 +2,7 @@
 # https://edhstatstracker.xyz/
 
 > Free EDH Commander playgroup stats tracker by Mat Kliment.
-> Log pod results, Elo, win rates, deck lists, and match history.
+> Log pod results, per-group Elo, win rates, deck lists, and match history.
 
 ## Primary pages
 - Home: https://edhstatstracker.xyz/
@@ -12,8 +12,14 @@
 ## Product summary
 Magic Friendz helps Magic: The Gathering Commander playgroups track match results over time.
 Features include commander and player Elo leaderboards, match logging with elimination details,
-session recaps, global insights (rivalries, top eliminators, how-we-lose stats), roster management,
+session recaps, playgroup insights (rivalries, top eliminators, how-we-lose stats), roster management,
 and group data export (JSON / CSV).
+
+## Differentiator
+Magic Friendz tracks stats and Elo **per playgroup**, not on a global ladder.
+Each group has its own match history, leaderboards, and ratings built from that pod's games only.
+Rankings reflect your table's power level and local meta — not strangers across the internet.
+Tagline: "Elo for your pod, not a global ladder."
 
 ## Access model
 - View stats: open a group link (no account required)

@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.30">
+    <meta name="mf-app-version" content="2.9.31">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
-    <meta name="description" content="Track Commander pod stats, Elo, win rates, deck lists, and match history for your MTG playgroup. Free EDH stats tracker with magic-link sign-in.">
-    <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, MTG Elo tracker, commander leaderboard, playgroup stats, match history">
+    <meta name="description" content="Per-playgroup Elo and stats for your Commander pod — your meta, not a global ladder. Log matches, win rates, deck lists, and history. Free EDH tracker with magic-link sign-in.">
+    <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, per-group Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
     <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Magic Friendz">
     <meta property="og:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
-    <meta property="og:description" content="Track Commander pod stats, Elo, win rates, and match history for your MTG playgroup.">
+    <meta property="og:description" content="Per-playgroup Elo and stats for your Commander pod — your meta, not a global ladder. Log matches and track your playgroup.">
     <meta property="og:url" id="mf-og-url" content="https://edhstatstracker.xyz/">
     <meta property="og:image" content="https://edhstatstracker.xyz/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
-    <meta name="twitter:description" content="Track Commander pod stats, Elo, win rates, and match history for your MTG playgroup.">
+    <meta name="twitter:description" content="Per-playgroup Elo and stats for your Commander pod — your meta, not a global ladder.">
     <meta name="twitter:image" content="https://edhstatstracker.xyz/og-image.png">
     <script type="application/ld+json">
     {
@@ -29,7 +29,7 @@
                 "name": "Magic Friendz",
                 "alternateName": "EDH Stats Tracker",
                 "url": "https://edhstatstracker.xyz/",
-                "description": "Free EDH Commander playgroup stats tracker — log pod results, Elo, win rates, deck lists, and match history.",
+                "description": "Free EDH Commander playgroup stats tracker with per-group Elo — rankings reflect your pod's meta and games, not a global ladder.",
                 "applicationCategory": "GameApplication",
                 "operatingSystem": "Web",
                 "browserRequirements": "Requires JavaScript",
@@ -837,7 +837,7 @@
     <noscript>
         <div class="bg-slate-950 border-b border-purple-500/30 px-4 py-6 text-center text-sm text-slate-300 leading-relaxed">
             <p><strong class="text-white">Magic Friendz</strong> is a free EDH Commander playgroup stats tracker by <strong class="text-white">Mat Kliment</strong>.
-            Track Elo, win rates, deck lists, and match history at <a href="https://edhstatstracker.xyz/" class="text-purple-400 underline">edhstatstracker.xyz</a>.
+            Track <strong class="text-white">per-playgroup Elo</strong> and stats for your pod&apos;s meta — not a global ladder — at <a href="https://edhstatstracker.xyz/" class="text-purple-400 underline">edhstatstracker.xyz</a>.
             JavaScript is required to use the app. <a href="/about.html" class="text-purple-400 underline">Learn more</a>.</p>
         </div>
     </noscript>
@@ -885,7 +885,7 @@
                         <span class="text-gradient">Track every victory.</span>
                     </h1>
                     <p class="text-base md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto lg:mx-0 drop-shadow-md">
-                        Magic Friendz is a free <strong class="font-semibold text-slate-200">EDH Commander playgroup stats tracker</strong> — log pod results, track Elo and win rates, and share match history with your tabletop group. Anyone with the group link can view stats; sign in to log games.
+                        Magic Friendz is a free <strong class="font-semibold text-slate-200">EDH Commander playgroup stats tracker</strong> — log pod results and track <strong class="font-semibold text-slate-200">Elo that matters for your group</strong>. Rankings come from <strong class="font-semibold text-slate-200">your pod&apos;s games only</strong>, so leaderboards reflect <strong class="font-semibold text-slate-200">your table&apos;s meta</strong>, not a global ladder. Anyone with the group link can view stats; sign in to log games.
                     </p>
                     <div id="landing-hero-actions" class="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
                         <button type="button" id="landing-view-stats-btn" onclick="window.openGroupModal()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 active:scale-[0.98] shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 group min-h-[52px] w-full sm:w-auto touch-manipulation">
@@ -1038,12 +1038,16 @@
                 <div class="text-center mb-10 md:mb-12">
                     <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-2">Built for Commander pods</p>
                     <h2 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">Features</h2>
-                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Everything your playgroup needs after game night — from quick match logging to long-running league stats.</p>
+                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Everything your playgroup needs after game night — stats and Elo scoped to <strong class="text-slate-300 font-semibold">your group</strong>, not the whole internet.</p>
                 </div>
                 <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 text-left">
+                    <li class="glass rounded-2xl border border-purple-500/25 bg-purple-950/10 p-5 md:p-6">
+                        <h3 class="text-base font-bold text-white mb-2">Your pod&apos;s Elo</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Each playgroup has its own leaderboards and Elo — built from your matches only, so ratings reflect <strong class="text-slate-300 font-semibold">your meta and power level</strong>, not strangers online.</p>
+                    </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
-                        <h3 class="text-base font-bold text-white mb-2">Commander &amp; player Elo</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed">Leaderboards for decks and pilots with automatic Elo shifts after every logged match.</p>
+                        <h3 class="text-base font-bold text-white mb-2">Commander &amp; player rankings</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Deck and pilot leaderboards with automatic Elo shifts after every logged game in your group.</p>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Match logging</h3>
@@ -1054,8 +1058,8 @@
                         <p class="text-sm text-slate-400 leading-relaxed">Browse match history by session, revisit last night&apos;s games, and share stats with anyone who has the group link.</p>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
-                        <h3 class="text-base font-bold text-white mb-2">Global insights</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed">Rivalries, top eliminators, how-we-lose breakdowns, pod color meta, signature synergies, and more.</p>
+                        <h3 class="text-base font-bold text-white mb-2">Playgroup insights</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Rivalries, top eliminators, how-we-lose breakdowns, pod color meta, and signature synergies — all from <strong class="text-slate-300 font-semibold">your group&apos;s history</strong>.</p>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Shareable group links</h3>
@@ -1078,7 +1082,11 @@
                 <div class="space-y-3">
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>What is Magic Friendz?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
-                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks Elo, win rates, deck lists, match history, and group insights so your table can focus on playing — not arguing about who&apos;s ahead.</p>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks <strong class="text-slate-300">per-group Elo</strong>, win rates, deck lists, match history, and playgroup insights — so rankings reflect your table&apos;s games, not a worldwide ladder.</p>
+                    </details>
+                    <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
+                        <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>How is this different from apps with global Elo?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Many trackers rank decks or players across everyone using the app. Magic Friendz is built for <strong class="text-slate-300">your Commander pod</strong>: each group has its own match history, leaderboards, and Elo. That means ratings reflect <strong class="text-slate-300">your playgroup&apos;s power level and meta</strong> — the decks you actually play against — not strangers on a global leaderboard.</p>
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>How do group links work?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
@@ -1109,7 +1117,7 @@
                 <a href="/groups.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">All Groups</a>
                 <a href="#contact" onclick="window.openFeedbackModal(); return false;" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Contact</a>
             </nav>
-            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz by Mat Kliment — EDH Commander playgroup stats tracker for Elo, win rates, deck lists, and match history.</p>
+            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz by Mat Kliment — per-playgroup EDH stats and Elo for your pod&apos;s meta, not a global ladder.</p>
         </footer>
 
         <div class="w-full overflow-hidden bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md py-3 z-30 shrink-0">
