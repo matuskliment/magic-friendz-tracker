@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.32">
+    <meta name="mf-app-version" content="2.9.33">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Per-playgroup Elo and stats for your Commander pod — your meta, not a global ladder. Log matches, win rates, deck lists, and history. Free EDH tracker with magic-link sign-in.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, per-group Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -25,7 +25,17 @@
         "@context": "https://schema.org",
         "@graph": [
             {
+                "@type": "WebSite",
+                "@id": "https://edhstatstracker.xyz/#website",
+                "name": "Magic Friendz",
+                "alternateName": "EDH Stats Tracker",
+                "url": "https://edhstatstracker.xyz/",
+                "description": "Free EDH Commander playgroup stats tracker with per-group Elo — rankings reflect your pod's meta and games, not a global ladder.",
+                "publisher": { "@id": "https://edhstatstracker.xyz/#organization" }
+            },
+            {
                 "@type": "WebApplication",
+                "@id": "https://edhstatstracker.xyz/#webapp",
                 "name": "Magic Friendz",
                 "alternateName": "EDH Stats Tracker",
                 "url": "https://edhstatstracker.xyz/",
@@ -34,21 +44,78 @@
                 "operatingSystem": "Web",
                 "browserRequirements": "Requires JavaScript",
                 "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-                "author": { "@type": "Person", "name": "Mat Kliment", "sameAs": "https://github.com/matuskliment/magic-friendz-tracker" }
+                "author": { "@id": "https://edhstatstracker.xyz/#person" },
+                "isPartOf": { "@id": "https://edhstatstracker.xyz/#website" }
             },
             {
                 "@type": "Organization",
+                "@id": "https://edhstatstracker.xyz/#organization",
                 "name": "Magic Friendz",
                 "url": "https://edhstatstracker.xyz/",
-                "founder": { "@type": "Person", "name": "Mat Kliment", "sameAs": "https://github.com/matuskliment/magic-friendz-tracker" }
+                "founder": { "@id": "https://edhstatstracker.xyz/#person" }
             },
             {
                 "@type": "Person",
+                "@id": "https://edhstatstracker.xyz/#person",
                 "name": "Mat Kliment",
                 "url": "https://edhstatstracker.xyz/about.html",
                 "jobTitle": "Creator",
                 "sameAs": "https://github.com/matuskliment/magic-friendz-tracker",
-                "worksFor": { "@type": "Organization", "name": "Magic Friendz", "url": "https://edhstatstracker.xyz/" }
+                "worksFor": { "@id": "https://edhstatstracker.xyz/#organization" }
+            },
+            {
+                "@type": "FAQPage",
+                "@id": "https://edhstatstracker.xyz/#faq",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "What is Magic Friendz?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks per-group Elo, win rates, deck lists, match history, and playgroup insights — so rankings reflect your table's games, not a worldwide ladder."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "How is this different from apps with global Elo?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Many trackers rank decks or players across everyone using the app. Magic Friendz is built for your Commander pod: each group has its own match history, leaderboards, and Elo. That means ratings reflect your playgroup's power level and meta — the decks you actually play against — not strangers on a global leaderboard."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "How do group links work?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Your host shares a URL like https://edhstatstracker.xyz/?group=your-group-name. Anyone with the link can view stats immediately. Sign in with a magic link when you want to log matches or manage the roster."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Do I need an account?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email — we send a magic link, no password required."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Is Magic Friendz free?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Yes. Magic Friendz is free for Commander playgroups. It was built by Mat Kliment for kitchen-table EDH nights."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Who built Magic Friendz?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Magic Friendz was created by Mat Kliment. Read more on the About page at https://edhstatstracker.xyz/about.html."
+                        }
+                    }
+                ]
             }
         ]
     }
