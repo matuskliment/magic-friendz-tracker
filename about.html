@@ -4,20 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>About — Magic Friendz EDH Stats Tracker</title>
-    <meta name="description" content="Magic Friendz tracks per-playgroup Commander Elo and stats — your pod's meta, not a global ladder. Free EDH tracker by Mat Kliment.">
-    <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, per-group Elo, playgroup meta">
+    <meta name="description" content="Learn how Magic Friendz tracks playgroup Commander Elo and stats for your pod — your meta, not a global ladder. Free EDH tracker built by Mat Kliment for kitchen-table nights.">
+    <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta">
     <link rel="canonical" href="https://edhstatstracker.xyz/about.html">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Magic Friendz">
     <meta property="og:title" content="About Magic Friendz — EDH Commander Stats Tracker">
-    <meta property="og:description" content="Per-playgroup Commander Elo and stats — your pod's meta, not a global ladder. Free tracker by Mat Kliment.">
+    <meta property="og:description" content="Playgroup Commander Elo and stats — your pod's meta, not a global ladder. Free tracker by Mat Kliment.">
     <meta property="og:url" content="https://edhstatstracker.xyz/about.html">
     <meta property="og:image" content="https://edhstatstracker.xyz/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="About Magic Friendz">
-    <meta name="twitter:description" content="Per-playgroup Commander Elo and stats — your pod's meta, not a global ladder.">
+    <meta name="twitter:description" content="Playgroup Commander Elo and stats — your pod's meta, not a global ladder.">
     <meta name="twitter:image" content="https://edhstatstracker.xyz/og-image.png">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a855f7'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3C/svg%3E">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LXRC54R98V"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-LXRC54R98V');
+    </script>
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/styles.css">
+    <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif;margin:0}</style>
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -47,9 +58,6 @@
         ]
     }
     </script>
-    <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif}</style>
-    <link rel="preload" href="/styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="/styles.css"></noscript>
     <style>
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .text-gradient { background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -84,7 +92,7 @@
             <h2 class="text-xl font-bold text-white">What you can do</h2>
             <ul class="list-disc pl-5 space-y-2 text-sm text-slate-400 leading-relaxed">
                 <li>Log Commander matches — winners, losers, pilots, decks, elimination details</li>
-                <li>View commander and player leaderboards with <strong class="text-slate-300">per-group Elo</strong> (your pod only)</li>
+                <li>View commander and player leaderboards with <strong class="text-slate-300">playgroup Elo</strong> (your pod only)</li>
                 <li>Browse match history, session recaps, and playgroup insights</li>
                 <li>Share a group link so anyone can view stats; sign in to log games</li>
                 <li>Export your group data as JSON or CSV</li>
@@ -93,7 +101,7 @@
 
         <section class="space-y-4">
             <h2 class="text-xl font-bold text-white">Getting started</h2>
-            <p class="text-sm text-slate-400 leading-relaxed">Open your group with a URL like <code class="text-purple-300 bg-slate-900 px-1.5 py-0.5 rounded text-xs">https://edhstatstracker.xyz/?group=your-group-name</code>. Create a new group from the homepage if you are starting fresh. Editors sign in with a magic link — no password required.</p>
+            <p class="text-sm text-slate-400 leading-relaxed">Open your group with a URL like <code class="text-purple-300 bg-slate-900 px-1.5 py-0.5 rounded text-xs">https://edhstatstracker.xyz/?group=myplaygroup</code>. Create a new group from the homepage if you are starting fresh. Editors sign in with a magic link — no password required.</p>
             <div class="flex flex-wrap gap-3 pt-2">
                 <a href="/" class="inline-flex bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-full text-sm font-bold transition">Open Magic Friendz</a>
                 <a href="/groups.html" class="inline-flex bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 px-6 py-3 rounded-full text-sm font-bold transition">All groups</a>
@@ -102,7 +110,7 @@
     </main>
 
     <footer class="border-t border-slate-800 px-4 py-8 text-center text-xs text-slate-600">
-        <p>Magic Friendz by Mat Kliment — per-playgroup EDH stats and Elo for your pod&apos;s meta</p>
+        <p>Magic Friendz by Mat Kliment — playgroup EDH stats and Elo for your pod&apos;s meta</p>
         <p class="mt-2"><a href="/" class="text-slate-500 hover:text-slate-300">Home</a> · <a href="/llms.txt" class="text-slate-500 hover:text-slate-300">llms.txt</a></p>
     </footer>
 </body>

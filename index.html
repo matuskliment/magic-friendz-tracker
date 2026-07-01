@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.33">
+    <meta name="mf-app-version" content="2.9.35">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
-    <meta name="description" content="Per-playgroup Elo and stats for your Commander pod — your meta, not a global ladder. Log matches, win rates, deck lists, and history. Free EDH tracker with magic-link sign-in.">
-    <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, per-group Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
+    <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod — rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
+    <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
     <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Magic Friendz">
     <meta property="og:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
-    <meta property="og:description" content="Per-playgroup Elo and stats for your Commander pod — your meta, not a global ladder. Log matches and track your playgroup.">
+    <meta property="og:description" content="Free Commander playgroup tracker with playgroup Elo for your pod. Log matches, leaderboards, and session history — your meta, not a global ladder.">
     <meta property="og:url" id="mf-og-url" content="https://edhstatstracker.xyz/">
     <meta property="og:image" content="https://edhstatstracker.xyz/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
-    <meta name="twitter:description" content="Per-playgroup Elo and stats for your Commander pod — your meta, not a global ladder.">
+    <meta name="twitter:description" content="Free Commander playgroup tracker with playgroup Elo for your pod — your meta, not a global ladder.">
     <meta name="twitter:image" content="https://edhstatstracker.xyz/og-image.png">
     <script type="application/ld+json">
     {
@@ -30,7 +30,7 @@
                 "name": "Magic Friendz",
                 "alternateName": "EDH Stats Tracker",
                 "url": "https://edhstatstracker.xyz/",
-                "description": "Free EDH Commander playgroup stats tracker with per-group Elo — rankings reflect your pod's meta and games, not a global ladder.",
+                "description": "Free EDH Commander playgroup stats tracker with playgroup Elo — rankings reflect your pod's meta and games, not a global ladder.",
                 "publisher": { "@id": "https://edhstatstracker.xyz/#organization" }
             },
             {
@@ -39,7 +39,7 @@
                 "name": "Magic Friendz",
                 "alternateName": "EDH Stats Tracker",
                 "url": "https://edhstatstracker.xyz/",
-                "description": "Free EDH Commander playgroup stats tracker with per-group Elo — rankings reflect your pod's meta and games, not a global ladder.",
+                "description": "Free EDH Commander playgroup stats tracker with playgroup Elo — rankings reflect your pod's meta and games, not a global ladder.",
                 "applicationCategory": "GameApplication",
                 "operatingSystem": "Web",
                 "browserRequirements": "Requires JavaScript",
@@ -72,7 +72,7 @@
                         "name": "What is Magic Friendz?",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks per-group Elo, win rates, deck lists, match history, and playgroup insights — so rankings reflect your table's games, not a worldwide ladder."
+                            "text": "Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks playgroup Elo, win rates, deck lists, match history, and playgroup insights — so rankings reflect your table's games, not a worldwide ladder."
                         }
                     },
                     {
@@ -88,7 +88,7 @@
                         "name": "How do group links work?",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "Your host shares a URL like https://edhstatstracker.xyz/?group=your-group-name. Anyone with the link can view stats immediately. Sign in with a magic link when you want to log matches or manage the roster."
+                            "text": "Your host shares a URL like https://edhstatstracker.xyz/?group=myplaygroup. Anyone with the link can view stats immediately. Sign in with a magic link when you want to log matches or manage the roster."
                         }
                     },
                     {
@@ -142,13 +142,22 @@
             } catch (_) {}
         })();
     </script>
-    <!-- Inline SVG Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a855f7'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3C/svg%3E">
-    <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif}</style>
-    <link rel="preload" href="/styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="/styles.css"></noscript>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LXRC54R98V"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-LXRC54R98V');
+    </script>
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/styles.css">
+    <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif;margin:0}#landing-page{display:flex;flex-direction:column;min-height:100dvh}#landing-page nav{position:fixed;top:0;left:0;right:0;z-index:50}</style>
     <style>
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .landing-showcase-shadow { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); }
         .hero-bg { background-image: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 1)), url('https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070&auto=format&fit=crop'); background-size: cover; background-position: center; }
         .text-gradient { background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         ::-webkit-scrollbar { width: 8px; }
@@ -905,7 +914,7 @@
     <noscript>
         <div class="bg-slate-950 border-b border-purple-500/30 px-4 py-6 text-center text-sm text-slate-300 leading-relaxed">
             <p><strong class="text-white">Magic Friendz</strong> is a free EDH Commander playgroup stats tracker by <strong class="text-white">Mat Kliment</strong>.
-            Track <strong class="text-white">per-playgroup Elo</strong> and stats for your pod&apos;s meta — not a global ladder — at <a href="https://edhstatstracker.xyz/" class="text-purple-400 underline">edhstatstracker.xyz</a>.
+            Track <strong class="text-white">playgroup Elo</strong> and stats for your pod&apos;s meta — not a global ladder — at <a href="https://edhstatstracker.xyz/" class="text-purple-400 underline">edhstatstracker.xyz</a>.
             JavaScript is required to use the app. <a href="/about.html" class="text-purple-400 underline">Learn more</a>.</p>
         </div>
     </noscript>
@@ -1019,7 +1028,7 @@
 
                 <div class="relative h-[400px] md:h-[500px] w-full perspective-1000 mt-12 lg:mt-0 transform scale-90 sm:scale-100 flex items-center justify-center">
                     
-                    <div id="showcase-latest-match" class="absolute top-[45%] left-[40%] transform -translate-x-1/2 -translate-y-1/2 w-64 md:w-72 glass rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-purple-500/30 z-30 backdrop-blur-md rotate-[-4deg] hover:rotate-0 transition duration-500 hover:scale-105">
+                    <div id="showcase-latest-match" class="absolute top-[45%] left-[40%] transform -translate-x-1/2 -translate-y-1/2 w-64 md:w-72 glass landing-showcase-shadow rounded-2xl p-4 border border-purple-500/30 z-30 backdrop-blur-md rotate-[-4deg] hover:rotate-0 transition duration-500 hover:scale-105">
                         <div class="flex justify-between items-center mb-3">
                             <h4 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Latest Match</h4>
                             <span class="text-[10px] text-slate-500">May 21, 2026</span>
@@ -1036,7 +1045,7 @@
                         </div>
                     </div>
 
-                    <div id="showcase-rank-1" class="absolute top-4 right-0 md:top-8 md:right-8 w-56 md:w-64 glass rounded-2xl p-3 md:p-4 transform rotate-6 hover:rotate-3 hover:scale-105 transition duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-yellow-500/40 z-20 backdrop-blur-md">
+                    <div id="showcase-rank-1" class="absolute top-4 right-0 md:top-8 md:right-8 w-56 md:w-64 glass landing-showcase-shadow rounded-2xl p-3 md:p-4 transform rotate-6 hover:rotate-3 hover:scale-105 transition duration-500 border border-yellow-500/40 z-20 backdrop-blur-md">
                         <div class="rounded-xl w-full h-28 md:h-32 bg-cover bg-center mb-3 shadow-inner bg-slate-800" style="background-image:url('https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?q=80&w=1000&auto=format&fit=crop');"></div>
                         <div class="flex justify-between items-center">
                             <div class="truncate pr-2"><h4 class="font-bold text-white text-sm md:text-base truncate">Zurgo Stormrender</h4><p class="text-[10px] text-slate-400">Rank #1 • Matus</p></div>
@@ -1044,7 +1053,7 @@
                         </div>
                     </div>
                     
-                    <div id="showcase-rank-2" class="absolute bottom-12 left-4 md:bottom-20 md:left-12 w-48 md:w-56 glass rounded-2xl p-3 md:p-4 transform -rotate-12 hover:-rotate-6 hover:scale-105 transition duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-amber-600/30 z-10 backdrop-blur-md hidden sm:block opacity-90">
+                    <div id="showcase-rank-2" class="absolute bottom-12 left-4 md:bottom-20 md:left-12 w-48 md:w-56 glass landing-showcase-shadow rounded-2xl p-3 md:p-4 transform -rotate-12 hover:-rotate-6 hover:scale-105 transition duration-500 border border-amber-600/30 z-10 backdrop-blur-md hidden sm:block opacity-90">
                         <div class="rounded-xl w-full h-24 bg-cover bg-center mb-3 shadow-inner bg-slate-800" style="background-image:url('https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1000&auto=format&fit=crop');"></div>
                         <div class="flex justify-between items-center">
                             <div class="truncate pr-2"><h4 class="font-bold text-white text-xs md:text-sm truncate">Tom Bombadil</h4><p class="text-[9px] md:text-[10px] text-slate-400">Rank #3 • Oliver</p></div>
@@ -1127,7 +1136,7 @@
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Playgroup insights</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed">Rivalries, top eliminators, how-we-lose breakdowns, pod color meta, and signature synergies — all from <strong class="text-slate-300 font-semibold">your group&apos;s history</strong>.</p>
+                        <p class="text-sm text-slate-400 leading-relaxed">Rivalries, top eliminators, how you lose breakdowns, pod color meta, and signature synergies — all from <strong class="text-slate-300 font-semibold">your group&apos;s history</strong>.</p>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Shareable group links</h3>
@@ -1150,7 +1159,7 @@
                 <div class="space-y-3">
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>What is Magic Friendz?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
-                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks <strong class="text-slate-300">per-group Elo</strong>, win rates, deck lists, match history, and playgroup insights — so rankings reflect your table&apos;s games, not a worldwide ladder.</p>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks <strong class="text-slate-300">playgroup Elo</strong>, win rates, deck lists, match history, and playgroup insights — so rankings reflect your table&apos;s games, not a worldwide ladder.</p>
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>How is this different from apps with global Elo?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
@@ -1158,7 +1167,7 @@
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>How do group links work?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
-                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Your host shares a URL like <code class="text-purple-300 text-xs bg-slate-900 px-1 py-0.5 rounded">https://edhstatstracker.xyz/?group=your-group-name</code>. Anyone with the link can view stats immediately. Sign in with a magic link when you want to log matches or manage the roster.</p>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Your host shares a URL like <code class="text-purple-300 text-xs bg-slate-900 px-1 py-0.5 rounded">https://edhstatstracker.xyz/?group=myplaygroup</code>. Anyone with the link can view stats immediately. Sign in with a magic link when you want to log matches or manage the roster.</p>
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>Do I need an account?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
@@ -1185,7 +1194,7 @@
                 <a href="/groups.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">All Groups</a>
                 <a href="#contact" onclick="window.openFeedbackModal(); return false;" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Contact</a>
             </nav>
-            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz by Mat Kliment — per-playgroup EDH stats and Elo for your pod&apos;s meta, not a global ladder.</p>
+            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz by Mat Kliment — playgroup EDH stats and Elo for your pod&apos;s meta, not a global ladder.</p>
         </footer>
 
         <div class="w-full overflow-hidden bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md py-3 z-30 shrink-0">
@@ -1249,7 +1258,7 @@
 
                 <div class="hidden md:flex glass p-4 md:p-5 rounded-xl border border-purple-500/35 bg-purple-950/20 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <div class="flex-1 min-w-0">
-                        <h2 class="text-sm md:text-base font-bold text-white">Contact &amp; feedback</h2>
+                        <h3 class="text-sm md:text-base font-bold text-white">Contact &amp; feedback</h3>
                         <p class="text-xs text-slate-400 mt-1 leading-relaxed">Questions, bugs, or ideas — we read every message.</p>
                     </div>
                     <button type="button" onclick="window.openFeedbackModal()" class="w-full sm:w-auto shrink-0 bg-purple-600 hover:bg-purple-500 text-white px-5 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation shadow-lg shadow-purple-500/25">Send message</button>
@@ -1263,7 +1272,7 @@
 
                 <div id="home-top-commanders-block" class="mt-8 mb-4">
                     <div class="flex justify-between items-end mb-4">
-                        <h2 class="text-xl font-bold">Top 5 Commanders</h2>
+                        <h3 class="text-xl font-bold">Top 5 Commanders</h3>
                     </div>
                     <div id="home-top-commanders" class="space-y-3">
                         <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">No data available.</p></div>
@@ -1273,7 +1282,7 @@
 
                 <div id="home-top-players-block" class="mt-8 mb-4">
                     <div class="flex justify-between items-end mb-4">
-                        <h2 class="text-xl font-bold">Top 5 Players</h2>
+                        <h3 class="text-xl font-bold">Top 5 Players</h3>
                     </div>
                     <div id="home-top-players" class="space-y-3">
                         <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">No data available.</p></div>
@@ -1285,7 +1294,7 @@
             <!-- TAB 2: MATCHES -->
             <div id="tab-matches" class="tab-content hidden space-y-6">
                 <div class="mt-4 mb-6">
-                    <h2 class="text-2xl md:text-3xl font-bold">Match History</h2>
+                    <h3 class="text-2xl md:text-3xl font-bold">Match History</h3>
                     <p class="text-xs text-slate-400">Chronological feed of all games logged</p>
                 </div>
                 <div id="match-feed-container" class="space-y-4"></div>
@@ -1295,7 +1304,7 @@
             <div id="tab-ranks" class="tab-content hidden space-y-6">
                 <div class="flex flex-col gap-4 mt-4 mb-4">
                     <div>
-                        <h2 class="text-2xl md:text-3xl font-bold">Leaderboard</h2>
+                        <h3 class="text-2xl md:text-3xl font-bold">Leaderboard</h3>
                         <p class="text-xs text-slate-400">Ranked by Elo rating</p>
                     </div>
                     
@@ -1320,14 +1329,14 @@
             <!-- NEW TAB: INSIGHTS & ANALYTICS -->
             <div id="tab-analytics" class="tab-content hidden space-y-6 w-full min-w-0 max-w-full overflow-x-hidden">
                 <div class="mt-4 mb-6">
-                    <h2 class="text-2xl md:text-3xl font-bold">Global Insights</h2>
+                    <h3 class="text-2xl md:text-3xl font-bold">Global Insights</h3>
                     <p class="text-xs text-slate-400">Deep analytics from across the multiverse</p>
                 </div>
 
                 <div class="space-y-8">
                     <!-- Signature Synergy -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             🌟 Signature Synergy
                             <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -1335,7 +1344,7 @@
                                     This highlights the most lethal pilot and deck combination (min. 3 games). It compares the player's overall win rate against their specific performance when piloting this exact commander!
                                 </div>
                             </div>
-                        </h2>
+                        </h3>
                         <div id="analytics-synergy">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1343,7 +1352,7 @@
 
                     <!-- Group at a Glance -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-cyan-400">📈</span> Group at a Glance
                             <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -1351,7 +1360,7 @@
                                     Your group's footprint — games logged, time at the table, session history, and community stats from every match in this group.
                                 </div>
                             </div>
-                        </h2>
+                        </h3>
                         <div id="analytics-group-stats">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1359,7 +1368,7 @@
 
                     <!-- The Meta -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-blue-400">📊</span> The Meta
                             <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -1368,7 +1377,7 @@
                                     Your group's three most-played commanders, ranked by how many games have been logged with each deck. Win rate shows how successful that deck has been across all pilots.
                                 </div>
                             </div>
-                        </h2>
+                        </h3>
                         <div id="analytics-meta" class="space-y-2">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1376,7 +1385,7 @@
 
                     <!-- Pod Colors -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-violet-400">🎨</span> Pod Colors
                             <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -1385,7 +1394,7 @@
                                     Most played shows how often each color appeared at the table (multicolor decks count toward every pip in their identity). Best win rate ranks colors by wins when that pip was present — requires at least 10 appearances.
                                 </div>
                             </div>
-                        </h2>
+                        </h3>
                         <div id="analytics-color-meta">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1393,9 +1402,9 @@
 
                     <!-- Biggest Upset -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-amber-500">🔥</span> Biggest Upset
-                        </h2>
+                        </h3>
                         <div id="analytics-upset">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1403,9 +1412,9 @@
 
                     <!-- Fiercest Rivalry -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-red-500">⚔️</span> Fiercest Rivalry
-                        </h2>
+                        </h3>
                         <div id="analytics-rivalry">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1413,7 +1422,7 @@
 
                     <!-- Top Eliminators -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-orange-400">🗡️</span> Top Eliminators
                             <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -1421,7 +1430,7 @@
                                     Pilots ranked by how many opponents they've eliminated. Self-inflicted losses don't count. Requires elimination data when logging matches.
                                 </div>
                             </div>
-                        </h2>
+                        </h3>
                         <div id="analytics-kill-leaders" class="space-y-2">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1429,7 +1438,7 @@
 
                     <!-- How We Lose -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-rose-400">💀</span> How We Lose
                             <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -1437,7 +1446,7 @@
                                     How defeated players left the game, ranked from most to least common. Based on killed-via logged on losses.
                                 </div>
                             </div>
-                        </h2>
+                        </h3>
                         <div id="analytics-kill-via" class="space-y-2">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1445,7 +1454,7 @@
 
                     <!-- Top Deck Builders -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-emerald-400">🛠️</span> Top Deck Builders
                             <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -1453,7 +1462,7 @@
                                     Ranks the people who BUILT the decks (the owner), not who piloted them. Score is the play-weighted average Elo of every deck they own, across all pilots. Requires at least one owned deck with 3+ games.
                                 </div>
                             </div>
-                        </h2>
+                        </h3>
                         <div id="analytics-builders" class="space-y-2">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1461,9 +1470,9 @@
 
                     <!-- Top Pilot & Deck Combos -->
                     <div>
-                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             <span class="text-purple-400">🎯</span> Top Pilot &amp; Deck Combos
-                        </h2>
+                        </h3>
                         <div id="analytics-synergy-rankings" class="space-y-2">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
@@ -1475,7 +1484,7 @@
             <div id="tab-group" class="tab-content hidden space-y-6">
                 <div class="flex justify-between items-end mt-4 mb-2">
                     <div>
-                        <h2 class="text-2xl md:text-3xl font-bold">Group Settings</h2>
+                        <h3 class="text-2xl md:text-3xl font-bold">Group Settings</h3>
                         <p class="text-xs text-slate-400">Players, access, and export</p>
                     </div>
                 </div>
@@ -1642,7 +1651,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
             </button>
-            <h2 id="cmd-view-title" class="text-sm font-bold text-slate-200 truncate max-w-[200px]">Commander</h2>
+            <h3 id="cmd-view-title" class="text-sm font-bold text-slate-200 truncate max-w-[200px]">Commander</h3>
             <div class="w-16"></div>
         </div>
 
@@ -1685,7 +1694,7 @@
                     </div>
 
                 <div class="flex-1 text-center md:text-left w-full min-w-0 md:flex md:flex-col md:justify-center">
-                    <h2 id="cmd-view-name" class="text-2xl md:text-4xl font-black text-white drop-shadow-lg leading-tight">Name</h2>
+                    <h3 id="cmd-view-name" class="text-2xl md:text-4xl font-black text-white drop-shadow-lg leading-tight">Name</h3>
                     <span id="cmd-view-mana" class="mf-card-mana flex items-center justify-center md:justify-start gap-0.5 mt-1.5 empty:hidden"></span>
                     <p id="cmd-view-type" class="mf-card-type text-[11px] sm:text-xs text-slate-300/90 italic mt-1 empty:hidden"></p>
 
@@ -1813,7 +1822,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
             </button>
-            <h2 class="text-sm font-bold text-slate-200 truncate flex-1 text-center">Player Stats</h2>
+            <h3 class="text-sm font-bold text-slate-200 truncate flex-1 text-center">Player Stats</h3>
             <button type="button" id="plr-create-deck-btn" onclick="window.toggleProfileDeckCreatePanel()" class="hidden text-purple-200 hover:text-white text-xs font-bold bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation shrink-0 whitespace-nowrap">Create Deck</button>
             <div id="plr-header-spacer" class="w-16 shrink-0"></div>
         </div>
@@ -1838,7 +1847,7 @@
             <div class="flex items-center gap-4 mb-2">
                 <div id="plr-view-icon" class="w-20 h-20 rounded-full bg-slate-800 border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.3)] flex items-center justify-center text-4xl flex-shrink-0"></div>
                 <div>
-                    <h2 id="plr-view-name" class="text-4xl font-black text-white tracking-tight">Player</h2>
+                    <h3 id="plr-view-name" class="text-4xl font-black text-white tracking-tight">Player</h3>
                     <p class="text-slate-400 text-sm font-medium mt-1">Decks & win record</p>
                 </div>
             </div>
@@ -1892,7 +1901,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
             </button>
-            <h2 class="text-sm font-bold text-slate-200">Admin Tools</h2>
+            <h3 class="text-sm font-bold text-slate-200">Admin Tools</h3>
             <div class="w-16"></div>
         </div>
 
@@ -1933,7 +1942,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
             </button>
-            <h2 class="text-sm font-bold text-slate-200">Art Diagnostics</h2>
+            <h3 class="text-sm font-bold text-slate-200">Art Diagnostics</h3>
             <div class="w-16"></div>
         </div>
 
@@ -1956,7 +1965,7 @@
                 <span id="log-match-header-left-label" class="text-sm font-semibold">Cancel</span>
             </button>
             <div class="flex-1 min-w-0 text-center px-1">
-                <h2 id="log-match-title" class="text-sm font-bold text-slate-200 truncate">Log New Match</h2>
+                <h3 id="log-match-title" class="text-sm font-bold text-slate-200 truncate">Log New Match</h3>
                 <p id="log-match-wizard-progress" class="hidden text-[10px] text-slate-500 font-medium mt-0.5 truncate">Step 1 of 5</p>
             </div>
             <button type="button" id="log-match-next-btn" onclick="window.mfLogMatchWizardNext(event)" class="hidden text-white font-bold hover:text-purple-100 transition px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg border border-purple-500/40 min-h-[44px] min-w-[72px] text-center whitespace-nowrap touch-manipulation shrink-0">Next</button>
@@ -2172,7 +2181,7 @@
     <div id="view-group-modal" class="fixed inset-0 z-[150] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target === this) window.closeGroupModal()">
         <div class="glass p-6 md:p-8 rounded-t-2xl sm:rounded-2xl w-full max-w-md transform scale-95 transition-transform duration-300 shadow-2xl border border-purple-500/30 border-b-0 sm:border-b" onclick="event.stopPropagation()">
             <div id="group-modal-join-panel">
-                <h2 class="text-2xl font-black text-white mb-2">Join a playgroup</h2>
+                <h3 class="text-2xl font-black text-white mb-2">Join a playgroup</h3>
                 <p class="text-sm text-slate-400 mb-6 leading-relaxed">Enter the group name your host shared. No sign-in needed to view stats.</p>
                 <label for="group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Group name</label>
                 <div class="field-wrap mb-5">
@@ -2187,7 +2196,7 @@
             <div id="group-modal-create-panel" class="hidden">
                 <button type="button" id="create-group-back-btn" onclick="window.showJoinGroupPanel()" class="text-xs text-slate-500 hover:text-slate-300 mb-3 flex items-center gap-1">← Back</button>
                 <div id="create-group-form">
-                    <h2 class="text-2xl font-black text-white mb-2">Create a playgroup</h2>
+                    <h3 class="text-2xl font-black text-white mb-2">Create a playgroup</h3>
                     <p class="text-sm text-slate-400 mb-4 leading-relaxed">You’ll be the owner. Sign in with email (magic link, no password) to create the group.</p>
                     <label for="create-group-name-input" class="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">New group name</label>
                     <div class="field-wrap mb-4">
@@ -2249,9 +2258,9 @@
                 </div>
             </div>
 
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2 leading-tight">
+            <h3 class="text-2xl sm:text-3xl font-extrabold text-white mb-2 leading-tight">
                 This playgroup is <span class="text-gradient">exiled</span>
-            </h2>
+            </h3>
             <p class="text-sm sm:text-base text-slate-400 mb-5 leading-relaxed max-w-md mx-auto">
                 We searched the entire multiverse — no group matches that name. Maybe a typo, or the slug was never created.
             </p>
@@ -2277,7 +2286,7 @@
     <!-- FEEDBACK MODAL -->
     <div id="feedback-modal" class="fixed inset-0 z-[280] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target === this) window.closeFeedbackModal()">
         <div class="glass p-5 md:p-6 rounded-t-2xl sm:rounded-2xl w-full max-w-md transform scale-95 transition-transform duration-300 shadow-2xl border border-purple-500/30 border-b-0 sm:border-b max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
-            <h2 class="text-xl font-black text-white mb-1">Contact &amp; feedback</h2>
+            <h3 class="text-xl font-black text-white mb-1">Contact &amp; feedback</h3>
             <p class="text-xs text-slate-400 mb-4 leading-relaxed">Questions, bugs, or ideas — we read every message.</p>
             <div class="space-y-3">
                 <div>
@@ -2309,7 +2318,7 @@
     <div id="app-modal" class="fixed inset-0 z-[300] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-center justify-center p-4">
         <div class="glass p-6 md:p-8 rounded-2xl w-full max-w-sm transform scale-95 transition-transform duration-300 shadow-2xl border border-slate-700/50 text-center">
             <div id="app-modal-icon" class="text-4xl mb-4">⚠️</div>
-            <h2 id="app-modal-title" class="text-xl font-black text-white mb-2">Notice</h2>
+            <h3 id="app-modal-title" class="text-xl font-black text-white mb-2">Notice</h3>
             <p id="app-modal-message" class="text-sm text-slate-400 mb-6 whitespace-pre-wrap"></p>
             <div class="flex justify-center gap-3">
                 <button id="app-modal-cancel" onclick="window.closeAppModal()" class="hidden px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition bg-slate-800 hover:bg-slate-700 rounded-xl">Cancel</button>
@@ -10118,7 +10127,7 @@
                 return `
                 <div class="glass rounded-2xl border border-purple-500/35 bg-gradient-to-br from-purple-950/40 to-slate-900/80 p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.35)] text-left">
                     <p class="text-[10px] uppercase tracking-widest text-purple-300 font-bold mb-2">Getting started</p>
-                    <h2 class="text-xl md:text-2xl font-extrabold text-white mb-2 leading-tight">${groupLabel} is ready</h2>
+                    <h3 class="text-xl md:text-2xl font-extrabold text-white mb-2 leading-tight">${groupLabel} is ready</h3>
                     <p class="text-sm text-slate-300 leading-relaxed mb-4">Log a match to start your first <span class="text-white font-semibold">session</span> — games on the same night group together automatically, and leaderboards fill in as you play.</p>
                     <ol class="text-sm text-slate-400 space-y-2 mb-5 list-none pl-0">
                         <li class="flex gap-2.5"><span class="text-purple-400 font-bold shrink-0">1.</span><span>Tap <span class="text-slate-200">Log first match</span> and add pilots &amp; decks (use <span class="text-slate-200">+ New</span> for anyone not on the list yet).</span></li>
@@ -10134,7 +10143,7 @@
             return `
                 <div class="glass rounded-2xl border border-slate-700/80 bg-slate-900/60 p-5 md:p-6 text-center">
                     <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">No games yet</p>
-                    <h2 class="text-lg font-bold text-white mb-2">Waiting for the first match</h2>
+                    <h3 class="text-lg font-bold text-white mb-2">Waiting for the first match</h3>
                     <p class="text-sm text-slate-400 leading-relaxed">This group has no logged games yet. Ask someone with edit access to log a match after your next Commander night.</p>
                 </div>`;
         }
@@ -10151,7 +10160,7 @@
                 return `
                 <div class="text-center mt-8 md:mt-12 bg-slate-900/80 p-6 md:p-8 rounded-2xl border border-purple-500/25 border-dashed">
                     <p class="text-3xl mb-3" aria-hidden="true">🎲</p>
-                    <h2 class="text-lg font-bold text-white mb-2">Start your first session</h2>
+                    <h3 class="text-lg font-bold text-white mb-2">Start your first session</h3>
                     <p class="text-sm text-slate-400 mb-5 max-w-sm mx-auto leading-relaxed">Log a match to build your group's history. You can also use the <span class="text-purple-300 font-semibold">+</span> button at the bottom right.</p>
                     <button type="button" onclick="window.openLogMatchModal()" class="w-full max-w-xs mx-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white px-6 py-3.5 rounded-xl text-sm font-bold transition min-h-[52px] touch-manipulation shadow-lg shadow-purple-500/30">Log first match</button>
                 </div>`;
@@ -10433,10 +10442,10 @@
                 
                 const matchFeedHTML = Object.keys(groupedMatches).map(date => `
                     <div class="mb-8">
-                        <h2 class="text-sm font-bold text-slate-300 mb-4 border-b border-slate-800 pb-2 flex items-center gap-2">
+                        <h3 class="text-sm font-bold text-slate-300 mb-4 border-b border-slate-800 pb-2 flex items-center gap-2">
                             <svg class="text-purple-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                             Session: ${date}
-                        </h2>
+                        </h3>
                         <div class="space-y-4 pl-2 border-l border-slate-800/50">
                             ${groupedMatches[date].map((m, i) => generateMatchHTML(m, 'feed-' + date.replace(/[^a-zA-Z0-9]/g, '') + '-' + i, { showDate: false })).join('')}
                         </div>
