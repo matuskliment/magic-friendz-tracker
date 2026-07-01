@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.13">
+    <meta name="mf-app-version" content="2.9.14">
     <title>Magic Friendz | Tracker</title>
     <script>
         (function preRouteByUrlParam() {
@@ -999,7 +999,16 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
                     <span class="hidden sm:inline">My Groups</span>
                 </button>
+                <button type="button" id="dashboard-menu-btn" onclick="window.toggleDashboardNavMenu()" class="hidden flex items-center justify-center w-10 h-10 rounded-xl border border-slate-600 bg-slate-800/80 text-slate-200 hover:text-white hover:border-slate-500 transition touch-manipulation" aria-label="Open menu" aria-expanded="false" aria-controls="dashboard-nav-menu">
+                    <svg id="dashboard-menu-icon-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    <svg id="dashboard-menu-icon-close" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
             </div>
+        </div>
+        <div id="dashboard-nav-menu" class="hidden fixed top-[4.25rem] right-3 sm:right-4 z-[60] w-[min(100vw-1.5rem,16rem)] glass rounded-2xl border border-slate-700/80 shadow-2xl p-2" role="menu">
+            <button type="button" onclick="window.closeDashboardNavMenu(); window.openGroupsHubForCurrentUser();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">My Groups</button>
+            <button type="button" onclick="window.closeDashboardNavMenu(); window.switchTab('group');" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Group settings</button>
+            <button type="button" onclick="window.closeDashboardNavMenu(); window.authSignOut();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-red-300 hover:bg-red-950/30 transition touch-manipulation mt-1 border-t border-slate-700/60" role="menuitem">Sign out</button>
         </div>
 
         <div class="dashboard-main p-4 mx-auto mt-2 pb-20">
@@ -1348,6 +1357,10 @@
                 <div id="nav-indicator-analytics" class="absolute -top-1 w-8 h-1 bg-purple-500 rounded-full opacity-0 transition-opacity duration-300"></div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                 <span class="text-[10px] mt-1 font-semibold">Insights</span>
+            </button>
+            <button id="nav-profile" onclick="window.openMyProfile()" class="hidden flex flex-col items-center hover:text-purple-400 transition w-14 relative" aria-label="My profile">
+                <div id="nav-indicator-profile" class="absolute -top-1 w-8 h-1 bg-purple-500 rounded-full opacity-0 transition-opacity duration-300"></div>
+                <div id="nav-profile-avatar" class="w-[22px] h-[22px] rounded-full overflow-hidden border border-slate-600/60 bg-slate-800 flex items-center justify-center text-[9px] font-black text-slate-400 ring-2 ring-transparent transition-[box-shadow]"></div>
             </button>
             <button id="nav-group" onclick="window.switchTab('group')" class="flex flex-col items-center hover:text-purple-400 transition w-14 relative">
                 <div id="nav-indicator-group" class="absolute -top-1 w-8 h-1 bg-purple-500 rounded-full opacity-0 transition-opacity duration-300"></div>
@@ -2169,6 +2182,107 @@
             if (iconClose) iconClose.classList.add('hidden');
         };
 
+        window.toggleDashboardNavMenu = function() {
+            const menu = document.getElementById('dashboard-nav-menu');
+            const btn = document.getElementById('dashboard-menu-btn');
+            const iconOpen = document.getElementById('dashboard-menu-icon-open');
+            const iconClose = document.getElementById('dashboard-menu-icon-close');
+            if (!menu) return;
+            const willOpen = menu.classList.contains('hidden');
+            menu.classList.toggle('hidden', !willOpen);
+            if (btn) btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            if (iconOpen) iconOpen.classList.toggle('hidden', willOpen);
+            if (iconClose) iconClose.classList.toggle('hidden', !willOpen);
+        };
+
+        window.closeDashboardNavMenu = function() {
+            const menu = document.getElementById('dashboard-nav-menu');
+            const btn = document.getElementById('dashboard-menu-btn');
+            const iconOpen = document.getElementById('dashboard-menu-icon-open');
+            const iconClose = document.getElementById('dashboard-menu-icon-close');
+            if (menu) menu.classList.add('hidden');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            if (iconOpen) iconOpen.classList.remove('hidden');
+            if (iconClose) iconClose.classList.add('hidden');
+        };
+
+        window._activeNavTab = 'home';
+        window._navTabBeforeProfile = null;
+
+        function setNavHighlight(tabName) {
+            ['home', 'matches', 'ranks', 'analytics', 'group', 'profile'].forEach(name => {
+                const navBtn = document.getElementById(`nav-${name}`);
+                if (!navBtn) return;
+                const isActive = name === tabName;
+                const isVisible = !navBtn.classList.contains('hidden');
+                if (isVisible) {
+                    navBtn.classList.toggle('text-purple-400', isActive);
+                    if (isActive) navBtn.classList.remove('hover:text-purple-400');
+                    else if (!navBtn.classList.contains('hover:text-purple-400')) navBtn.classList.add('hover:text-purple-400');
+                    const navInd = document.getElementById(`nav-indicator-${name}`);
+                    if (navInd) navInd.classList.toggle('opacity-0', !isActive);
+                }
+                if (name === 'profile') {
+                    const avatarWrap = document.getElementById('nav-profile-avatar');
+                    if (avatarWrap) {
+                        avatarWrap.classList.toggle('ring-purple-500', isActive);
+                        avatarWrap.classList.toggle('ring-transparent', !isActive);
+                    }
+                }
+            });
+            window._activeNavTab = tabName;
+        }
+
+        function findPlayerIndexByName(playerName) {
+            const target = normalizeName(playerName || '').toLowerCase();
+            if (!target) return -1;
+            return (window.appData?.players || []).findIndex(p => normalizeName(p.name).toLowerCase() === target);
+        }
+
+        function refreshNavProfileAvatar() {
+            const avatarEl = document.getElementById('nav-profile-avatar');
+            if (!avatarEl) return;
+            const linkedName = window.linkedPlayerName || '';
+            const index = findPlayerIndexByName(linkedName);
+            const player = index >= 0 ? window.appData.players[index] : null;
+            if (player) {
+                avatarEl.innerHTML = renderPlayerAvatar(player, 'w-full h-full', 'text-[9px]', 'border-0 shadow-none');
+                return;
+            }
+            if (linkedName) {
+                const color = getResolvedAvatarColor(linkedName);
+                const label = getPlayerInitials(linkedName);
+                avatarEl.innerHTML = `<div class="w-full h-full flex items-center justify-center font-black tracking-wide text-white text-[9px]" style="background:${color}">${label}</div>`;
+                return;
+            }
+            avatarEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+        }
+
+        window.openMyProfile = function() {
+            window.closeDashboardNavMenu();
+            const linkedName = window.linkedPlayerName || '';
+            if (!linkedName) {
+                window.showAppAlert(
+                    'Your account is not linked to a player on the roster yet. Open Group settings from the menu to invite or link yourself.',
+                    'No player linked',
+                    '👤'
+                );
+                return;
+            }
+            const index = findPlayerIndexByName(linkedName);
+            if (index < 0) {
+                window.showAppAlert(
+                    'We could not find your player on the roster yet. Try logging a match or adding yourself under Group settings.',
+                    'Player not found',
+                    '👤'
+                );
+                return;
+            }
+            window._navTabBeforeProfile = window._activeNavTab;
+            setNavHighlight('profile');
+            window.openPlayerProfile(index);
+        };
+
         function getAuthContinueUrl(groupId, signInEmail = '', debugLinkId = '') {
             const base = groupId ? `${window.location.origin}${window.location.pathname}` : getGroupsHubUrl();
             const params = new URLSearchParams();
@@ -2740,6 +2854,9 @@
             const inviteHelp = document.getElementById('roster-invite-help');
             const inviteLocked = document.getElementById('roster-invite-locked');
             const groupListBtn = document.getElementById('group-list-btn');
+            const dashboardMenuBtn = document.getElementById('dashboard-menu-btn');
+            const navProfile = document.getElementById('nav-profile');
+            const navGroup = document.getElementById('nav-group');
 
             if (fab) {
                 if (canWrite) fab.classList.remove('hidden');
@@ -2815,9 +2932,27 @@
                 else accessDenied.classList.add('hidden');
             }
             if (groupListBtn) {
-                const showGroupList = hasFirebaseUser;
+                const showGroupList = hasFirebaseUser && !canWrite;
                 groupListBtn.classList.toggle('hidden', !showGroupList);
                 groupListBtn.classList.toggle('inline-flex', showGroupList);
+            }
+            if (dashboardMenuBtn) {
+                const showDashboardMenu = hasFirebaseUser && canWrite;
+                dashboardMenuBtn.classList.toggle('hidden', !showDashboardMenu);
+                dashboardMenuBtn.classList.toggle('flex', showDashboardMenu);
+                if (!showDashboardMenu) window.closeDashboardNavMenu();
+            }
+            if (navProfile) {
+                navProfile.classList.toggle('hidden', !canWrite);
+                navProfile.classList.toggle('flex', canWrite);
+            }
+            if (navGroup) {
+                navGroup.classList.toggle('hidden', canWrite);
+                navGroup.classList.toggle('flex', !canWrite);
+            }
+            if (canWrite) refreshNavProfileAvatar();
+            if (prevCanWrite !== canWrite && canWrite && window._activeNavTab === 'group') {
+                window.switchTab('home');
             }
 
             if (prevCanWrite !== canWrite && window.appData?.matches?.length) {
@@ -9539,6 +9674,7 @@
                 console.error("Error drawing app UI: ", error);
             } finally {
                 hideAppBootLoader();
+                if (window.canWrite()) refreshNavProfileAvatar();
                 window.mfSyncPageScroll();
             }
         }
@@ -9584,20 +9720,12 @@
         }
 
         window.switchTab = function(tabName) {
+            window.closeDashboardNavMenu();
             ['home', 'matches', 'ranks', 'analytics', 'group'].forEach(name => {
                 const tabEl = document.getElementById(`tab-${name}`);
                 if (tabEl) {
                     tabEl.classList.add('hidden'); 
                     tabEl.classList.remove('block');
-                }
-                const navBtn = document.getElementById(`nav-${name}`);
-                if (navBtn) {
-                    navBtn.classList.remove('text-purple-400');
-                    if(!navBtn.classList.contains('hover:text-purple-400')) navBtn.classList.add('hover:text-purple-400');
-                }
-                const navInd = document.getElementById(`nav-indicator-${name}`);
-                if (navInd) {
-                    navInd.classList.add('opacity-0');
                 }
             });
             const activeTab = document.getElementById(`tab-${tabName}`);
@@ -9605,15 +9733,8 @@
                 activeTab.classList.remove('hidden'); 
                 activeTab.classList.add('block');
             }
-            const activeBtn = document.getElementById(`nav-${tabName}`);
-            if (activeBtn) {
-                activeBtn.classList.add('text-purple-400'); 
-                activeBtn.classList.remove('hover:text-purple-400');
-            }
-            const activeInd = document.getElementById(`nav-indicator-${tabName}`);
-            if (activeInd) {
-                activeInd.classList.remove('opacity-0');
-            }
+            setNavHighlight(tabName);
+            window._navTabBeforeProfile = null;
             window.scrollTo({top: 0, behavior: 'smooth'});
             window.processArtQueue();
             window.mfSyncPageScroll();
@@ -9984,6 +10105,10 @@
                 }, 300);
             } else {
                 window.mfSyncPageScroll();
+            }
+            if (window._navTabBeforeProfile) {
+                setNavHighlight(window._navTabBeforeProfile);
+                window._navTabBeforeProfile = null;
             }
         }
 
@@ -11455,6 +11580,12 @@
             if (landingMenu && !landingMenu.classList.contains('hidden')) {
                 if (!e.target.closest('#landing-nav-menu') && !e.target.closest('#landing-menu-btn')) {
                     window.closeLandingNavMenu();
+                }
+            }
+            const dashboardMenu = document.getElementById('dashboard-nav-menu');
+            if (dashboardMenu && !dashboardMenu.classList.contains('hidden')) {
+                if (!e.target.closest('#dashboard-nav-menu') && !e.target.closest('#dashboard-menu-btn')) {
+                    window.closeDashboardNavMenu();
                 }
             }
 
