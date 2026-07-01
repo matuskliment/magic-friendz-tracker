@@ -4098,8 +4098,7 @@
                 if (n) names.add(n);
             });
             mfGetFilledPodPilotNames().forEach((n) => names.add(n));
-            const candidates = [];
-            if (defeated) candidates.push({ value: MF_KILL_SELF, label: 'Self' });
+            const candidates = [{ value: MF_KILL_SELF, label: 'Self' }];
             [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
                 .filter((n) => n !== defeated)
                 .forEach((n) => candidates.push({ value: n, label: n }));
