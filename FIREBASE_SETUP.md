@@ -9,9 +9,10 @@ Do these steps **after** deploying the latest `index.html` / `admin.html`.
 3. On the same provider, enable **Email link (passwordless sign-in)**
 4. **Settings** → **Authorized domains** → add every host you use:
    - `localhost` (local testing only)
-   - `magic-friends-tracker.netlify.app` (recommended production)
+   - `edhstatstracker.xyz` (production)
+   - `magic-friends-tracker.netlify.app` (Netlify deploy host, if still used)
    - `matuskliment.github.io` (GitHub Pages, optional)
-   - Any custom domain
+   - Any other custom domain
 
 Magic links only work on domains in this list.
 
@@ -29,7 +30,7 @@ If invites fail with **Missing or insufficient permissions**, publish the latest
 
 Use **one** URL for the playgroup day to day (bookmarks, invites, magic links):
 
-**Recommended:** `https://magic-friends-tracker.netlify.app/index.html?group=YOUR_GROUP_SLUG`
+**Recommended:** `https://edhstatstracker.xyz/?group=YOUR_GROUP_SLUG`
 
 Replace `YOUR_GROUP_SLUG` with the Firestore document id under `groups/` (see README).
 
@@ -80,7 +81,7 @@ You can also set owners from **admin.html** → Selected Group → **Group owner
 
 Use your real Netlify URL and Firestore group slug.
 
-- [ ] Open `.../index.html?group=SLUG` — dashboard loads (not “Group Not Found”)
+- [ ] Open `https://edhstatstracker.xyz/?group=SLUG` — dashboard loads (not “Group Not Found”)
 - [ ] Guest: header/badge shows **View only**; cannot log a match
 - [ ] Settings → Sign in → Send magic link → in-app **Check your email** appears
 - [ ] Open link on **same device/browser** → signed in; badge **Owner** or **Can edit**

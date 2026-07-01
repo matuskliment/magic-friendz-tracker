@@ -3,8 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.16">
-    <title>Magic Friendz | Tracker</title>
+    <meta name="mf-app-version" content="2.9.17">
+    <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
+    <meta name="description" content="Track Commander pod stats, Elo, win rates, deck lists, and match history for your MTG playgroup. Free EDH stats tracker with magic-link sign-in.">
+    <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Magic Friendz">
+    <meta property="og:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
+    <meta property="og:description" content="Track Commander pod stats, Elo, win rates, and match history for your MTG playgroup.">
+    <meta property="og:url" id="mf-og-url" content="https://edhstatstracker.xyz/">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&amp;w=1200&amp;h=630&amp;auto=format&amp;fit=crop">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
+    <meta name="twitter:description" content="Track Commander pod stats, Elo, win rates, and match history for your MTG playgroup.">
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&amp;w=1200&amp;h=630&amp;auto=format&amp;fit=crop">
+    <script>
+        (function mfSeoCanonical() {
+            try {
+                const group = new URLSearchParams(window.location.search).get('group');
+                if (!group) return;
+                const url = 'https://edhstatstracker.xyz/?group=' + encodeURIComponent(group);
+                const canonical = document.getElementById('mf-canonical');
+                const ogUrl = document.getElementById('mf-og-url');
+                if (canonical) canonical.href = url;
+                if (ogUrl) ogUrl.content = url;
+            } catch (_) {}
+        })();
+    </script>
     <script>
         (function preRouteByUrlParam() {
             try {

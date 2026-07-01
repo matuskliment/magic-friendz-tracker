@@ -4,12 +4,12 @@ Multiplayer MTG playgroup stats (Elo, matches, commanders) with Firebase Auth an
 
 ## Live app (use this URL)
 
-**Production:** [https://magic-friends-tracker.netlify.app/index.html](https://magic-friends-tracker.netlify.app/index.html)
+**Production:** [https://edhstatstracker.xyz/](https://edhstatstracker.xyz/)
 
 Share your group with:
 
 ```text
-https://magic-friends-tracker.netlify.app/index.html?group=YOUR_GROUP_SLUG
+https://edhstatstracker.xyz/?group=YOUR_GROUP_SLUG
 ```
 
 `YOUR_GROUP_SLUG` is the **document id** in Firestore → `groups` (e.g. `magic-friendz`). It is created when you name the group (lowercase, hyphens). Typos in the URL cause “Group Not Found”.
