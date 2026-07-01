@@ -1,0 +1,36 @@
+---
+description: Keep app version and git commit subjects in sync (mf-app-version)
+alwaysApply: true
+---
+
+# App version and commit messages
+
+## Single source of truth
+
+The shipped app version lives in **one place**:
+
+- `index.html` → `<meta name="mf-app-version" content="X.Y.Z">`
+
+`package.json` `"version"` must match that meta tag (no leading `v`).
+
+Runtime code reads the meta tag via `MF_APP_VERSION`; do not hardcode version strings elsewhere.
+
+## When to bump
+
+Bump the patch version (`2.9.37` → `2.9.38`) for user-facing releases: copy, SEO, UI, or behavior changes users will see on the live site.
+
+Skip a version bump only for internal/tooling-only changes (e.g. Tailwind build config with no HTML change).
+
+## Commit subject format
+
+When creating a git commit for a versioned release:
+
+1. Read current `mf-app-version` from `index.html` (or bump it first if this release needs a new version).
+2. Start the subject with **`vX.Y.Z:`** matching the meta tag (e.g. `v2.9.38: fix landing copy.`).
+3. Stage `index.html` (and `package.json` if you bumped version there too) so the diff shows the version change.
+
+Do not guess the version from prior commits, chat history, or the `MF_APP_VERSION` JS fallback.
+
+## Cursor "Generate commit message"
+
+If using the sparkle button, bump and stage `mf-app-version` before generating, then verify the subject matches the meta tag and edit if not.
