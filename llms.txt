@@ -18,7 +18,7 @@ and group data export (JSON / CSV).
 ## Differentiator
 Magic Friendz tracks stats and Elo **per playgroup**, not on a global ladder.
 Each group has its own match history, leaderboards, and ratings built from that pod's games only.
-Rankings reflect your table's power level and local meta — not strangers across the internet.
+Rankings reflect your table's power level and local meta, not strangers across the internet.
 Tagline: "Elo for your pod, not a global ladder."
 
 ## Access model
@@ -29,7 +29,7 @@ Tagline: "Elo for your pod, not a global ladder."
 https://edhstatstracker.xyz/?group=GROUP_SLUG
 
 ## Creator
-Mat Kliment — founder and developer of Magic Friendz
+Mat Kliment, founder and developer of Magic Friendz
 GitHub: https://github.com/matuskliment/magic-friendz-tracker
 
 ## Contact

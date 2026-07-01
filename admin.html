@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="robots" content="noindex, nofollow">
     <title>Magic Friendz | Backoffice</title>
-    <!-- Inline SVG favicon (amber shield — distinct from tracker sparkle) -->
+    <!-- Inline SVG favicon (amber shield, distinct from tracker sparkle) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23f59e0b'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E">
     <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif;margin:0}</style>
     <link rel="stylesheet" href="/styles.css">
@@ -142,7 +142,7 @@
 
                     <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-4 md:p-5">
                         <h3 class="text-sm font-bold text-white mb-1">Deck entities</h3>
-                        <p class="text-xs text-slate-500 mb-3">One-time: create <code class="text-indigo-300">decks/{id}</code> docs for every deck seen in match history. Useful for unified edit/archive in the app — not required for correctness.</p>
+                        <p class="text-xs text-slate-500 mb-3">One-time: create <code class="text-indigo-300">decks/{id}</code> docs for every deck seen in match history. Useful for unified edit/archive in the app, not required for correctness.</p>
                         <button id="materialize-decks-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Materialize decks from history</button>
                         <p id="materialize-decks-status" class="text-[11px] text-slate-500 mt-3 hidden"></p>
                     </div>
@@ -162,7 +162,7 @@
                         <div class="space-y-3">
                             <button id="wipe-btn" class="w-full bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Wipe All Matches</button>
                             <div class="bg-slate-950 border border-slate-700 rounded-xl p-3">
-                                <p class="text-[10px] text-slate-400 mb-2">CSV columns: Date, Pilot1 (win), Commander1 (win), Pilot2, Commander2, …, Winning commanders, Notes, Cards 1–4. Legacy P1/D1 headers still import.</p>
+                                <p class="text-[10px] text-slate-400 mb-2">CSV columns: Date, Pilot1 (win), Commander1 (win), Pilot2, Commander2, …, Winning commanders, Notes, Cards 1-4. Legacy P1/D1 headers still import.</p>
                                 <input id="csv-upload" type="file" accept=".csv" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-purple-500/20 file:text-purple-300">
                             </div>
                             <button id="import-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>Import CSV</button>
@@ -525,7 +525,7 @@
                     </td>
                     <td class="py-2 px-2 text-right text-slate-300">${group.rosterCount}</td>
                     <td class="py-2 px-2 text-right text-slate-300">${group.matchCount}</td>
-                    <td class="py-2 pl-2 text-right text-[11px] text-slate-400">${group.lastMatchDate || '—'}</td>
+                    <td class="py-2 pl-2 text-right text-[11px] text-slate-400">${group.lastMatchDate || '…'}</td>
                 </tr>
             `).join('');
 
@@ -745,7 +745,7 @@
             }
             els.adminRosterList.innerHTML = rosterSnap.docs.map(d => {
                 const data = d.data();
-                const name = data.name || '—';
+                const name = data.name || '…';
                 const email = data.email ? ` · ${data.email}` : '';
                 return `
                     <div class="flex items-center justify-between gap-2 bg-slate-950 border border-slate-700 rounded-lg p-2">
@@ -908,12 +908,12 @@
         }
 
         function formatFeedbackDate(ts) {
-            if (!ts) return '—';
+            if (!ts) return '…';
             try {
                 const d = typeof ts.toDate === 'function' ? ts.toDate() : new Date(ts);
                 return d.toLocaleString();
             } catch (_) {
-                return '—';
+                return '…';
             }
         }
 
@@ -964,7 +964,7 @@
             }
             if (els.feedbackPageInfo) {
                 els.feedbackPageInfo.textContent = filtered.length
-                    ? `Showing ${pageStart + 1}–${pageEnd} of ${filtered.length}`
+                    ? `Showing ${pageStart + 1}-${pageEnd} of ${filtered.length}`
                     : '';
             }
             if (els.feedbackPrevBtn) {
@@ -984,10 +984,10 @@
                     </div>
                     <p class="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed mb-3">${escapeHtml(item.message)}</p>
                     <div class="text-[11px] text-slate-500 space-y-0.5">
-                        ${item.groupId ? `<p>Group: <span class="text-slate-300">${escapeHtml(item.groupName || item.groupId)}</span> <span class="font-mono text-slate-600">(${escapeHtml(item.groupId)})</span></p>` : '<p>Group: <span class="text-slate-600">—</span></p>'}
+                        ${item.groupId ? `<p>Group: <span class="text-slate-300">${escapeHtml(item.groupName || item.groupId)}</span> <span class="font-mono text-slate-600">(${escapeHtml(item.groupId)})</span></p>` : '<p>Group: <span class="text-slate-600">…</span></p>'}
                         ${item.email ? `<p>Email: <span class="text-slate-300">${escapeHtml(item.email)}</span></p>` : ''}
                         ${item.uid ? `<p class="font-mono truncate">UID: ${escapeHtml(item.uid)}</p>` : ''}
-                        <p>App v${escapeHtml(item.appVersion || '—')} · ${escapeHtml(item.page || '—')}</p>
+                        <p>App v${escapeHtml(item.appVersion || '…')} · ${escapeHtml(item.page || '…')}</p>
                     </div>
                     ${item.status !== 'read' ? `<button type="button" data-feedback-id="${escapeHtml(item.id)}" class="feedback-mark-read mt-3 text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-3 py-1.5 rounded-lg transition">Mark read</button>` : ''}
                 </article>
@@ -1127,7 +1127,7 @@
             setMaterializeDecksStatus('Working…');
             try {
                 const result = await materializeDecksFromHistory(selectedGroup.id);
-                setMaterializeDecksStatus(`Done — created ${result.created}, skipped ${result.skipped} existing (${result.total} unique decks in history).`);
+                setMaterializeDecksStatus(`Done: created ${result.created}, skipped ${result.skipped} existing (${result.total} unique decks in history).`);
             } catch (e) {
                 setMaterializeDecksStatus('Failed: ' + e.message, true);
             }

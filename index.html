@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.35">
-    <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
-    <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod — rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
+    <meta name="mf-app-version" content="2.9.36">
+    <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
+    <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
     <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Magic Friendz">
-    <meta property="og:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
-    <meta property="og:description" content="Free Commander playgroup tracker with playgroup Elo for your pod. Log matches, leaderboards, and session history — your meta, not a global ladder.">
+    <meta property="og:title" content="Magic Friendz: EDH Commander Playgroup Stats Tracker">
+    <meta property="og:description" content="Free Commander playgroup tracker with playgroup Elo for your pod. Log matches, leaderboards, and session history for your meta, not a global ladder.">
     <meta property="og:url" id="mf-og-url" content="https://edhstatstracker.xyz/">
     <meta property="og:image" content="https://edhstatstracker.xyz/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Magic Friendz — EDH Commander Playgroup Stats Tracker">
-    <meta name="twitter:description" content="Free Commander playgroup tracker with playgroup Elo for your pod — your meta, not a global ladder.">
+    <meta name="twitter:title" content="Magic Friendz: EDH Commander Playgroup Stats Tracker">
+    <meta name="twitter:description" content="Free Commander playgroup tracker with playgroup Elo for your pod. Your meta, not a global ladder.">
     <meta name="twitter:image" content="https://edhstatstracker.xyz/og-image.png">
     <script type="application/ld+json">
     {
@@ -30,7 +30,7 @@
                 "name": "Magic Friendz",
                 "alternateName": "EDH Stats Tracker",
                 "url": "https://edhstatstracker.xyz/",
-                "description": "Free EDH Commander playgroup stats tracker with playgroup Elo — rankings reflect your pod's meta and games, not a global ladder.",
+                "description": "Free EDH Commander playgroup stats tracker with playgroup Elo. Rankings reflect your pod's meta and games, not a global ladder.",
                 "publisher": { "@id": "https://edhstatstracker.xyz/#organization" }
             },
             {
@@ -39,7 +39,7 @@
                 "name": "Magic Friendz",
                 "alternateName": "EDH Stats Tracker",
                 "url": "https://edhstatstracker.xyz/",
-                "description": "Free EDH Commander playgroup stats tracker with playgroup Elo — rankings reflect your pod's meta and games, not a global ladder.",
+                "description": "Free EDH Commander playgroup stats tracker with playgroup Elo. Rankings reflect your pod's meta and games, not a global ladder.",
                 "applicationCategory": "GameApplication",
                 "operatingSystem": "Web",
                 "browserRequirements": "Requires JavaScript",
@@ -72,7 +72,7 @@
                         "name": "What is Magic Friendz?",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks playgroup Elo, win rates, deck lists, match history, and playgroup insights — so rankings reflect your table's games, not a worldwide ladder."
+                            "text": "Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks playgroup Elo, win rates, deck lists, match history, and playgroup insights, so rankings reflect your table's games, not a worldwide ladder."
                         }
                     },
                     {
@@ -80,7 +80,7 @@
                         "name": "How is this different from apps with global Elo?",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "Many trackers rank decks or players across everyone using the app. Magic Friendz is built for your Commander pod: each group has its own match history, leaderboards, and Elo. That means ratings reflect your playgroup's power level and meta — the decks you actually play against — not strangers on a global leaderboard."
+                            "text": "Many trackers rank decks or players across everyone using the app. Magic Friendz is built for your Commander pod: each group has its own match history, leaderboards, and Elo. That means ratings reflect your playgroup's power level and meta (the decks you actually play against), not strangers on a global leaderboard."
                         }
                     },
                     {
@@ -96,7 +96,7 @@
                         "name": "Do I need an account?",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email — we send a magic link, no password required."
+                            "text": "No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email. We send a magic link, no password required."
                         }
                     },
                     {
@@ -235,7 +235,7 @@
         }
         @keyframes mfBootSpin { to { transform: rotate(360deg); } }
 
-        /* MTG 404 — group not found */
+        /* MTG 404: group not found */
         .mf-404-bg {
             background-image: linear-gradient(to bottom, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.98)),
                 url('https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070&auto=format&fit=crop');
@@ -514,7 +514,7 @@
                 max-width: 28rem;
             }
         }
-        /* Log Match mobile wizard (≤767px) — desktop keeps scroll-all form */
+        /* Log Match mobile wizard (≤767px); desktop keeps scroll-all form */
         @media (max-width: 767px) {
             #view-log-match.mf-log-match-wizard #log-match-scroll > .p-4 {
                 padding-bottom: 1rem;
@@ -708,7 +708,7 @@
             #log-match-step-review {
                 display: none !important;
             }
-            /* Log match setup — compact desktop controls (mobile wizard keeps touch size) */
+            /* Log match setup: compact desktop controls (mobile wizard keeps touch size) */
             #view-log-match .mf-session-stepper-row {
                 padding: 0.5rem 0.625rem;
                 border-radius: 0.75rem;
@@ -851,7 +851,7 @@
             justify-content: center;
             line-height: 1.25;
         }
-        /* Clearable text/search inputs — button sits in reserved padding, no text overlap */
+        /* Clearable text/search inputs: button sits in reserved padding, no text overlap */
         .mf-clearable-wrap {
             position: relative;
             display: block;
@@ -914,7 +914,7 @@
     <noscript>
         <div class="bg-slate-950 border-b border-purple-500/30 px-4 py-6 text-center text-sm text-slate-300 leading-relaxed">
             <p><strong class="text-white">Magic Friendz</strong> is a free EDH Commander playgroup stats tracker by <strong class="text-white">Mat Kliment</strong>.
-            Track <strong class="text-white">playgroup Elo</strong> and stats for your pod&apos;s meta — not a global ladder — at <a href="https://edhstatstracker.xyz/" class="text-purple-400 underline">edhstatstracker.xyz</a>.
+            Track <strong class="text-white">playgroup Elo</strong> and stats for your pod&apos;s meta, not a global ladder, at <a href="https://edhstatstracker.xyz/" class="text-purple-400 underline">edhstatstracker.xyz</a>.
             JavaScript is required to use the app. <a href="/about.html" class="text-purple-400 underline">Learn more</a>.</p>
         </div>
     </noscript>
@@ -962,7 +962,7 @@
                         <span class="text-gradient">Track every victory.</span>
                     </h1>
                     <p class="text-base md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto lg:mx-0 drop-shadow-md">
-                        Magic Friendz is a free <strong class="font-semibold text-slate-200">EDH Commander playgroup stats tracker</strong> — log pod results and track <strong class="font-semibold text-slate-200">Elo that matters for your group</strong>. Rankings come from <strong class="font-semibold text-slate-200">your pod&apos;s games only</strong>, so leaderboards reflect <strong class="font-semibold text-slate-200">your table&apos;s meta</strong>, not a global ladder. Anyone with the group link can view stats; sign in to log games.
+                        Magic Friendz is a free <strong class="font-semibold text-slate-200">EDH Commander playgroup stats tracker</strong>. Log pod results and track <strong class="font-semibold text-slate-200">Elo that matters for your group</strong>. Rankings come from <strong class="font-semibold text-slate-200">your pod&apos;s games only</strong>, so leaderboards reflect <strong class="font-semibold text-slate-200">your table&apos;s meta</strong>, not a global ladder. Anyone with the group link can view stats; sign in to log games.
                     </p>
                     <div id="landing-hero-actions" class="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
                         <button type="button" id="landing-view-stats-btn" onclick="window.openGroupModal()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 active:scale-[0.98] shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 group min-h-[52px] w-full sm:w-auto touch-manipulation">
@@ -993,7 +993,7 @@
                         </div>
                     </div>
                     <div id="landing-sign-in-panel" class="hidden mt-6 p-4 rounded-xl border border-purple-500/25 bg-purple-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
-                        <p id="landing-sign-in-intro" class="text-sm text-slate-400">Use the email from your invite, or the one you used to create a group. We’ll send a magic link — no password.</p>
+                        <p id="landing-sign-in-intro" class="text-sm text-slate-400">Use the email from your invite, or the one you used to create a group. We’ll send a magic link, no password.</p>
                         <div id="landing-sign-in-form" class="space-y-3">
                             <div class="field-wrap">
                                 <input type="email" id="landing-sign-in-email" placeholder="Email address" autocomplete="email" class="mf-clearable w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
@@ -1069,7 +1069,7 @@
                 <div class="text-center mb-10 md:mb-12">
                     <p class="text-xs uppercase tracking-widest text-purple-400 font-bold mb-2">Playgroup workflow</p>
                     <h2 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">How it works</h2>
-                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Built for kitchen-table Commander nights — a simple EDH stats tracker to log games fast, share leaderboards, and revisit your playgroup&apos;s story after the league.</p>
+                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Built for kitchen-table Commander nights: a simple EDH stats tracker to log games fast, share leaderboards, and revisit your playgroup&apos;s story after the league.</p>
                 </div>
 
                 <ol class="space-y-4 md:space-y-5">
@@ -1077,21 +1077,21 @@
                         <div class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-sm md:text-base font-black text-purple-300" aria-hidden="true">1</div>
                         <div class="min-w-0 text-left">
                             <h3 class="text-base md:text-lg font-bold text-white mb-1.5">Open your group link</h3>
-                            <p class="text-sm text-slate-400 leading-relaxed">Enter the group name your host shared — anyone with the link can <span class="text-slate-300">view stats</span> right away. Sign in with a magic link (no password) when you want to log games or manage the roster.</p>
+                            <p class="text-sm text-slate-400 leading-relaxed">Enter the group name your host shared. Anyone with the link can <span class="text-slate-300">view stats</span> right away. Sign in with a magic link (no password) when you want to log games or manage the roster.</p>
                         </div>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6 flex gap-4 md:gap-5">
                         <div class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-xl bg-slate-800 border border-slate-600 flex items-center justify-center text-sm md:text-base font-black text-slate-300" aria-hidden="true">2</div>
                         <div class="min-w-0 text-left">
                             <h3 class="text-base md:text-lg font-bold text-white mb-1.5">Set up your playgroup</h3>
-                            <p class="text-sm text-slate-400 leading-relaxed">Create a new group in seconds, or join one you were invited to. Add players to the roster, send email invites for editors, or let new names appear automatically when someone logs a match. Your friends don’t all need accounts — only people who log or invite do.</p>
+                            <p class="text-sm text-slate-400 leading-relaxed">Create a new group in seconds, or join one you were invited to. Add players to the roster, send email invites for editors, or let new names appear automatically when someone logs a match. Your friends don’t all need accounts. Only people who log or invite do.</p>
                         </div>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6 flex gap-4 md:gap-5">
                         <div class="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-sm md:text-base font-black text-emerald-300" aria-hidden="true">3</div>
                         <div class="min-w-0 text-left">
                             <h3 class="text-base md:text-lg font-bold text-white mb-1.5">Log a match</h3>
-                            <p class="text-sm text-slate-400 leading-relaxed">Record winners, pilots, commanders, and optional notes after the game. Elo shifts update automatically. Designed to stay out of your way so you spend more time playing and less time on your phone — Commander pods, ties, and multi-player formats supported.</p>
+                            <p class="text-sm text-slate-400 leading-relaxed">Record winners, pilots, commanders, and optional notes after the game. Elo shifts update automatically. Designed to stay out of your way so you spend more time playing and less time on your phone. Commander pods, ties, and multi-player formats supported.</p>
                         </div>
                     </li>
                     <li class="glass rounded-2xl border border-amber-500/25 bg-amber-950/10 p-5 md:p-6 flex gap-4 md:gap-5">
@@ -1115,12 +1115,12 @@
                 <div class="text-center mb-10 md:mb-12">
                     <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-2">Built for Commander pods</p>
                     <h2 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">Features</h2>
-                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Everything your playgroup needs after game night — stats and Elo scoped to <strong class="text-slate-300 font-semibold">your group</strong>, not the whole internet.</p>
+                    <p class="text-sm md:text-base text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">Everything your playgroup needs after game night: stats and Elo scoped to <strong class="text-slate-300 font-semibold">your group</strong>, not the whole internet.</p>
                 </div>
                 <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 text-left">
                     <li class="glass rounded-2xl border border-purple-500/25 bg-purple-950/10 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Your pod&apos;s Elo</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed">Each playgroup has its own leaderboards and Elo — built from your matches only, so ratings reflect <strong class="text-slate-300 font-semibold">your meta and power level</strong>, not strangers online.</p>
+                        <p class="text-sm text-slate-400 leading-relaxed">Each playgroup has its own leaderboards and Elo, built from your matches only, so ratings reflect <strong class="text-slate-300 font-semibold">your meta and power level</strong>, not strangers online.</p>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Commander &amp; player rankings</h3>
@@ -1136,7 +1136,7 @@
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Playgroup insights</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed">Rivalries, top eliminators, how you lose breakdowns, pod color meta, and signature synergies — all from <strong class="text-slate-300 font-semibold">your group&apos;s history</strong>.</p>
+                        <p class="text-sm text-slate-400 leading-relaxed">Rivalries, top eliminators, how you lose breakdowns, pod color meta, and signature synergies, all from <strong class="text-slate-300 font-semibold">your group&apos;s history</strong>.</p>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Shareable group links</h3>
@@ -1159,11 +1159,11 @@
                 <div class="space-y-3">
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>What is Magic Friendz?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
-                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks <strong class="text-slate-300">playgroup Elo</strong>, win rates, deck lists, match history, and playgroup insights — so rankings reflect your table&apos;s games, not a worldwide ladder.</p>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks <strong class="text-slate-300">playgroup Elo</strong>, win rates, deck lists, match history, and playgroup insights, so rankings reflect your table&apos;s games, not a worldwide ladder.</p>
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>How is this different from apps with global Elo?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
-                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Many trackers rank decks or players across everyone using the app. Magic Friendz is built for <strong class="text-slate-300">your Commander pod</strong>: each group has its own match history, leaderboards, and Elo. That means ratings reflect <strong class="text-slate-300">your playgroup&apos;s power level and meta</strong> — the decks you actually play against — not strangers on a global leaderboard.</p>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Many trackers rank decks or players across everyone using the app. Magic Friendz is built for <strong class="text-slate-300">your Commander pod</strong>: each group has its own match history, leaderboards, and Elo. That means ratings reflect <strong class="text-slate-300">your playgroup&apos;s power level and meta</strong> (the decks you actually play against), not strangers on a global leaderboard.</p>
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>How do group links work?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
@@ -1171,7 +1171,7 @@
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>Do I need an account?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
-                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email — we send a magic link, no password required.</p>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email. We send a magic link, no password required.</p>
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>Is Magic Friendz free?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
@@ -1194,7 +1194,7 @@
                 <a href="/groups.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">All Groups</a>
                 <a href="#contact" onclick="window.openFeedbackModal(); return false;" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Contact</a>
             </nav>
-            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz by Mat Kliment — playgroup EDH stats and Elo for your pod&apos;s meta, not a global ladder.</p>
+            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz by Mat Kliment. Playgroup EDH stats and Elo for your pod&apos;s meta, not a global ladder.</p>
         </footer>
 
         <div class="w-full overflow-hidden bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md py-3 z-30 shrink-0">
@@ -1259,7 +1259,7 @@
                 <div class="hidden md:flex glass p-4 md:p-5 rounded-xl border border-purple-500/35 bg-purple-950/20 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <div class="flex-1 min-w-0">
                         <h3 class="text-sm md:text-base font-bold text-white">Contact &amp; feedback</h3>
-                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">Questions, bugs, or ideas — we read every message.</p>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">Questions, bugs, or ideas. We read every message.</p>
                     </div>
                     <button type="button" onclick="window.openFeedbackModal()" class="w-full sm:w-auto shrink-0 bg-purple-600 hover:bg-purple-500 text-white px-5 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation shadow-lg shadow-purple-500/25">Send message</button>
                 </div>
@@ -1357,7 +1357,7 @@
                             <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                                 <div class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100">
-                                    Your group's footprint — games logged, time at the table, session history, and community stats from every match in this group.
+                                    Your group's footprint: games logged, time at the table, session history, and community stats from every match in this group.
                                 </div>
                             </div>
                         </h3>
@@ -1391,7 +1391,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                                 <span class="sr-only">What is Pod Colors?</span>
                                 <div role="tooltip" class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100">
-                                    Most played shows how often each color appeared at the table (multicolor decks count toward every pip in their identity). Best win rate ranks colors by wins when that pip was present — requires at least 10 appearances.
+                                    Most played shows how often each color appeared at the table (multicolor decks count toward every pip in their identity). Best win rate ranks colors by wins when that pip was present. Requires at least 10 appearances.
                                 </div>
                             </div>
                         </h3>
@@ -1551,8 +1551,8 @@
                     <div id="roster-invite-help" class="hidden mb-4 rounded-lg border border-purple-500/25 bg-purple-950/20 px-3 py-3">
                         <p class="text-xs font-bold text-purple-300 mb-2">How to invite someone</p>
                         <ol class="text-[11px] text-slate-400 space-y-1 list-decimal list-inside leading-relaxed">
-                            <li><span class="text-slate-300 font-semibold">Not invited</span> — on the list for stats; no login yet.</li>
-                            <li><span class="text-slate-300 font-semibold">Invite</span> — enter email and send; they become <span class="text-emerald-300 font-semibold">Active</span> after opening the magic link.</li>
+                            <li><span class="text-slate-300 font-semibold">Not invited</span>: on the list for stats; no login yet.</li>
+                            <li><span class="text-slate-300 font-semibold">Invite</span>: enter email and send; they become <span class="text-emerald-300 font-semibold">Active</span> after opening the magic link.</li>
                             <li>Logging a match with a new player adds them here automatically.</li>
                         </ol>
                     </div>
@@ -1601,7 +1601,7 @@
                 </div>
                 <div class="pt-2 pb-6 text-center">
                     <p class="text-[11px] text-slate-500">Magic Friendz Tracker</p>
-                    <p class="text-[11px] text-slate-600 mt-0.5">Version <span id="settings-app-version" class="font-mono text-slate-500">—</span></p>
+                    <p class="text-[11px] text-slate-600 mt-0.5">Version <span id="settings-app-version" class="font-mono text-slate-500">…</span></p>
                 </div>
             </div>
         </div>
@@ -1779,7 +1779,7 @@
                     <div class="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-xl border border-red-500/30 flex-shrink-0 cmd-view-nemesis-fallback">💀</div>
                     <div class="min-w-0 flex-1">
                         <p class="text-[10px] text-red-400 uppercase font-bold tracking-wider">Nemesis (Most Losses)</p>
-                        <p id="cmd-view-nemesis" class="font-bold text-white text-sm mt-0.5 truncate">—</p>
+                        <p id="cmd-view-nemesis" class="font-bold text-white text-sm mt-0.5 truncate">…</p>
                         <p id="cmd-view-nemesis-hint" class="hidden text-[10px] text-slate-500 mt-1 leading-snug">At least 3 games vs. another deck needed.</p>
                     </div>
                 </div>
@@ -1788,7 +1788,7 @@
                     <div class="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 text-xl border border-green-500/30 flex-shrink-0 cmd-view-prey-fallback">🎯</div>
                     <div class="min-w-0 flex-1">
                         <p class="text-[10px] text-green-400 uppercase font-bold tracking-wider">Prey (Most Wins)</p>
-                        <p id="cmd-view-prey" class="font-bold text-white text-sm mt-0.5 truncate">—</p>
+                        <p id="cmd-view-prey" class="font-bold text-white text-sm mt-0.5 truncate">…</p>
                         <p id="cmd-view-prey-hint" class="hidden text-[10px] text-slate-500 mt-1 leading-snug">At least 3 games vs. another deck needed.</p>
                     </div>
                 </div>
@@ -1867,7 +1867,7 @@
                 </div>
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner text-center">
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Hours Played</p>
-                    <p id="plr-view-hours" class="text-2xl font-black text-purple-300 mt-1">—</p>
+                    <p id="plr-view-hours" class="text-2xl font-black text-purple-300 mt-1">…</p>
                 </div>
             </div>
 
@@ -2150,7 +2150,7 @@
                         </div>
                     </div>
                 </div>
-                <p class="md:hidden text-[10px] text-slate-500 mt-4 text-center">Optional — tap Next for notes</p>
+                <p class="md:hidden text-[10px] text-slate-500 mt-4 text-center">Optional: tap Next for notes</p>
             </div>
 
             <div id="log-match-step-notes" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-slate-800 shadow-sm relative">
@@ -2159,7 +2159,7 @@
                     Game Notes / Strategy
                 </h3>
                 <textarea id="form-notes" rows="5" placeholder="How did they pull it off? E.g., 'Overwhelming goblins...'" class="mf-clearable mf-notes-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-4 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none shadow-sm min-h-[120px]"></textarea>
-                <p class="md:hidden text-[10px] text-slate-500 mt-4 text-center">Optional — tap Next to review</p>
+                <p class="md:hidden text-[10px] text-slate-500 mt-4 text-center">Optional: tap Next to review</p>
             </div>
 
             <div id="log-match-step-review" class="log-match-step-panel bg-slate-900/50 p-5 rounded-2xl border border-purple-500/30 shadow-sm">
@@ -2262,7 +2262,7 @@
                 This playgroup is <span class="text-gradient">exiled</span>
             </h3>
             <p class="text-sm sm:text-base text-slate-400 mb-5 leading-relaxed max-w-md mx-auto">
-                We searched the entire multiverse — no group matches that name. Maybe a typo, or the slug was never created.
+                We searched the entire multiverse. No group matches that name. Maybe a typo, or the slug was never created.
             </p>
 
             <div class="glass rounded-xl border border-slate-700/80 bg-slate-900/60 px-4 py-3 mb-6 mx-auto max-w-sm">
@@ -2270,7 +2270,7 @@
                 <p id="error-group-id" class="text-sm font-mono text-amber-200/90 break-all"></p>
             </div>
 
-            <p class="text-xs text-purple-300/80 italic mb-6">“Target group is illegal.” — The rules lawyer at table 4</p>
+            <p class="text-xs text-purple-300/80 italic mb-6">“Target group is illegal.” (The rules lawyer at table 4</p>
 
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <button type="button" onclick="window.returnToLobby()" class="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-3.5 rounded-full text-sm font-bold transition shadow-lg shadow-purple-500/30 min-h-[48px] touch-manipulation">
@@ -2287,7 +2287,7 @@
     <div id="feedback-modal" class="fixed inset-0 z-[280] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target === this) window.closeFeedbackModal()">
         <div class="glass p-5 md:p-6 rounded-t-2xl sm:rounded-2xl w-full max-w-md transform scale-95 transition-transform duration-300 shadow-2xl border border-purple-500/30 border-b-0 sm:border-b max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
             <h3 class="text-xl font-black text-white mb-1">Contact &amp; feedback</h3>
-            <p class="text-xs text-slate-400 mb-4 leading-relaxed">Questions, bugs, or ideas — we read every message.</p>
+            <p class="text-xs text-slate-400 mb-4 leading-relaxed">Questions, bugs, or ideas. We read every message.</p>
             <div class="space-y-3">
                 <div>
                     <label for="feedback-type" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-1">Type</label>
@@ -2832,7 +2832,7 @@
             if (!window.canManageDeckFor(ent.owner)) throw new Error('Not allowed.');
             const cmd = (window.appData.commanders || []).find((c) => c.name === ent.name);
             if ((cmd?.plays || 0) > 0) {
-                throw new Error('This deck has logged games — archive it instead of deleting.');
+                throw new Error('This deck has logged games. Archive it instead of deleting.');
             }
             await deleteDoc(doc(db, 'groups', window.groupIdRaw, 'decks', deckId));
         };
@@ -4407,8 +4407,8 @@
 
         function mfFormatLoserElimSubline(l) {
             if (!l?.killedBy && !l?.killedVia) return '';
-            const by = l.killedBy ? mfKilledByDisplayLabel(l.player, l.killedBy) : '—';
-            const via = l.killedVia ? mfKillViaLabel(l.killedVia) : '—';
+            const by = l.killedBy ? mfKilledByDisplayLabel(l.player, l.killedBy) : '…';
+            const via = l.killedVia ? mfKillViaLabel(l.killedVia) : '…';
             return `<span class="text-[9px] text-slate-500 block truncate mt-0.5 normal-case leading-snug"><span class="uppercase tracking-wide text-[8px] font-bold text-slate-600">Killed by</span> <span class="text-slate-500">${escapeHtml(by)}</span><span class="text-slate-600"> · </span><span class="uppercase tracking-wide text-[8px] font-bold text-slate-600">via</span> <span class="text-slate-500">${escapeHtml(via)}</span></span>`;
         }
 
@@ -4485,10 +4485,10 @@
                     return `Search Scryfall and tap "${name}" from the results.`;
                 },
                 errPilotNotFound(name) {
-                    return `"${name}" isn't in your group — pick a pilot from the list, or create a new one.`;
+                    return `"${name}" isn't in your group. Pick a pilot from the list, or create a new one.`;
                 },
                 errCommanderNotFound(name) {
-                    return `"${name}" isn't a saved commander deck — pick from the list or search Scryfall.`;
+                    return `"${name}" isn't a saved commander deck. Pick from the list or search Scryfall.`;
                 },
                 errKilledByMissing: 'Choose who eliminated this player.',
                 errKilledViaMissing: 'Choose how they were eliminated.',
@@ -4621,7 +4621,7 @@
         function mfRenderLogMatchReview() {
             const host = document.getElementById('log-match-review-content');
             if (!host) return;
-            let dateLabel = '—';
+            let dateLabel = '…';
             try {
                 const d = readFormMatchDate();
                 dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -5339,7 +5339,7 @@
                         list.innerHTML = '';
                         const err = document.createElement('li');
                         err.className = 'px-4 py-3 text-sm text-amber-300/90';
-                        err.textContent = 'Could not reach Scryfall — try again';
+                        err.textContent = 'Could not reach Scryfall. Try again';
                         list.appendChild(err);
                     }
                 }, 200);
@@ -6125,7 +6125,7 @@
 
         function mfMountFloatingDropdown(input, dropdown) {
             if (mfIsMobileWizardPickerMode()) return;
-            // Only one floating dropdown alive at a time — clear any others first.
+            // Only one floating dropdown alive at a time. Clear any others first.
             document.querySelectorAll('.mf-floating-dropdown').forEach((d) => {
                 if (d !== dropdown) d.remove();
             });
@@ -6335,7 +6335,7 @@
         }
 
         function formatPlayerHoursPlayed(totalMinutes) {
-            if (!totalMinutes || totalMinutes <= 0) return '—';
+            if (!totalMinutes || totalMinutes <= 0) return '…';
             const hours = totalMinutes / 60;
             if (hours >= 10) return `${Math.round(hours)}h`;
             if (hours >= 1) return `${hours.toFixed(1)}h`;
@@ -7216,7 +7216,7 @@
 
         const MF_COLOR_HEX = { W: '#f3e3b3', U: '#4a90d9', B: '#5d5d6e', R: '#e2584f', G: '#3fae5a', C: '#9aa3b2' };
 
-        /** Per-color horizontal bars on a shared 0–100% scale (always WUBRGC including colorless). */
+        /** Per-color horizontal bars on a shared 0-100% scale (always WUBRGC including colorless). */
         function mfRenderColorInclusionBarChart(percents, counts) {
             const rows = MF_COLOR_ORDER.map((c) => {
                 const pct = Math.min(100, Math.max(0, percents[c] ?? 0));
@@ -7588,7 +7588,7 @@
             const groupNameDisplay = document.getElementById('group-name-display');
             const inviteLinkDisplay = document.getElementById('invite-link-display');
             if (!window.groupIdRaw) {
-                if (groupNameDisplay) groupNameDisplay.innerText = '—';
+                if (groupNameDisplay) groupNameDisplay.innerText = '…';
                 if (inviteLinkDisplay) inviteLinkDisplay.value = '';
                 return;
             }
@@ -8414,7 +8414,7 @@
         function buildRecentForm(historyArr) {
             const n = 5;
             const recent = historyArr.slice(-n);
-            if (recent.length === 0) return "—";
+            if (recent.length === 0) return "…";
             while (recent.length < n) recent.unshift("·");
             return recent.join(" ");
         }
@@ -8633,7 +8633,7 @@
                     highestElo: hasPlayedGames ? Math.max(...playedEloHistory) : SETTINGS.STARTING_ELO,
                     isBaselineOnlyElo: !hasPlayedGames,
                     peakRank: s.peakRank || rank,
-                    winRate: s.plays > 0 ? ((s.wins / s.plays) * 100).toFixed(1) + "%" : "—",
+                    winRate: s.plays > 0 ? ((s.wins / s.plays) * 100).toFixed(1) + "%" : "…",
                     owner: s.owner,
                     deckLink: s.deckLink || '',
                     deckEntityId: ent?.id || '',
@@ -8819,7 +8819,7 @@
             const ranked = getRankedCommanders();
             const unplayed = getRegisteredUnplayedCommanders();
             if (!ranked.length && !unplayed.length) {
-                return `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet — log a match or register a deck on a player profile.</div>`;
+                return `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet. Log a match or register a deck on a player profile.</div>`;
             }
             let html = ranked.map((cmd) => generateCommanderRow(cmd, window.appData.commanders.indexOf(cmd))).join('');
             if (unplayed.length) {
@@ -8943,7 +8943,7 @@
             const decks = getPlayerProfileDecks(player.name);
             safeSetHTML('plr-view-decks', decks.length
                 ? decks.map((entry) => renderPlayerDeckCard(entry, player.name)).join('')
-                : `<div class="col-span-2 sm:col-span-3 md:col-span-4 bg-slate-900 p-4 rounded-xl border border-slate-800"><p class="text-sm text-slate-500 italic text-center">No decks yet — owned or piloted.</p></div>`);
+                : `<div class="col-span-2 sm:col-span-3 md:col-span-4 bg-slate-900 p-4 rounded-xl border border-slate-800"><p class="text-sm text-slate-500 italic text-center">No decks yet (owned or piloted).</p></div>`);
 
             const archived = getArchivedDeckEntitiesForOwner(player.name);
             const archivedWrap = document.getElementById('plr-view-archived-wrap');
@@ -9281,7 +9281,7 @@
         }
 
         function formatGroupTableHours(totalMinutes) {
-            if (!totalMinutes || totalMinutes <= 0) return { value: '—', sub: 'No durations logged' };
+            if (!totalMinutes || totalMinutes <= 0) return { value: '…', sub: 'No durations logged' };
             const hours = totalMinutes / 60;
             if (hours >= 100) return { value: `${Math.round(hours)}h`, sub: `${formatDurationLabel(totalMinutes)} at the table` };
             if (hours >= 10) return { value: `${hours.toFixed(0)}h`, sub: `${formatDurationLabel(totalMinutes)} at the table` };
@@ -9511,8 +9511,8 @@
             }
 
             const tableHours = formatGroupTableHours(stats.totalTableMinutes);
-            const playerHours = stats.totalPlayerMinutes > 0 ? formatPlayerHoursPlayed(stats.totalPlayerMinutes) : '—';
-            const avgGameLen = stats.avgGameLength > 0 ? formatDurationLabel(Math.round(stats.avgGameLength)) : '—';
+            const playerHours = stats.totalPlayerMinutes > 0 ? formatPlayerHoursPlayed(stats.totalPlayerMinutes) : '…';
+            const avgGameLen = stats.avgGameLength > 0 ? formatDurationLabel(Math.round(stats.avgGameLength)) : '…';
             const avgGameLenSub = stats.matchesWithDuration > 0
                 ? `${stats.matchesWithDuration} of ${stats.totalGames} logged`
                 : 'No durations logged';
@@ -9560,8 +9560,8 @@
                 </div>`;
 
             const winSpreadHtml = stats.winRateSpread
-                ? `${stats.winRateSpread.min.toFixed(0)}% – ${stats.winRateSpread.max.toFixed(0)}%`
-                : '—';
+                ? `${stats.winRateSpread.min.toFixed(0)}% to ${stats.winRateSpread.max.toFixed(0)}%`
+                : '…';
             const playersWith3Plus = (window.appData.players || []).filter(p => (p.plays || 0) >= 3).length;
             const winSpreadSub = stats.winRateSpread
                 ? `Among ${playersWith3Plus} players (3+ games)`
@@ -9606,15 +9606,15 @@
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
                             ${statTile('🎲', stats.totalGames, 'Total Games', `${stats.avgGamesPerNight.toFixed(1)} per night avg`, 'cyan')}
                             ${statTile('⏱️', tableHours.value, 'Table Time', tableHours.sub, 'amber')}
-                            ${statTile('🌙', stats.gameNights, 'Game Nights', stats.longestNight.count > 0 ? `Longest: ${stats.longestNight.count} games` : '—', 'purple')}
+                            ${statTile('🌙', stats.gameNights, 'Game Nights', stats.longestNight.count > 0 ? `Longest: ${stats.longestNight.count} games` : '…', 'purple')}
                             ${statTile('👥', stats.activePlayers, 'Active Players', stats.rosterSize > stats.activePlayers ? `${stats.rosterSize} on roster` : 'All rostered players', 'emerald')}
                             ${statTile('📊', stats.avgGamesPerPlayer.toFixed(1), 'Avg Games / Player', `${stats.totalGames} total appearances`, 'sky')}
                             ${statTile('🃏', stats.uniqueCommanders, 'Unique Commanders', 'Across all pilots', 'rose')}
                             ${statTile('🪑', stats.avgPodSize.toFixed(1), 'Avg Pod Size', 'Players per game', 'cyan')}
                             ${statTile('⌛', avgGameLen, 'Avg Game Length', avgGameLenSub, 'amber')}
-                            ${statTile('🔥', stats.avgGamesPerNight.toFixed(1), 'Games / Night', stats.busiestMonth.count > 0 ? `Peak: ${stats.busiestMonth.count} in a month` : '—', 'purple')}
+                            ${statTile('🔥', stats.avgGamesPerNight.toFixed(1), 'Games / Night', stats.busiestMonth.count > 0 ? `Peak: ${stats.busiestMonth.count} in a month` : '…', 'purple')}
                             ${statTile('🧑‍🤝‍🧑', playerHours, 'Player-Hours', 'Time × seats at table', 'emerald')}
-                            ${statTile('📅', stats.lastSessionDate || '—', 'Last Session', formatDaysAgo(stats.daysSinceLast) || '—', 'sky')}
+                            ${statTile('📅', stats.lastSessionDate || '…', 'Last Session', formatDaysAgo(stats.daysSinceLast) || '…', 'sky')}
                             ${statTile('⚖️', winSpreadHtml, 'Win Rate Spread', winSpreadSub, 'rose')}
                         </div>
 
@@ -9625,23 +9625,23 @@
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                                 ${highlightCard(
                                     'Longest Game Night',
-                                    stats.longestNight.count > 0 ? `${stats.longestNight.count} matches` : '—',
+                                    stats.longestNight.count > 0 ? `${stats.longestNight.count} matches` : '…',
                                     stats.longestNight.date || 'No sessions yet'
                                 )}
                                 ${highlightCard(
                                     'Busiest Month',
-                                    stats.busiestMonth.count > 0 ? `${stats.busiestMonth.count} games` : '—',
+                                    stats.busiestMonth.count > 0 ? `${stats.busiestMonth.count} games` : '…',
                                     stats.busiestMonth.label || 'Not enough history'
                                 )}
                                 ${highlightCard(
                                     'Most Dedicated',
-                                    dedicatedPlayer ? dedicatedPlayer.name : '—',
+                                    dedicatedPlayer ? dedicatedPlayer.name : '…',
                                     dedicatedPlayer ? `${dedicatedPlayer.plays} games · ${dedicatedPlayer.winRate} win rate` : 'No players yet',
                                     dedicatedPlayer ? `<div class="mb-2">${dedicatedIdx >= 0 ? `<button type="button" onclick="window.openPlayerProfile(${dedicatedIdx})" class="inline-flex touch-manipulation">${dedicatedAvatar}</button>` : dedicatedAvatar}</div>` : ''
                                 )}
                                 ${highlightCard(
                                     'Top Eliminator',
-                                    topEliminator ? topEliminator.name : '—',
+                                    topEliminator ? topEliminator.name : '…',
                                     topEliminator ? `${topEliminator.kills} ${topEliminator.kills === 1 ? 'kill' : 'kills'} dealt` : 'No elimination data yet',
                                     topEliminatorPlayer ? `<div class="mb-2">${topEliminatorIdx >= 0 ? `<button type="button" onclick="window.openPlayerProfile(${topEliminatorIdx})" class="inline-flex touch-manipulation">${topEliminatorAvatar}</button>` : topEliminatorAvatar}</div>` : ''
                                 )}
@@ -9675,7 +9675,7 @@
                         <div class="flex-grow text-center sm:text-left min-w-0">
                             <h3 class="text-base md:text-lg font-black text-white group-hover:text-purple-400 transition leading-snug">${escapeHtml(combo.player)} &amp; ${escapeHtml(combo.deck)}</h3>
                             <p class="text-[10px] sm:text-xs text-slate-400 leading-relaxed mt-1">With this deck they win <span class="font-bold text-white">${combo.comboWinRate.toFixed(0)}%</span> vs <span class="font-bold text-slate-300">${combo.overallWinRate.toFixed(0)}%</span> overall <span class="font-bold ${liftColor}">(${liftLabel} lift)</span></p>
-                            <p class="text-[10px] text-slate-500 mt-1">${combo.wins}W – ${combo.plays - combo.wins}L in ${combo.plays} games together</p>
+                            <p class="text-[10px] text-slate-500 mt-1">${combo.wins}W / ${combo.plays - combo.wins}L in ${combo.plays} games together</p>
                         </div>
                         <div class="text-center sm:text-right shrink-0 bg-slate-900/60 border border-purple-500/30 rounded-xl px-3 py-2">
                             <p class="text-2xl font-black text-purple-300 leading-none">${combo.comboWinRate.toFixed(0)}%</p>
@@ -9768,7 +9768,7 @@
                             <div class="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <span class="text-[10px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.decks} ${b.decks === 1 ? 'deck' : 'decks'}</span>
                                 <span class="text-[10px] font-bold text-green-300 bg-green-500/15 border border-green-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.wins} ${b.wins === 1 ? 'win' : 'wins'} built</span>
-                                <span class="text-[10px] text-slate-400 truncate min-w-0" title="${escapeHtml(b.best?.name || '')}">Best: ${escapeHtml(b.best?.name || '—')}</span>
+                                <span class="text-[10px] text-slate-400 truncate min-w-0" title="${escapeHtml(b.best?.name || '')}">Best: ${escapeHtml(b.best?.name || '…')}</span>
                             </div>
                         </div>
                         <div class="text-right shrink-0 bg-slate-900/70 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
@@ -9791,7 +9791,7 @@
 
             if (!leaders.length) {
                 const hasAnyKills = stats && Object.keys(stats.killsByPlayer || {}).length > 0;
-                safeSetHTML('analytics-kill-leaders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">${hasAnyKills ? `Log elimination details on more matches — need at least ${KILLS_MIN_COUNT} kills per pilot to rank.` : 'Eliminator rankings appear once you log killed-by and killed-via on losses.'}</p></div>`);
+                safeSetHTML('analytics-kill-leaders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">${hasAnyKills ? `Log elimination details on more matches. Need at least ${KILLS_MIN_COUNT} kills per pilot to rank.` : 'Eliminator rankings appear once you log killed-by and killed-via on losses.'}</p></div>`);
                 return;
             }
 
@@ -9824,7 +9824,7 @@
 
             if (!rows.length) {
                 const hasElimData = stats && stats.losersWithElimData > 0;
-                safeSetHTML('analytics-kill-via', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">${hasElimData ? 'No kill methods logged yet — choose killed-via when recording losses.' : 'How-we-lose stats appear once you log killed-via on losses.'}</p></div>`);
+                safeSetHTML('analytics-kill-via', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">${hasElimData ? 'No kill methods logged yet. Choose killed-via when recording losses.' : 'How-we-lose stats appear once you log killed-via on losses.'}</p></div>`);
                 return;
             }
 
@@ -9853,9 +9853,9 @@
         }
 
         function generateCommanderRow(cmd, index) {
-            const ownerName = cmd.owner || (cmd.pilots && cmd.pilots[0]) || '—';
+            const ownerName = cmd.owner || (cmd.pilots && cmd.pilots[0]) || '…';
             const topThree = cmd.rank <= 3 && (cmd.plays || 0) > 0;
-            const rankDisplay = (cmd.plays || 0) === 0 && cmd.isRegistered ? '—' : cmd.rank;
+            const rankDisplay = (cmd.plays || 0) === 0 && cmd.isRegistered ? '…' : cmd.rank;
             const winStrong = parseFloat(cmd.winRate) >= 50;
             const eloStyle = getRankEloChipStyle(cmd.rank);
             const artName = mfPrimaryCommanderArtName(cmd.name);
@@ -10128,7 +10128,7 @@
                 <div class="glass rounded-2xl border border-purple-500/35 bg-gradient-to-br from-purple-950/40 to-slate-900/80 p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.35)] text-left">
                     <p class="text-[10px] uppercase tracking-widest text-purple-300 font-bold mb-2">Getting started</p>
                     <h3 class="text-xl md:text-2xl font-extrabold text-white mb-2 leading-tight">${groupLabel} is ready</h3>
-                    <p class="text-sm text-slate-300 leading-relaxed mb-4">Log a match to start your first <span class="text-white font-semibold">session</span> — games on the same night group together automatically, and leaderboards fill in as you play.</p>
+                    <p class="text-sm text-slate-300 leading-relaxed mb-4">Log a match to start your first <span class="text-white font-semibold">session</span>. Games on the same night group together automatically, and leaderboards fill in as you play.</p>
                     <ol class="text-sm text-slate-400 space-y-2 mb-5 list-none pl-0">
                         <li class="flex gap-2.5"><span class="text-purple-400 font-bold shrink-0">1.</span><span>Tap <span class="text-slate-200">Log first match</span> and add pilots &amp; decks (use <span class="text-slate-200">+ New</span> for anyone not on the list yet).</span></li>
                         <li class="flex gap-2.5"><span class="text-purple-400 font-bold shrink-0">2.</span><span>Optional: add players under <span class="text-slate-200">Group</span> before the night starts.</span></li>
@@ -10188,7 +10188,7 @@
                     safeSetHTML('analytics-kill-leaders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Eliminator rankings appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-kill-via', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">How-we-lose stats appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Deck builder rankings appear once games are logged.</p></div>`);
-                    safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet — log a match or register a deck on a player profile.</div>`);
+                    safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet. Log a match or register a deck on a player profile.</div>`);
                     safeSetHTML('home-top-commanders', '');
                     safeSetHTML('roster-list', renderPlayerListHtml());
                     if (window.appData.players.length > 0) {
@@ -10646,7 +10646,7 @@
             if (flipBtn) flipBtn.classList.add('hidden');
 
             if (formEl && formWrap) {
-                if (cmd.form && cmd.form !== '—') {
+                if (cmd.form && cmd.form !== '…') {
                     formEl.innerText = cmd.form;
                     formWrap.classList.remove('hidden');
                 } else {
@@ -10817,7 +10817,7 @@
             });
 
             const lastPlayedRaw = results.length ? results[0].date : null;
-            let lastPlayed = '—';
+            let lastPlayed = '…';
             if (lastPlayedRaw) {
                 const d = new Date(lastPlayedRaw);
                 lastPlayed = isNaN(d.getTime())
@@ -10831,13 +10831,13 @@
                 else if (r.win === streakWin) { streak += 1; }
                 else break;
             }
-            const streakLabel = streak > 0 ? `${streak}${streakWin ? 'W' : 'L'}` : '—';
+            const streakLabel = streak > 0 ? `${streak}${streakWin ? 'W' : 'L'}` : '…';
             const streakColor = streak === 0 ? 'text-slate-300'
                 : (streakWin ? 'text-green-400' : 'text-red-400');
             const streakSub = streak === 0 ? 'No games yet'
                 : (streakWin ? `${streak} ${streak === 1 ? 'win' : 'wins'} in a row` : `${streak} ${streak === 1 ? 'loss' : 'losses'} in a row`);
 
-            const favDeck = player.topDeck || '—';
+            const favDeck = player.topDeck || '…';
             const favDeckSub = player.topDeckPlays > 0
                 ? `${player.topDeckPlays} ${player.topDeckPlays === 1 ? 'play' : 'plays'}`
                 : 'No decks yet';
@@ -10884,15 +10884,15 @@
             const killsSub = insights.kills > 0
                 ? (insights.kills === 1 ? '1 opponent eliminated' : `${insights.kills} opponents eliminated`)
                 : 'No kills logged yet';
-            const topVictimLabel = insights.topVictim ? insights.topVictim.name : '—';
+            const topVictimLabel = insights.topVictim ? insights.topVictim.name : '…';
             const topVictimSub = insights.topVictim
                 ? `${insights.topVictim.count}× eliminated`
                 : 'No victims yet';
-            const favKillLabel = insights.favKillMethod ? mfKillViaLabel(insights.favKillMethod.via) : '—';
+            const favKillLabel = insights.favKillMethod ? mfKillViaLabel(insights.favKillMethod.via) : '…';
             const favKillSub = insights.favKillMethod
                 ? `${insights.favKillMethod.count}× via this method`
                 : 'No kill method logged';
-            const elimByLabel = insights.eliminatedBy ? insights.eliminatedBy.name : '—';
+            const elimByLabel = insights.eliminatedBy ? insights.eliminatedBy.name : '…';
             const elimBySub = insights.eliminatedBy
                 ? `${insights.eliminatedBy.count}× taken out by them`
                 : 'No losses with elimination data';
@@ -10928,7 +10928,7 @@
             if(playsEl) playsEl.innerText = player.plays;
             if(winsEl) winsEl.innerText = player.wins;
             if(winrateEl) winrateEl.innerText = player.winRate;
-            if(hoursEl) hoursEl.innerText = player.hoursPlayedLabel || '—';
+            if(hoursEl) hoursEl.innerText = player.hoursPlayedLabel || '…';
 
             renderPlayerInsights(player);
             renderPlayerElimInsights(player);
@@ -11417,7 +11417,7 @@
             if (publicAvatarBackfillDone) return;
             if (!window.canWrite() || !window.groupIdRaw) return;
             const roster = window.appData.explicitRoster || [];
-            if (!roster.length) return; // roster not loaded yet — retry on a later trigger
+            if (!roster.length) return; // roster not loaded yet. Retry on a later trigger
             const updates = {};
             roster.forEach(r => {
                 if (r && r.avatarDataUrl) {
@@ -11838,7 +11838,7 @@
             const match = (window.appData.matches || []).find(m => getMatchFirestoreId(m) === matchId);
             const dateLabel = match?.date || 'this match';
             const winnerNames = (match?.winners || []).map(w => w.name).filter(Boolean).join(', ');
-            const summary = winnerNames ? `\n\n${dateLabel} — ${winnerNames}` : `\n\n${dateLabel}`;
+            const summary = winnerNames ? `\n\n${dateLabel}: ${winnerNames}` : `\n\n${dateLabel}`;
 
             window.showAppConfirm(
                 `Permanently delete this match?${summary}\n\nEveryone's Elo and stats will recalculate. This cannot be undone.`,
@@ -12670,7 +12670,7 @@
                     dropdown.className = useFloating ? dropdownClass : dropdownClass + ' absolute z-[200] mt-2';
                     const li = document.createElement('li');
                     li.className = 'dropdown-empty px-4 py-3 text-sm';
-                    li.textContent = isDeck ? 'No commander decks logged yet — tap + New to add one' : 'No pilots in your group yet — tap + New to add one';
+                    li.textContent = isDeck ? 'No commander decks logged yet. Tap + New to add one' : 'No pilots in your group yet, tap + New to add one';
                     dropdown.appendChild(li);
                     mountDropdown(dropdown);
                 }
@@ -12687,7 +12687,7 @@
                     const li = document.createElement('li');
                     li.className = 'px-4 py-3 text-sm text-purple-300 hover:bg-purple-600 hover:text-white cursor-pointer transition flex items-center gap-2 touch-manipulation';
                     const label = isDeck
-                        ? `Create new deck — search Scryfall for <span class="font-semibold">"${escapeHtml(rawQuery)}"</span>`
+                        ? `Create new deck: search Scryfall for <span class="font-semibold">"${escapeHtml(rawQuery)}"</span>`
                         : `Create <span class="font-semibold">"${escapeHtml(rawQuery)}"</span> as new player`;
                     li.innerHTML = `<span class="text-base leading-none">+</span><span class="truncate">${label}</span>`;
                     mfBindDropdownPick(li, input, () => {
@@ -12826,7 +12826,7 @@
                     if (requestId !== scryfallRequestId) return;
                     if (String(input.value || '').trim() !== query) return;
                     showScryfallDropdown(input, (ul) => {
-                        appendScryfallDropdownMessage(ul, 'Could not reach Scryfall — try again', 'dropdown-empty text-amber-300/90');
+                        appendScryfallDropdownMessage(ul, 'Could not reach Scryfall. Try again', 'dropdown-empty text-amber-300/90');
                     });
                 }
             }, 200);
@@ -12845,7 +12845,7 @@
                         });
                     };
                     mfScheduleFocusTimer(settleField, 0);
-                    // iOS keyboard animation finishes after focus — second pass keeps field visible.
+                    // iOS keyboard animation finishes after focus. Second pass keeps field visible.
                     mfScheduleFocusTimer(settleField, 120);
                 } else if (e.target.closest('#dashboard-view, #landing-page, #view-group-modal, #feedback-modal')) {
                     mfScheduleFocusTimer(() => mfScrollFieldIntoView(e.target), 0);
