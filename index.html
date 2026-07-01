@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.21">
+    <meta name="mf-app-version" content="2.9.22">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Track Commander pod stats, Elo, win rates, deck lists, and match history for your MTG playgroup. Free EDH stats tracker with magic-link sign-in.">
     <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
@@ -3956,8 +3956,8 @@
                 playerInput.classList.add('mf-field-valid');
                 playerInput.classList.remove('mf-field-invalid');
             }
-            if (deckInput && entry.name) {
-                deckInput.value = entry.name;
+            if (deckInput && (entry.name || entry.deck)) {
+                deckInput.value = entry.deck || entry.name;
                 deckInput.dataset.mfSelected = '1';
                 deckInput.classList.add('mf-field-valid');
                 deckInput.classList.remove('mf-field-invalid');
@@ -4001,14 +4001,14 @@
             document.querySelectorAll('#form-winners-container .winner-slot').forEach((slot, i) => {
                 const d = winners[i];
                 if (!d) return;
-                mfFillPodSlot(slot, { player: d.player, name: d.deck || d.name, commanders: d.commanders });
+                mfFillPodSlot(slot, d);
             });
             document.querySelectorAll('#form-losers-container .loser-slot').forEach((slot, i) => {
                 const d = losers[i];
                 if (!d) return;
-                mfFillPodSlot(slot, { player: d.player, name: d.deck || d.name, commanders: d.commanders });
+                mfFillPodSlot(slot, d);
             });
-            mfSyncMobilePickerLabels();
+            mfSyncEliminationFields();
         }
 
         function mfPodSlotCountsMatchForm() {
@@ -4169,6 +4169,21 @@
             const by = l.killedBy ? mfKilledByDisplayLabel(l.player, l.killedBy) : '—';
             const via = l.killedVia ? mfKillViaLabel(l.killedVia) : '—';
             return `<span class="text-[10px] text-slate-500 block truncate mt-0.5">${escapeHtml(by)} · ${escapeHtml(via)}</span>`;
+        }
+
+        function mfFormatSessionLoserRow(l, m) {
+            const delta = m.eloChanges[l.name];
+            const elim = mfFormatLoserElimSubline(l);
+            return `<div class="flex items-center gap-2 bg-slate-900/40 p-2 rounded-lg border border-slate-800/50"><div data-card="${l.name}" data-version="art_crop" class="set-bg bg-cover bg-center w-7 h-7 rounded-full border border-red-500/30 grayscale art-fallback shrink-0"></div><div class="min-w-0 flex-grow"><p class="text-[11px] font-semibold text-slate-300 truncate"><span class="text-red-500/50 mr-1">💀</span>${escapeHtml(l.player)}</p><p class="text-[9px] text-slate-500 truncate">${escapeHtml(l.name)}</p>${elim}</div><span class="text-xs text-red-400/80 font-bold shrink-0">${delta}</span></div>`;
+        }
+
+        function mfFormatMatchLosersPreview(m) {
+            if (!m.losers?.length) return '';
+            const rows = m.losers.map((l) => {
+                const elim = mfFormatLoserElimSubline(l);
+                return `<div class="flex items-start gap-2 min-w-0 opacity-90"><span class="text-red-500/60 shrink-0 text-[10px] mt-0.5">💀</span><div class="min-w-0"><p class="text-[11px] text-slate-300 font-medium truncate">${escapeHtml(l.name)}</p><p class="text-[10px] text-slate-500 truncate normal-case">${escapeHtml(resolvePlayerDisplayName(l.player))}</p>${elim}</div></div>`;
+            }).join('');
+            return `<div class="mt-2 pt-2 border-t border-slate-800/60 space-y-1.5">${rows}</div>`;
         }
 
         function mfGetWinnerCount() {
@@ -9512,6 +9527,8 @@
                 </div>`;
             }).join('');
 
+            const losersPreviewHtml = mfFormatMatchLosersPreview(m);
+
             const chevronHtml = `
                         <div id="match-chevron-${safeId}" class="text-slate-500 group-hover:text-purple-400 transition-transform duration-300 shrink-0 pt-0.5" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -9533,9 +9550,9 @@
                         </div>
                         ${cardActionsColumn}
                     </div>
-                    <div class="space-y-2.5 min-w-0">${winnersHtml}</div>`
+                    <div class="space-y-2.5 min-w-0">${winnersHtml}${losersPreviewHtml}</div>`
                 : `<div class="flex items-start gap-2 min-w-0">
-                        <div class="flex-1 min-w-0 space-y-2.5">${winnersHtml}</div>
+                        <div class="flex-1 min-w-0 space-y-2.5">${winnersHtml}${losersPreviewHtml}</div>
                         ${cardActionsColumn}
                     </div>`;
 
@@ -9779,13 +9796,7 @@
                             return `<div class="flex items-center gap-2 bg-slate-800/40 p-2 rounded-lg border border-slate-700/50"><div data-card="${w.name}" data-version="art_crop" class="set-bg bg-cover bg-center w-7 h-7 rounded-full border border-green-500/50 art-fallback shrink-0 shadow-sm"></div><div class="min-w-0 flex-grow"><p class="text-xs font-bold text-white truncate"><span class="text-yellow-500 mr-1">👑</span>${w.player}</p><p class="text-[9px] text-slate-400 truncate">${w.name}</p></div><span class="text-xs text-green-400 font-bold shrink-0">+${delta}</span></div>`;
                         }).join('');
                         
-                        const losersHtml = m.losers.map(l => {
-                            const delta = m.eloChanges[l.name];
-                            const elim = (l.killedBy || l.killedVia)
-                                ? `<p class="text-[9px] text-slate-500 truncate">${escapeHtml(l.killedBy ? mfKilledByDisplayLabel(l.player, l.killedBy) : '—')} · ${escapeHtml(l.killedVia ? mfKillViaLabel(l.killedVia) : '—')}</p>`
-                                : '';
-                            return `<div class="flex items-center gap-2 bg-slate-900/40 p-2 rounded-lg border border-slate-800/50"><div data-card="${l.name}" data-version="art_crop" class="set-bg bg-cover bg-center w-7 h-7 rounded-full border border-red-500/30 grayscale art-fallback shrink-0"></div><div class="min-w-0 flex-grow"><p class="text-[11px] font-semibold text-slate-300 truncate"><span class="text-red-500/50 mr-1">💀</span>${l.player}</p><p class="text-[9px] text-slate-500 truncate">${l.name}</p>${elim}</div><span class="text-xs text-red-400/80 font-bold shrink-0">${delta}</span></div>`;
-                        }).join('');
+                        const losersHtml = m.losers.map((l) => mfFormatSessionLoserRow(l, m)).join('');
 
                         const cardsHtml = (m.winningCards && m.winningCards.length > 0) 
                             ? `<div class="flex flex-wrap gap-1 mt-2 mb-1">` + m.winningCards.map(c => `<span class="bg-purple-500/10 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-500/20 font-medium">${c}</span>`).join('') + `</div>`
@@ -9793,8 +9804,9 @@
                             
                         return `
                             <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/50 relative shadow-sm mb-3 last:mb-0">
-                                <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-800">
+                                <div class="flex justify-between items-center gap-2 mb-2 pb-2 border-b border-slate-800">
                                     <p class="text-[10px] text-purple-400 font-bold uppercase tracking-widest">Match ${matchNum}</p>
+                                    ${renderMatchAdminActions(m, { inline: true })}
                                 </div>
                                 <div class="space-y-1.5 mb-2">
                                     ${winnersHtml}
@@ -11283,7 +11295,7 @@
             document.querySelectorAll('.loser-slot').forEach((slot, i) => {
                 if (losers[i]) mfFillPodSlot(slot, losers[i]);
             });
-
+            mfSyncEliminationFields();
             const cards = match.winningCards || [];
             ['form-card-1', 'form-card-2', 'form-card-3'].forEach((id, i) => {
                 const el = document.getElementById(id);
@@ -11313,6 +11325,7 @@
             mfSyncDurationStepperDisplay();
             mfSyncRoundsDisplay();
             mfSyncMobileCardPickerLabels();
+            mfSyncMobilePickerLabels();
             mfSyncAllClearableInputs(document.getElementById('view-log-match'));
 
             const modal = document.getElementById('view-log-match');
