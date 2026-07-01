@@ -156,6 +156,7 @@
         #analytics-upset,
         #analytics-rivalry,
         #analytics-kill-leaders,
+        #analytics-kill-via,
         #analytics-synergy-rankings { width: 100%; max-width: 100%; min-width: 0; }
         #analytics-synergy > *,
         #analytics-group-stats > *,
@@ -164,6 +165,7 @@
         #analytics-upset > *,
         #analytics-rivalry > *,
         #analytics-kill-leaders > *,
+        #analytics-kill-via > *,
         #analytics-synergy-rankings > * { max-width: 100%; min-width: 0; }
         @keyframes mfGroupGlow {
             0%, 100% { opacity: 0.45; transform: scale(1); }
@@ -1227,6 +1229,22 @@
                             </div>
                         </h2>
                         <div id="analytics-kill-leaders" class="space-y-2">
+                            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
+                        </div>
+                    </div>
+
+                    <!-- How We Lose -->
+                    <div>
+                        <h2 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <span class="text-rose-400">💀</span> How We Lose
+                            <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <div class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100">
+                                    How defeated players left the game, ranked from most to least common. Based on killed-via logged on losses.
+                                </div>
+                            </div>
+                        </h2>
+                        <div id="analytics-kill-via" class="space-y-2">
                             <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
                         </div>
                     </div>
@@ -9120,7 +9138,6 @@
             });
 
             const topEliminator = mfTopCountEntry(killsByPlayer);
-            const mostCommonVia = mfTopCountEntry(viaCounts);
 
             return {
                 killsByPlayer,
@@ -9131,8 +9148,21 @@
                 losersTotal,
                 losersWithElimData,
                 topEliminator: topEliminator ? { name: topEliminator.key, kills: topEliminator.count } : null,
-                mostCommonVia: mostCommonVia ? { via: mostCommonVia.key, count: mostCommonVia.count } : null,
             };
+        }
+
+        function getKillViaRankedList(stats) {
+            const viaTotal = Object.values(stats?.viaCounts || {}).reduce((sum, n) => sum + n, 0);
+            if (!viaTotal) return { rows: [], viaTotal: 0 };
+            const rows = Object.entries(stats.viaCounts)
+                .map(([via, count]) => ({
+                    via,
+                    label: mfKillViaLabel(via),
+                    count,
+                    pct: Math.round((count / viaTotal) * 100),
+                }))
+                .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+            return { rows, viaTotal };
         }
 
         function getPlayerEliminationInsights(playerName, stats) {
@@ -9345,11 +9375,6 @@
             const topEliminatorAvatar = topEliminatorPlayer
                 ? renderPlayerAvatar(topEliminatorPlayer, 'w-10 h-10', 'text-[10px]', 'shrink-0 border border-orange-500/40')
                 : '';
-            const mostCommonVia = elimStats?.mostCommonVia;
-            const mostCommonKillLabel = mostCommonVia ? mfKillViaLabel(mostCommonVia.via) : '—';
-            const mostCommonKillSub = mostCommonVia && elimStats.losersWithElimData > 0
-                ? `${mostCommonVia.count} of ${elimStats.losersWithElimData} eliminations (${Math.round((mostCommonVia.count / elimStats.losersWithElimData) * 100)}%)`
-                : (elimStats?.losersWithElimData ? 'No kill method logged' : 'Log elimination details when recording losses');
 
             safeSetHTML('analytics-group-stats', `
                 <div class="glass relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 shadow-[0_0_30px_rgba(34,211,238,0.06)] w-full max-w-full min-w-0">
@@ -9416,11 +9441,6 @@
                                     topEliminator ? topEliminator.name : '—',
                                     topEliminator ? `${topEliminator.kills} ${topEliminator.kills === 1 ? 'kill' : 'kills'} dealt` : 'No elimination data yet',
                                     topEliminatorPlayer ? `<div class="mb-2">${topEliminatorIdx >= 0 ? `<button type="button" onclick="window.openPlayerProfile(${topEliminatorIdx})" class="inline-flex touch-manipulation">${topEliminatorAvatar}</button>` : topEliminatorAvatar}</div>` : ''
-                                )}
-                                ${highlightCard(
-                                    'Most Common Kill',
-                                    mostCommonKillLabel,
-                                    mostCommonKillSub
                                 )}
                             </div>
                         </div>
@@ -9593,6 +9613,40 @@
                     </div>`;
             }).join('');
             safeSetHTML('analytics-kill-leaders', html);
+        }
+
+        function renderKillViaBreakdown() {
+            const stats = window.appData.eliminationStats;
+            const { rows, viaTotal } = getKillViaRankedList(stats);
+
+            if (!rows.length) {
+                const hasElimData = stats && stats.losersWithElimData > 0;
+                safeSetHTML('analytics-kill-via', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">${hasElimData ? 'No kill methods logged yet — choose killed-via when recording losses.' : 'How-we-lose stats appear once you log killed-via on losses.'}</p></div>`);
+                return;
+            }
+
+            const maxCount = rows[0].count;
+            const barRows = rows.map((r, i) => {
+                const barPct = maxCount > 0 ? Math.round((r.count / maxCount) * 100) : 0;
+                const barTone = i === 0 ? 'bg-rose-500/70' : i === 1 ? 'bg-orange-500/55' : 'bg-slate-500/45';
+                return `<div class="flex items-center gap-2 min-h-[1.5rem]">
+                    <span class="text-xs font-semibold text-slate-300 truncate min-w-0 flex-1" title="${escapeHtml(r.label)}">${escapeHtml(r.label)}</span>
+                    <div class="relative w-24 sm:w-32 h-2 rounded bg-slate-800/60 border border-slate-700/40 overflow-hidden shrink-0">
+                        <div class="absolute inset-y-0 left-0 rounded-sm min-w-[2px] ${barTone}" style="width:${barPct}%"></div>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-300 tabular-nums text-right shrink-0 w-[3.5rem] leading-tight">${r.count}</span>
+                    <span class="text-[10px] font-semibold text-slate-500 tabular-nums text-right shrink-0 w-[2.25rem] leading-tight">${r.pct}%</span>
+                </div>`;
+            }).join('');
+
+            const elimNote = stats.losersWithElimData > viaTotal
+                ? `Based on ${viaTotal} logged kill methods across ${stats.losersWithElimData} eliminations.`
+                : `Based on ${viaTotal} logged eliminations.`;
+
+            safeSetHTML('analytics-kill-via', `<div class="glass p-4 rounded-xl border border-slate-800 space-y-3 w-full max-w-full min-w-0">
+                <div class="space-y-2.5">${barRows}</div>
+                <p class="text-[10px] text-slate-600 leading-snug pt-1 border-t border-slate-800/80">${escapeHtml(elimNote)}</p>
+            </div>`);
         }
 
         function generateCommanderRow(cmd, index) {
@@ -9929,6 +9983,7 @@
                     safeSetHTML('analytics-upset', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Biggest upsets show up once you have match history.</p></div>`);
                     safeSetHTML('analytics-rivalry', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Rivalries need a few logged games first.</p></div>`);
                     safeSetHTML('analytics-kill-leaders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Eliminator rankings appear once games are logged.</p></div>`);
+                    safeSetHTML('analytics-kill-via', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">How-we-lose stats appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Deck builder rankings appear once games are logged.</p></div>`);
                     safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet — log a match or register a deck on a player profile.</div>`);
                     safeSetHTML('home-top-commanders', '');
@@ -10171,6 +10226,7 @@
 
                 renderDeckBuilders();
                 renderKillLeaderboard();
+                renderKillViaBreakdown();
 
                 safeSetHTML('commander-view', renderCommanderLeaderboardHtml());
                 safeSetHTML('player-view', window.appData.players.map((p, i) => generatePlayerRow(p, i)).join(''));
