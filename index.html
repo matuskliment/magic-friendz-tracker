@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.19">
+    <meta name="mf-app-version" content="2.9.20">
     <title>Magic Friendz — EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Track Commander pod stats, Elo, win rates, deck lists, and match history for your MTG playgroup. Free EDH stats tracker with magic-link sign-in.">
     <link rel="canonical" id="mf-canonical" href="https://edhstatstracker.xyz/">
@@ -436,9 +436,6 @@
             #view-log-match.mf-log-match-wizard .mf-mobile-field-picker {
                 display: block;
             }
-            #view-log-match.mf-log-match-wizard .mf-desktop-killed-by {
-                display: none !important;
-            }
             #view-log-match.mf-log-match-wizard .mf-desktop-card-search {
                 display: none !important;
             }
@@ -462,9 +459,6 @@
         }
         .mf-mobile-field-picker {
             display: none;
-        }
-        .mf-desktop-killed-by {
-            display: block;
         }
         .mf-mobile-card-picker {
             display: none;
@@ -4054,13 +4048,6 @@
             return opt ? opt.label : value || '';
         }
 
-        function mfBuildKillViaDropdownOptionsHtml() {
-            return MF_KILL_VIA_OPTIONS.map((opt, i) => {
-                const border = i < MF_KILL_VIA_OPTIONS.length - 1 ? ' border-b border-slate-700/50' : '';
-                return `<li data-value="${opt.value}" class="static-dropdown-option px-4 py-3 text-sm text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition${border}">${opt.label}</li>`;
-            }).join('');
-        }
-
         function mfGetDefeatedPilotName(slot) {
             const pg = slot?.querySelector('.input-slot-group[data-type="player"]');
             if (!pg) return '';
@@ -4095,6 +4082,7 @@
             const group = loserSlot?.querySelector('.input-slot-group[data-type="killed-by"]');
             if (!group) return;
             const hidden = group.querySelector('.killed-by-input');
+            const local = group.querySelector('.local-killed-by-input');
             if (hidden) {
                 hidden.value = value || '';
                 hidden.classList.toggle('mf-field-valid', !!value);
@@ -4103,14 +4091,13 @@
             const candidates = mfGetKilledByCandidates(loserSlot);
             const match = candidates.find((c) => c.value === value);
             const label = match?.label || (value && value !== MF_KILL_SELF ? value : '');
-            const display = group.querySelector('.static-dropdown-display');
-            if (display) {
-                display.textContent = label || 'Choose player…';
-                display.classList.toggle('text-slate-400', !label);
-                display.classList.toggle('text-white', !!label);
+            if (local) {
+                local.value = label || '';
+                if (label) mfMarkFieldSelected(local);
+                else mfClearFieldSelected(local);
             }
-            const pickerVal = group.querySelector('.mf-killed-by-picker .mf-mobile-picker-value');
-            const pickerBtn = group.querySelector('.mf-killed-by-picker');
+            const pickerVal = group.querySelector('.mf-mobile-field-picker .mf-mobile-picker-value');
+            const pickerBtn = group.querySelector('.mf-mobile-field-picker');
             if (pickerVal) {
                 pickerVal.textContent = label || 'Tap to choose player';
                 pickerVal.classList.toggle('text-slate-400', !label);
@@ -4123,37 +4110,38 @@
             const group = loserSlot?.querySelector('.input-slot-group[data-type="killed-via"]');
             if (!group) return;
             const hidden = group.querySelector('.killed-via-input');
+            const local = group.querySelector('.local-killed-via-input');
             const label = mfKillViaLabel(value);
             if (hidden) {
                 hidden.value = value || '';
                 hidden.classList.toggle('mf-field-valid', !!value);
                 hidden.classList.remove('mf-field-invalid');
             }
-            const display = group.querySelector('.static-dropdown-display');
-            if (display) {
-                display.textContent = label || 'Choose elimination…';
-                display.classList.toggle('text-slate-400', !label);
-                display.classList.toggle('text-white', !!label);
+            if (local) {
+                local.value = label || '';
+                if (label) mfMarkFieldSelected(local);
+                else mfClearFieldSelected(local);
             }
+            const pickerVal = group.querySelector('.mf-mobile-field-picker .mf-mobile-picker-value');
+            const pickerBtn = group.querySelector('.mf-mobile-field-picker');
+            if (pickerVal) {
+                pickerVal.textContent = label || 'Tap to choose elimination';
+                pickerVal.classList.toggle('text-slate-400', !label);
+                pickerVal.classList.toggle('text-white', !!label);
+            }
+            if (pickerBtn) pickerBtn.classList.toggle('border-purple-500/40', !!label);
         }
 
-        function mfRefreshKilledByDropdowns() {
+        function mfSyncEliminationFields() {
             document.querySelectorAll('#form-losers-container .loser-slot').forEach((slot) => {
-                const group = slot.querySelector('.input-slot-group[data-type="killed-by"]');
-                if (!group) return;
-                const hidden = group.querySelector('.killed-by-input');
+                const hidden = slot.querySelector('.killed-by-input');
                 const current = hidden?.value || '';
-                const list = group.querySelector('.killed-by-options');
-                if (!list) return;
+                if (!current) return;
                 const candidates = mfGetKilledByCandidates(slot);
-                list.innerHTML = candidates.map((c, i) => {
-                    const border = i < candidates.length - 1 ? ' border-b border-slate-700/50' : '';
-                    return `<li data-value="${escapeHtml(c.value)}" class="static-dropdown-option px-4 py-3 text-sm text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition${border}">${escapeHtml(c.label)}</li>`;
-                }).join('');
-                const stillValid = !current || candidates.some((c) => c.value === current);
-                if (!stillValid) mfSetKilledByValue(slot, '');
-                else if (current) mfSetKilledByValue(slot, current);
+                if (!candidates.some((c) => c.value === current)) mfSetKilledByValue(slot, '');
+                else mfSetKilledByValue(slot, current);
             });
+            mfSyncMobilePickerLabels();
         }
 
         function mfResolveKilledByForSave(loserSlot, rawValue, defeatedPlayer) {
@@ -4316,11 +4304,11 @@
                 const kb = kbGroup?.querySelector('.killed-by-input')?.value?.trim();
                 const kv = kvGroup?.querySelector('.killed-via-input')?.value?.trim();
                 if (!kb) {
-                    const kbTarget = kbGroup?.querySelector('.mf-killed-by-picker') || kbGroup?.querySelector('.static-dropdown-header');
+                    const kbTarget = kbGroup?.querySelector('.local-killed-by-input') || kbGroup?.querySelector('.mf-mobile-field-picker');
                     addIssue(kbTarget, copy.errKilledByMissing);
                 }
                 if (!kv) {
-                    const kvTarget = kvGroup?.querySelector('.static-dropdown-header');
+                    const kvTarget = kvGroup?.querySelector('.local-killed-via-input') || kvGroup?.querySelector('.mf-mobile-field-picker');
                     addIssue(kvTarget, copy.errKilledViaMissing);
                 }
             }
@@ -4470,7 +4458,7 @@
             document.querySelectorAll('#form-winners-container .winner-slot, #form-losers-container .loser-slot').forEach(el => {
                 el.classList.add('log-match-step-panel');
             });
-            mfRefreshKilledByDropdowns();
+            mfSyncEliminationFields();
             if (mfIsLogMatchWizardViewport()) {
                 const plan = mfBuildLogMatchWizardPlan();
                 if (window._logMatchWizardStep >= plan.length) {
@@ -4702,20 +4690,34 @@
         }
 
         function mfSyncMobilePickerLabels() {
-            document.querySelectorAll('#view-log-match .mf-mobile-field-picker:not(.mf-mobile-card-picker):not(.mf-killed-by-picker)').forEach((btn) => {
+            document.querySelectorAll('#view-log-match .mf-mobile-field-picker:not(.mf-mobile-card-picker)').forEach((btn) => {
                 const group = btn.closest('.input-slot-group');
-                const kind = btn.dataset.pickerKind;
+                const kind = btn.dataset.pickerKind || 'player';
                 const valueEl = btn.querySelector('.mf-mobile-picker-value');
+                const slot = btn.closest('.loser-slot');
                 if (!group || !valueEl) return;
-                const local = group.querySelector(kind === 'player' ? '.local-player-input' : '.local-deck-input');
-                const v = (local?.value || '').trim();
+                let v = '';
+                let emptyLabel = 'Tap to choose';
+                if (kind === 'killed-by') {
+                    const raw = group.querySelector('.killed-by-input')?.value || '';
+                    const match = slot ? mfGetKilledByCandidates(slot).find((c) => c.value === raw) : null;
+                    v = match?.label || '';
+                    emptyLabel = 'Tap to choose player';
+                } else if (kind === 'killed-via') {
+                    v = mfKillViaLabel(group.querySelector('.killed-via-input')?.value || '');
+                    emptyLabel = 'Tap to choose elimination';
+                } else {
+                    const local = group.querySelector(kind === 'deck' ? '.local-deck-input' : '.local-player-input');
+                    v = (local?.value || '').trim();
+                    emptyLabel = kind === 'deck' ? 'Tap to choose commander' : 'Tap to choose pilot';
+                }
                 if (v) {
                     valueEl.textContent = v;
                     valueEl.classList.remove('text-slate-400');
                     valueEl.classList.add('text-white');
                     btn.classList.add('border-purple-500/40');
                 } else {
-                    valueEl.textContent = kind === 'player' ? 'Tap to choose pilot' : 'Tap to choose commander';
+                    valueEl.textContent = emptyLabel;
                     valueEl.classList.remove('text-white');
                     valueEl.classList.add('text-slate-400');
                     btn.classList.remove('border-purple-500/40');
@@ -5133,6 +5135,24 @@
                 return;
             }
 
+            if (state.kind === 'killed-via') {
+                let filtered = MF_KILL_VIA_OPTIONS;
+                if (query) {
+                    filtered = MF_KILL_VIA_OPTIONS.filter((o) => o.label.toLowerCase().includes(query));
+                }
+                filtered.forEach((opt) => {
+                    const row = document.createElement('li');
+                    row.className = 'px-4 py-3 text-slate-200 bg-slate-800/80 hover:bg-purple-600 hover:text-white rounded-xl cursor-pointer transition font-medium';
+                    row.textContent = opt.label;
+                    mfPickerBindRow(row, () => {
+                        mfSetKilledViaValue(state.slot, opt.value);
+                        mfCloseMobileFieldPicker();
+                    });
+                    list.appendChild(row);
+                });
+                return;
+            }
+
             const isDeck = state.kind === 'deck';
             const dataArray = isDeck ? getSelectableCommanders() : (window.appData.players || []);
             let filtered = dataArray;
@@ -5242,7 +5262,7 @@
                         mfWriteCommandersToDeckGroup(state.group, mfParseCommanderNamesFromDeckName(item.name));
                     }
                     delete state.group.dataset.confirmedNew;
-                    mfRefreshKilledByDropdowns();
+                    mfSyncEliminationFields();
                     mfCloseMobileFieldPicker();
                 });
                 list.appendChild(row);
@@ -5256,7 +5276,10 @@
             const slot = btn.closest('.winner-slot, .loser-slot');
             if (!group || !slot) return;
             const pickerKind = btn.dataset.pickerKind || 'player';
-            const kind = pickerKind === 'deck' ? 'deck' : (pickerKind === 'killed-by' ? 'killed-by' : 'player');
+            let kind = 'player';
+            if (pickerKind === 'deck') kind = 'deck';
+            else if (pickerKind === 'killed-by') kind = 'killed-by';
+            else if (pickerKind === 'killed-via') kind = 'killed-via';
             window._logMatchPickerState = { group, slot, kind, mode: 'list' };
             const modal = document.getElementById('view-log-match');
             const picker = document.getElementById('log-match-picker');
@@ -5265,13 +5288,21 @@
             if (title) {
                 title.textContent = kind === 'deck'
                     ? 'Choose commander'
-                    : (kind === 'killed-by' ? 'Killed by' : 'Choose pilot');
+                    : kind === 'killed-by'
+                        ? 'Killed by'
+                        : kind === 'killed-via'
+                            ? 'Killed via'
+                            : 'Choose pilot';
             }
             if (searchEl) {
                 searchEl.value = '';
                 searchEl.placeholder = kind === 'deck'
                     ? 'Search commander decks…'
-                    : (kind === 'killed-by' ? 'Search pod players…' : 'Search pilots…');
+                    : kind === 'killed-by'
+                        ? 'Search pod players…'
+                        : kind === 'killed-via'
+                            ? 'Search elimination type…'
+                            : 'Search pilots…';
             }
             modal?.classList.add('mf-picker-open');
             if (picker) picker.setAttribute('aria-hidden', 'false');
@@ -5738,7 +5769,7 @@
 
         function mfIsLogMatchAutocompleteInput(input) {
             return !!(input && input.closest('#view-log-match') && input.matches(
-                '.local-player-input, .local-deck-input, .local-owner-input, .scryfall-input'
+                '.local-player-input, .local-deck-input, .local-owner-input, .local-killed-by-input, .local-killed-via-input, .scryfall-input'
             ));
         }
 
@@ -5994,36 +6025,41 @@
         }
 
         function mfBuildLoserElimFields() {
+            const focusRing = 'focus:border-purple-500 focus:ring-1 focus:ring-purple-500';
             return `
                         <div class="pt-3 mt-1 border-t border-slate-800/80 space-y-4">
                             <p class="text-[10px] uppercase tracking-wider font-bold text-red-400/80">Elimination</p>
                             <div class="input-slot-group" data-type="killed-by">
                                 <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Killed by</label>
-                                <button type="button" class="mf-mobile-field-picker mf-killed-by-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileFieldPicker(this)" data-picker-kind="killed-by">
+                                <button type="button" class="mf-mobile-field-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileFieldPicker(this)" data-picker-kind="killed-by">
                                     <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to choose player</span>
                                     <span class="block text-[10px] text-slate-500 mt-0.5">Pod member or Self</span>
                                 </button>
-                                <div class="mf-desktop-killed-by relative custom-static-dropdown min-w-0">
-                                    <input type="hidden" class="killed-by-input" value="">
-                                    <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] touch-manipulation text-left text-sm">
-                                        <span class="static-dropdown-display text-slate-400">Choose player…</span>
-                                        <svg class="text-slate-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                    </button>
-                                    <ul class="static-dropdown-list killed-by-options hidden absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto shadow-2xl"></ul>
+                                <div class="existing-mode">
+                                    <div class="relative flex-grow mf-search-wrap">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                        </div>
+                                        <input type="text" class="mf-clearable local-killed-by-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search pod players…" autocomplete="off">
+                                    </div>
                                 </div>
+                                <input type="hidden" class="killed-by-input" value="">
                             </div>
                             <div class="input-slot-group" data-type="killed-via">
                                 <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 ml-1">Killed via</label>
-                                <div class="relative custom-static-dropdown min-w-0">
-                                    <input type="hidden" class="killed-via-input" value="">
-                                    <button type="button" class="static-dropdown-header w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all cursor-pointer shadow-sm flex justify-between items-center min-h-[48px] touch-manipulation text-left text-sm">
-                                        <span class="static-dropdown-display text-slate-400">Choose elimination…</span>
-                                        <svg class="text-slate-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                    </button>
-                                    <ul class="static-dropdown-list hidden absolute z-[200] w-full bg-slate-800 border border-slate-600 rounded-xl mt-2 max-h-60 overflow-y-auto shadow-2xl">
-                                        ${mfBuildKillViaDropdownOptionsHtml()}
-                                    </ul>
+                                <button type="button" class="mf-mobile-field-picker w-full text-left bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 min-h-[48px] touch-manipulation transition-all hover:border-slate-600" onclick="window.mfOpenMobileFieldPicker(this)" data-picker-kind="killed-via">
+                                    <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to choose elimination</span>
+                                    <span class="block text-[10px] text-slate-500 mt-0.5">How they were eliminated</span>
+                                </button>
+                                <div class="existing-mode">
+                                    <div class="relative flex-grow mf-search-wrap">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                        </div>
+                                        <input type="text" class="mf-clearable local-killed-via-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm cursor-pointer" placeholder="Choose elimination…" autocomplete="off" readonly>
+                                    </div>
                                 </div>
+                                <input type="hidden" class="killed-via-input" value="">
                             </div>
                         </div>`;
         }
@@ -11482,7 +11518,7 @@
                 }
                 if (localInput) localInput.value = name;
                 fieldToRefocus = localInput;
-                mfRefreshKilledByDropdowns();
+                mfSyncEliminationFields();
             } else if (type === 'deck') {
                 const newInput = group.querySelector('.new-deck-input');
                 const variantInput = group.querySelector('.new-deck-variant-input');
@@ -11562,7 +11598,7 @@
             input.classList.remove('mf-field-invalid');
             mfClearFieldError(input);
             if (input.classList.contains('local-player-input') && input.closest('#view-log-match')) {
-                mfRefreshKilledByDropdowns();
+                mfSyncEliminationFields();
             }
         }
 
@@ -11661,11 +11697,11 @@
                     const kb = slot.querySelector('.killed-by-input')?.value?.trim();
                     const kv = slot.querySelector('.killed-via-input')?.value?.trim();
                     if (!kb) {
-                        const kbTarget = slot.querySelector('.mf-killed-by-picker') || slot.querySelector('[data-type="killed-by"] .static-dropdown-header');
+                        const kbTarget = slot.querySelector('.local-killed-by-input') || slot.querySelector('[data-type="killed-by"] .mf-mobile-field-picker');
                         addIssue(kbTarget, copy.errKilledByMissing);
                     }
                     if (!kv) {
-                        const kvTarget = slot.querySelector('[data-type="killed-via"] .static-dropdown-header');
+                        const kvTarget = slot.querySelector('.local-killed-via-input') || slot.querySelector('[data-type="killed-via"] .mf-mobile-field-picker');
                         addIssue(kvTarget, copy.errKilledViaMissing);
                     }
                 }
@@ -11952,13 +11988,6 @@
                 displaySpan.innerText = option.innerText;
                 list.classList.add('hidden');
 
-                const loserSlot = container.closest('.loser-slot');
-                if (hiddenInput.classList.contains('killed-by-input') && loserSlot) {
-                    mfSetKilledByValue(loserSlot, hiddenInput.value);
-                } else if (hiddenInput.classList.contains('killed-via-input') && loserSlot) {
-                    mfSetKilledViaValue(loserSlot, hiddenInput.value);
-                }
-
                 if (hiddenInput.id === 'form-pod-size' || hiddenInput.id === 'form-winner-count') {
                     mfRebuildPlayerSlotsPreservingData();
                 }
@@ -11987,7 +12016,93 @@
             }
         }
 
+        window.renderKilledByDropdown = function(input) {
+            if (mfIsMobileWizardPickerMode()) return;
+            const slot = input.closest('.loser-slot');
+            if (!slot) return;
+            const slotGroup = mfGetDropdownHost(input);
+            const useFloating = mfIsLogMatchAutocompleteInput(input);
+            mfDismissFloatingDropdown(input);
+
+            const candidates = mfGetKilledByCandidates(slot);
+            const query = String(input.value || '').trim().toLowerCase();
+            let filtered = candidates;
+            if (query) {
+                filtered = candidates.filter((c) => c.label.toLowerCase().includes(query));
+            }
+
+            const dropdownClass = 'custom-dropdown w-full bg-slate-800 border border-slate-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden';
+            const dropdown = document.createElement('ul');
+            dropdown.className = useFloating ? dropdownClass : dropdownClass + ' absolute z-[200] mt-2';
+
+            if (!filtered.length) {
+                const li = document.createElement('li');
+                li.className = 'dropdown-empty px-4 py-3 text-sm';
+                li.textContent = candidates.length
+                    ? 'No players match your search'
+                    : 'Fill in pilots first, then pick who eliminated this player';
+                dropdown.appendChild(li);
+            } else {
+                filtered.forEach((c) => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 last:border-0 touch-manipulation';
+                    li.innerHTML = `<span class="truncate font-medium">${escapeHtml(c.label)}</span>`;
+                    mfBindDropdownPick(li, input, () => {
+                        mfSetKilledByValue(slot, c.value);
+                        mfMarkFieldSelected(input);
+                    });
+                    dropdown.appendChild(li);
+                });
+            }
+
+            if (useFloating) mfMountFloatingDropdown(input, dropdown);
+            else input.parentNode.appendChild(dropdown);
+            if (slotGroup) slotGroup.classList.add('mf-slot-active');
+        };
+
+        window.renderKilledViaDropdown = function(input) {
+            if (mfIsMobileWizardPickerMode()) return;
+            const slot = input.closest('.loser-slot');
+            if (!slot) return;
+            const slotGroup = mfGetDropdownHost(input);
+            const useFloating = mfIsLogMatchAutocompleteInput(input);
+            mfDismissFloatingDropdown(input);
+
+            const query = String(input.value || '').trim().toLowerCase();
+            let filtered = MF_KILL_VIA_OPTIONS;
+            if (query) {
+                filtered = MF_KILL_VIA_OPTIONS.filter((o) => o.label.toLowerCase().includes(query));
+            }
+
+            const dropdownClass = 'custom-dropdown w-full bg-slate-800 border border-slate-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden';
+            const dropdown = document.createElement('ul');
+            dropdown.className = useFloating ? dropdownClass : dropdownClass + ' absolute z-[200] mt-2';
+
+            filtered.forEach((opt) => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-3 text-slate-200 hover:bg-purple-600 hover:text-white cursor-pointer transition border-b border-slate-700/50 last:border-0 touch-manipulation';
+                li.textContent = opt.label;
+                mfBindDropdownPick(li, input, () => {
+                    mfSetKilledViaValue(slot, opt.value);
+                    mfMarkFieldSelected(input);
+                });
+                dropdown.appendChild(li);
+            });
+
+            if (useFloating) mfMountFloatingDropdown(input, dropdown);
+            else input.parentNode.appendChild(dropdown);
+            if (slotGroup) slotGroup.classList.add('mf-slot-active');
+        };
+
         window.renderLocalDropdown = function(input, dataArray, isDeck) {
+            if (input?.classList.contains('local-killed-by-input')) {
+                window.renderKilledByDropdown(input);
+                return;
+            }
+            if (input?.classList.contains('local-killed-via-input')) {
+                window.renderKilledViaDropdown(input);
+                return;
+            }
             if (mfIsMobileWizardPickerMode()) return;
             const slotGroup = mfGetDropdownHost(input);
             const useFloating = mfIsLogMatchAutocompleteInput(input);
@@ -12229,20 +12344,26 @@
             if (e.target && e.target.classList.contains('local-player-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
             if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, getSelectableCommanders(), true); }
             if (e.target && e.target.classList.contains('local-owner-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
+            if (e.target && e.target.classList.contains('local-killed-by-input')) { window.renderKilledByDropdown(e.target); }
+            if (e.target && e.target.classList.contains('local-killed-via-input')) { window.renderKilledViaDropdown(e.target); }
             if (e.target && e.target.classList.contains('scryfall-input')) { window.queueScryfallAutocomplete(e.target); }
         });
 
         document.addEventListener('input', function(e) {
             const t = e.target;
-            if (t && (t.classList.contains('local-player-input') || t.classList.contains('local-deck-input') || t.classList.contains('local-owner-input'))) {
-                // Manual typing invalidates a prior pick: existing-mode is pick-only.
+            if (t && (t.classList.contains('local-player-input') || t.classList.contains('local-deck-input') || t.classList.contains('local-owner-input') || t.classList.contains('local-killed-by-input'))) {
                 mfClearFieldSelected(t);
                 const grp = t.closest('.input-slot-group');
                 if (grp) delete grp.dataset.confirmedNew;
+                if (t.classList.contains('local-killed-by-input')) {
+                    const hidden = grp?.querySelector('.killed-by-input');
+                    if (hidden) hidden.value = '';
+                }
             }
             if (e.target && e.target.classList.contains('local-player-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
             if (e.target && e.target.classList.contains('local-deck-input')) { window.renderLocalDropdown(e.target, getSelectableCommanders(), true); }
             if (e.target && e.target.classList.contains('local-owner-input')) { window.renderLocalDropdown(e.target, window.appData.players, false); }
+            if (e.target && e.target.classList.contains('local-killed-by-input')) { window.renderKilledByDropdown(e.target); }
             
             if (e.target && e.target.classList.contains('scryfall-input')) {
                 window.queueScryfallAutocomplete(e.target);
@@ -12257,7 +12378,7 @@
                 mfScheduleFocusTimer(mfCleanupFocusSideEffects, 0);
             }
             if (e.target && e.target.closest('.mf-mobile-sheet') && e.target.matches(
-                '.scryfall-input, .local-player-input, .local-deck-input, .local-owner-input, .new-player-input, .new-deck-input, .new-deck-variant-input'
+                '.scryfall-input, .local-player-input, .local-deck-input, .local-owner-input, .local-killed-by-input, .local-killed-via-input, .new-player-input, .new-deck-input, .new-deck-variant-input'
             )) {
                 const blurredInput = e.target;
                 const relatedTarget = e.relatedTarget;
