@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.36">
+    <meta name="mf-app-version" content="2.9.37">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -11,7 +11,7 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Magic Friendz">
     <meta property="og:title" content="Magic Friendz: EDH Commander Playgroup Stats Tracker">
-    <meta property="og:description" content="Free Commander playgroup tracker with playgroup Elo for your pod. Log matches, leaderboards, and session history for your meta, not a global ladder.">
+    <meta property="og:description" content="Free Commander playgroup tracker with playgroup Elo for your pod. Log matches, leaderboards, and session history scoped to your pod's meta, not a global ladder.">
     <meta property="og:url" id="mf-og-url" content="https://edhstatstracker.xyz/">
     <meta property="og:image" content="https://edhstatstracker.xyz/og-image.png">
     <meta property="og:image:width" content="1200">
@@ -72,7 +72,7 @@
                         "name": "What is Magic Friendz?",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks playgroup Elo, win rates, deck lists, match history, and playgroup insights, so rankings reflect your table's games, not a worldwide ladder."
+                            "text": "Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks playgroup Elo, win rates, deck lists, match history, and playgroup insights. Rankings reflect your table's games, not a worldwide ladder."
                         }
                     },
                     {
@@ -96,7 +96,7 @@
                         "name": "Do I need an account?",
                         "acceptedAnswer": {
                             "@type": "Answer",
-                            "text": "No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email. We send a magic link, no password required."
+                            "text": "No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email. We send a magic link. No password required."
                         }
                     },
                     {
@@ -914,7 +914,7 @@
     <noscript>
         <div class="bg-slate-950 border-b border-purple-500/30 px-4 py-6 text-center text-sm text-slate-300 leading-relaxed">
             <p><strong class="text-white">Magic Friendz</strong> is a free EDH Commander playgroup stats tracker by <strong class="text-white">Mat Kliment</strong>.
-            Track <strong class="text-white">playgroup Elo</strong> and stats for your pod&apos;s meta, not a global ladder, at <a href="https://edhstatstracker.xyz/" class="text-purple-400 underline">edhstatstracker.xyz</a>.
+            Track <strong class="text-white">playgroup Elo</strong> and stats for your pod&apos;s meta, not a global ladder. Visit <a href="https://edhstatstracker.xyz/" class="text-purple-400 underline">edhstatstracker.xyz</a>.
             JavaScript is required to use the app. <a href="/about.html" class="text-purple-400 underline">Learn more</a>.</p>
         </div>
     </noscript>
@@ -993,7 +993,7 @@
                         </div>
                     </div>
                     <div id="landing-sign-in-panel" class="hidden mt-6 p-4 rounded-xl border border-purple-500/25 bg-purple-950/20 max-w-md mx-auto lg:mx-0 space-y-3">
-                        <p id="landing-sign-in-intro" class="text-sm text-slate-400">Use the email from your invite, or the one you used to create a group. We’ll send a magic link, no password.</p>
+                        <p id="landing-sign-in-intro" class="text-sm text-slate-400">Use the email from your invite, or the one you used to create a group. We’ll send a magic link (no password).</p>
                         <div id="landing-sign-in-form" class="space-y-3">
                             <div class="field-wrap">
                                 <input type="email" id="landing-sign-in-email" placeholder="Email address" autocomplete="email" class="mf-clearable w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
@@ -1120,7 +1120,7 @@
                 <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 text-left">
                     <li class="glass rounded-2xl border border-purple-500/25 bg-purple-950/10 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Your pod&apos;s Elo</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed">Each playgroup has its own leaderboards and Elo, built from your matches only, so ratings reflect <strong class="text-slate-300 font-semibold">your meta and power level</strong>, not strangers online.</p>
+                        <p class="text-sm text-slate-400 leading-relaxed">Each playgroup has its own leaderboards and Elo, built from your matches only. Ratings reflect <strong class="text-slate-300 font-semibold">your meta and power level</strong>, not strangers online.</p>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Commander &amp; player rankings</h3>
@@ -1136,7 +1136,7 @@
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Playgroup insights</h3>
-                        <p class="text-sm text-slate-400 leading-relaxed">Rivalries, top eliminators, how you lose breakdowns, pod color meta, and signature synergies, all from <strong class="text-slate-300 font-semibold">your group&apos;s history</strong>.</p>
+                        <p class="text-sm text-slate-400 leading-relaxed">Rivalries, top eliminators, how you lose breakdowns, pod color meta, and signature synergies, all drawn from <strong class="text-slate-300 font-semibold">your group&apos;s history</strong>.</p>
                     </li>
                     <li class="glass rounded-2xl border border-slate-700/60 p-5 md:p-6">
                         <h3 class="text-base font-bold text-white mb-2">Shareable group links</h3>
@@ -1159,7 +1159,7 @@
                 <div class="space-y-3">
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>What is Magic Friendz?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
-                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks <strong class="text-slate-300">playgroup Elo</strong>, win rates, deck lists, match history, and playgroup insights, so rankings reflect your table&apos;s games, not a worldwide ladder.</p>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">Magic Friendz is a free web app for Magic: The Gathering Commander playgroups. It tracks <strong class="text-slate-300">playgroup Elo</strong>, win rates, deck lists, match history, and playgroup insights. Rankings reflect your table&apos;s games, not a worldwide ladder.</p>
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>How is this different from apps with global Elo?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
@@ -1171,7 +1171,7 @@
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>Do I need an account?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
-                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email. We send a magic link, no password required.</p>
+                        <p class="text-sm text-slate-400 mt-3 leading-relaxed">No account is needed to view stats. To log games, invite players, or edit decks, sign in with your email. We send a magic link. No password required.</p>
                     </details>
                     <details class="glass rounded-xl border border-slate-700/60 p-4 md:p-5 group">
                         <summary class="text-sm md:text-base font-bold text-white cursor-pointer list-none flex justify-between items-center gap-2"><span>Is Magic Friendz free?</span><span class="text-slate-500 group-open:rotate-180 transition-transform shrink-0" aria-hidden="true">▾</span></summary>
@@ -2270,7 +2270,7 @@
                 <p id="error-group-id" class="text-sm font-mono text-amber-200/90 break-all"></p>
             </div>
 
-            <p class="text-xs text-purple-300/80 italic mb-6">“Target group is illegal.” (The rules lawyer at table 4</p>
+            <p class="text-xs text-purple-300/80 italic mb-6">“Target group is illegal.” (The rules lawyer at table 4.)</p>
 
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <button type="button" onclick="window.returnToLobby()" class="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-3.5 rounded-full text-sm font-bold transition shadow-lg shadow-purple-500/30 min-h-[48px] touch-manipulation">
