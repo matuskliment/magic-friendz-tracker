@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.38">
+    <meta name="mf-app-version" content="2.9.39">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -950,6 +950,8 @@
             <a href="#landing-features" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Features</a>
             <a href="#landing-how-it-works" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">How it works</a>
             <a href="/about.html" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">About</a>
+            <a href="/terms.html" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Terms</a>
+            <a href="/privacy.html" onclick="window.closeLandingNavMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Privacy</a>
             <button type="button" onclick="window.closeLandingNavMenu(); window.openFeedbackModal();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Contact &amp; feedback</button>
             <button type="button" onclick="window.closeLandingNavMenu(); window.openGroupModal();" class="w-full mt-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-xl text-sm font-bold transition min-h-[48px] touch-manipulation" role="menuitem">Enter App</button>
         </div>
@@ -999,6 +1001,7 @@
                                 <input type="email" id="landing-sign-in-email" placeholder="Email address" autocomplete="email" class="mf-clearable w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
                             </div>
                             <button type="button" onclick="window.sendSignInLink({ fromLanding: true })" id="landing-sign-in-send-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition min-h-[44px] touch-manipulation disabled:opacity-50 disabled:pointer-events-none">Send magic link</button>
+                            <p class="text-[11px] text-slate-500 leading-relaxed">By continuing, you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-purple-400/90 hover:text-purple-300 underline">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="text-purple-400/90 hover:text-purple-300 underline">Privacy Policy</a>.</p>
                             <p id="landing-sign-in-status" class="text-xs text-red-400/90 hidden"></p>
                         </div>
                         <div id="landing-sign-in-sent" class="hidden space-y-4">
@@ -1191,6 +1194,8 @@
                 <a href="#landing-how-it-works" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">How it works</a>
                 <a href="#landing-faq" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">FAQ</a>
                 <a href="/about.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">About</a>
+                <a href="/terms.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Terms</a>
+                <a href="/privacy.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Privacy</a>
                 <a href="/groups.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">All Groups</a>
                 <a href="#contact" onclick="window.openFeedbackModal(); return false;" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Contact</a>
             </nav>
@@ -1506,6 +1511,7 @@
                                 <input type="email" id="sign-in-email" placeholder="Email address" autocomplete="email" class="mf-clearable w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
                             </div>
                             <button type="button" onclick="window.sendSignInLink()" id="sign-in-send-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition min-h-[44px] touch-manipulation disabled:opacity-50 disabled:pointer-events-none">Send magic link</button>
+                            <p class="text-[10px] text-slate-500 leading-relaxed">By continuing, you agree to our <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-purple-400/90 hover:text-purple-300 underline">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="text-purple-400/90 hover:text-purple-300 underline">Privacy Policy</a>.</p>
                             <p id="sign-in-status" class="text-xs text-red-400/90 hidden"></p>
                         </div>
                         <div id="group-sign-in-sent" class="hidden space-y-4">
@@ -2206,6 +2212,10 @@
                     <div class="field-wrap mb-3">
                         <input type="email" id="create-owner-email-input" placeholder="you@email.com" autocomplete="email" class="mf-clearable w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition" oninput="window.clearFieldError(this)">
                     </div>
+                    <label class="flex items-start gap-2.5 text-xs text-slate-400 leading-relaxed cursor-pointer mb-3">
+                        <input type="checkbox" id="create-group-terms" class="mt-0.5 shrink-0 rounded border-slate-600 bg-slate-900 text-green-500 focus:ring-green-500/40" onchange="window.clearCreateGroupTermsError()">
+                        <span>I agree to the <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:text-purple-300 underline">Terms of Service</a> and <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:text-purple-300 underline">Privacy Policy</a>.</span>
+                    </label>
                     <p id="create-group-status" class="text-xs text-red-400/90 hidden mb-3"></p>
                     <button id="group-create-btn" onclick="window.createGroup(event)" class="w-full bg-green-600 hover:bg-green-500 text-white px-6 py-3.5 rounded-xl text-base font-bold transition min-h-[52px] touch-manipulation disabled:opacity-50 disabled:pointer-events-none">Send link &amp; create</button>
                 </div>
@@ -3680,15 +3690,26 @@
             );
         };
 
+        window.clearCreateGroupTermsError = function() {
+            const termsEl = document.getElementById('create-group-terms');
+            const statusEl = document.getElementById('create-group-status');
+            if (termsEl?.checked && statusEl?.textContent === 'Agree to the Terms and Privacy Policy to continue.') {
+                statusEl.textContent = '';
+                statusEl.classList.add('hidden');
+            }
+        };
+
         window.resetCreateGroupPanel = function() {
             const form = document.getElementById('create-group-form');
             const sent = document.getElementById('create-group-sent');
             const status = document.getElementById('create-group-status');
             const btn = document.getElementById('group-create-btn');
             const back = document.getElementById('create-group-back-btn');
+            const termsEl = document.getElementById('create-group-terms');
             if (form) form.classList.remove('hidden');
             if (sent) sent.classList.add('hidden');
             if (back) back.classList.remove('hidden');
+            if (termsEl) termsEl.checked = false;
             if (status) {
                 status.textContent = '';
                 status.classList.add('hidden');
@@ -7849,6 +7870,19 @@
                 return;
             }
             clearFieldError(emailEl);
+            const termsEl = document.getElementById('create-group-terms');
+            if (!termsEl?.checked) {
+                if (statusEl) {
+                    statusEl.textContent = 'Agree to the Terms and Privacy Policy to continue.';
+                    statusEl.classList.remove('hidden');
+                }
+                termsEl?.focus();
+                return;
+            }
+            if (statusEl) {
+                statusEl.textContent = '';
+                statusEl.classList.add('hidden');
+            }
             const formatted = formatGroupSlug(input);
             if (!formatted) {
                 setFieldError(inputEl, 'Use letters or numbers only.');

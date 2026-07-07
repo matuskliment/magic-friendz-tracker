@@ -7,6 +7,8 @@
 ## Primary pages
 - Home: https://edhstatstracker.xyz/
 - About: https://edhstatstracker.xyz/about.html
+- Terms: https://edhstatstracker.xyz/terms.html
+- Privacy: https://edhstatstracker.xyz/privacy.html
 - All groups: https://edhstatstracker.xyz/groups.html
 
 ## Product summary
