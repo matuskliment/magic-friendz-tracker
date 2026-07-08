@@ -102,7 +102,9 @@
                                     <th class="text-left py-2 pr-2">Group</th>
                                     <th class="text-right py-2 px-2">Players</th>
                                     <th class="text-right py-2 px-2">Matches</th>
-                                    <th class="text-right py-2 pl-2">Last Match</th>
+                                    <th class="text-right py-2 px-2 whitespace-nowrap">Created</th>
+                                    <th class="text-right py-2 px-2 whitespace-nowrap">Last match</th>
+                                    <th class="text-right py-2 pl-2 whitespace-nowrap">Last sign-in</th>
                                 </tr>
                             </thead>
                             <tbody id="groups-tbody"></tbody>
@@ -514,7 +516,7 @@
 
         function renderGroupsTable() {
             if (!groupsData.length) {
-                els.groupsTbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 text-sm">No groups found.</td></tr>`;
+                els.groupsTbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 text-sm">No groups found.</td></tr>`;
                 return;
             }
             els.groupsTbody.innerHTML = groupsData.map(group => `
@@ -525,7 +527,9 @@
                     </td>
                     <td class="py-2 px-2 text-right text-slate-300">${group.rosterCount}</td>
                     <td class="py-2 px-2 text-right text-slate-300">${group.matchCount}</td>
-                    <td class="py-2 pl-2 text-right text-[11px] text-slate-400">${group.lastMatchDate || '…'}</td>
+                    <td class="py-2 px-2 text-right text-[11px] text-slate-400 whitespace-nowrap">${group.createdLabel || '…'}</td>
+                    <td class="py-2 px-2 text-right text-[11px] text-slate-400 whitespace-nowrap">${group.lastMatchLabel || '…'}</td>
+                    <td class="py-2 pl-2 text-right text-[11px] text-slate-400 whitespace-nowrap">${group.lastSignInLabel || '…'}</td>
                 </tr>
             `).join('');
 
@@ -571,7 +575,7 @@
         }
 
         async function loadGroupsOverview() {
-            els.groupsTbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 text-sm">Loading groups…</td></tr>`;
+            els.groupsTbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 text-sm">Loading groups…</td></tr>`;
             const groupSnap = await getDocs(collection(db, 'groups'));
             const groups = [];
             let totalMatches = 0;
@@ -582,8 +586,9 @@
             for (let i = 0; i < docs.length; i++) {
                 const g = docs[i];
                 const groupId = g.id;
+                const groupData = g.data();
                 if (total > 3) {
-                    els.groupsTbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 text-sm">Loading groups (${i + 1}/${total})…</td></tr>`;
+                    els.groupsTbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 text-sm">Loading groups (${i + 1}/${total})…</td></tr>`;
                 }
                 const [matchesSnap, rosterSnap] = await Promise.all([
                     getDocs(collection(db, 'groups', groupId, 'matches')),
@@ -593,12 +598,16 @@
                 const lastMatch = matches.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
                 totalMatches += matches.length;
                 totalRoster += rosterSnap.size;
+                const lastMatchLabel = lastMatch?.date
+                    || (lastMatch?.timestamp ? formatAdminDate(lastMatch.timestamp) : '');
                 groups.push({
                     id: groupId,
-                    name: g.data().name || '',
+                    name: groupData.name || '',
                     rosterCount: rosterSnap.size,
                     matchCount: matches.length,
-                    lastMatchDate: lastMatch?.date || ''
+                    createdLabel: formatAdminDate(groupData.createdAt),
+                    lastMatchLabel,
+                    lastSignInLabel: formatAdminDate(groupData.lastSignInAt)
                 });
             }
 
@@ -770,8 +779,15 @@
         async function selectGroup(group) {
             selectedGroup = group;
             const groupSnap = await getDoc(doc(db, 'groups', group.id));
-            const ownerHint = groupSnap.exists() && groupSnap.data().ownerUid ? ` · owner set` : ' · no owner';
-            els.selectedGroupLabel.textContent = `${group.name || group.id} (${group.id})${ownerHint}`;
+            const groupData = groupSnap.exists() ? groupSnap.data() : {};
+            const ownerHint = groupData.ownerUid ? ' · owner set' : ' · no owner';
+            const created = formatAdminDate(groupData.createdAt);
+            const lastMatch = group.lastMatchLabel || '…';
+            const lastSignIn = formatAdminDate(groupData.lastSignInAt);
+            els.selectedGroupLabel.innerHTML = `
+                <span class="block font-semibold text-white">${escapeHtml(group.name || group.id)} <span class="text-slate-500 font-normal">(${escapeHtml(group.id)})</span>${ownerHint}</span>
+                <span class="block text-xs text-slate-500 mt-1">Created ${escapeHtml(created)} · Last match ${escapeHtml(lastMatch)} · Last sign-in ${escapeHtml(lastSignIn)}</span>
+            `;
             setActionButtonsEnabled(true);
             if (els.ownerSetStatus) els.ownerSetStatus.textContent = '';
             setPartnerMigrateStatus('');
@@ -912,6 +928,17 @@
             try {
                 const d = typeof ts.toDate === 'function' ? ts.toDate() : new Date(ts);
                 return d.toLocaleString();
+            } catch (_) {
+                return '…';
+            }
+        }
+
+        function formatAdminDate(ts) {
+            if (!ts) return '…';
+            try {
+                const d = typeof ts.toDate === 'function' ? ts.toDate() : new Date(ts);
+                if (Number.isNaN(d.getTime())) return '…';
+                return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
             } catch (_) {
                 return '…';
             }

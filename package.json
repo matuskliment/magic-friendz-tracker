@@ -1,6 +1,6 @@
 {
   "name": "magic-friendz-tracker",
-  "version": "2.9.41",
+  "version": "2.9.42",
   "private": true,
   "scripts": {
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./styles.css --minify"
