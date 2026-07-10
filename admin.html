@@ -73,51 +73,29 @@
                 </div>
             </div>
 
-            <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-4 md:p-5">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-white">User feedback</h3>
-                        <p class="text-xs text-slate-500 mt-1">Newest first. Search message, email, group, or type.</p>
-                    </div>
-                    <input id="feedback-search" type="search" placeholder="Search feedback…" class="w-full sm:w-64 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500" />
-                </div>
-                <p id="feedback-stat" class="text-[11px] text-slate-500 mb-3">Loading…</p>
-                <div id="feedback-list" class="space-y-3 max-h-[28rem] overflow-y-auto pr-1 text-sm text-slate-400">Loading feedback…</div>
-                <div id="feedback-pagination" class="hidden flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-800">
-                    <p id="feedback-page-info" class="text-[11px] text-slate-500 order-2 sm:order-1"></p>
-                    <div class="flex items-center gap-2 order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
-                        <button type="button" id="feedback-prev-btn" class="flex-1 sm:flex-none text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg transition disabled:opacity-40 disabled:pointer-events-none">← Newer</button>
-                        <button type="button" id="feedback-next-btn" class="flex-1 sm:flex-none text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg transition disabled:opacity-40 disabled:pointer-events-none">Older →</button>
-                    </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5">
+                <h3 class="text-sm font-bold text-white mb-3">All Groups</h3>
+                <div class="overflow-x-auto -mx-1 px-1">
+                    <table class="w-full min-w-[44rem] text-sm">
+                        <thead class="text-slate-400">
+                            <tr class="border-b border-slate-800">
+                                <th class="text-left py-2 pr-2">Group</th>
+                                <th class="text-right py-2 px-2">Players</th>
+                                <th class="text-right py-2 px-2">Matches</th>
+                                <th class="text-right py-2 px-2 whitespace-nowrap">Created</th>
+                                <th class="text-right py-2 px-2 whitespace-nowrap">Last match</th>
+                                <th class="text-right py-2 px-2 whitespace-nowrap">Last sign-in</th>
+                                <th class="text-right py-2 pl-2 whitespace-nowrap">Signed in by</th>
+                            </tr>
+                        </thead>
+                        <tbody id="groups-tbody"></tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5">
-                    <h3 class="text-sm font-bold text-white mb-3">All Groups</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead class="text-slate-400">
-                                <tr class="border-b border-slate-800">
-                                    <th class="text-left py-2 pr-2">Group</th>
-                                    <th class="text-right py-2 px-2">Players</th>
-                                    <th class="text-right py-2 px-2">Matches</th>
-                                    <th class="text-right py-2 px-2 whitespace-nowrap">Created</th>
-                                    <th class="text-right py-2 px-2 whitespace-nowrap">Last match</th>
-                                    <th class="text-right py-2 pl-2 whitespace-nowrap">Last sign-in</th>
-                                </tr>
-                            </thead>
-                            <tbody id="groups-tbody"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5">
-                        <h3 class="text-sm font-bold text-white mb-3">Selected Group</h3>
-                        <p id="selected-group-label" class="text-sm text-slate-300">Select a group on the left.</p>
-                    </div>
-
+            <div class="space-y-3">
+                <p id="group-tools-hint" class="text-xs text-slate-500">Select a group in the table above to manage it.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-4 md:p-5">
                         <h3 class="text-sm font-bold text-white mb-3">Group owner</h3>
                         <p class="text-xs text-slate-400 mb-3">Set who owns this group (Firestore <code class="text-amber-300">ownerUid</code> + <code class="text-amber-300">members</code>).</p>
@@ -172,6 +150,25 @@
                     </div>
                 </div>
             </div>
+
+            <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-4 md:p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white">User feedback</h3>
+                        <p class="text-xs text-slate-500 mt-1">Newest first. Search message, email, group, or type.</p>
+                    </div>
+                    <input id="feedback-search" type="search" placeholder="Search feedback…" class="w-full sm:w-64 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500" />
+                </div>
+                <p id="feedback-stat" class="text-[11px] text-slate-500 mb-3">Loading…</p>
+                <div id="feedback-list" class="space-y-3 max-h-[28rem] overflow-y-auto pr-1 text-sm text-slate-400">Loading feedback…</div>
+                <div id="feedback-pagination" class="hidden flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-800">
+                    <p id="feedback-page-info" class="text-[11px] text-slate-500 order-2 sm:order-1"></p>
+                    <div class="flex items-center gap-2 order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <button type="button" id="feedback-prev-btn" class="flex-1 sm:flex-none text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg transition disabled:opacity-40 disabled:pointer-events-none">← Newer</button>
+                        <button type="button" id="feedback-next-btn" class="flex-1 sm:flex-none text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg transition disabled:opacity-40 disabled:pointer-events-none">Older →</button>
+                    </div>
+                </div>
+            </div>
         </section>
     </div>
 
@@ -211,7 +208,7 @@
             statGroups: document.getElementById('stat-groups'),
             statMatches: document.getElementById('stat-matches'),
             statRoster: document.getElementById('stat-roster'),
-            selectedGroupLabel: document.getElementById('selected-group-label'),
+            groupToolsHint: document.getElementById('group-tools-hint'),
             ownershipList: document.getElementById('ownership-list'),
             partnerMigrateStatus: document.getElementById('partner-migrate-status'),
             materializeDecksBtn: document.getElementById('materialize-decks-btn'),
@@ -516,20 +513,21 @@
 
         function renderGroupsTable() {
             if (!groupsData.length) {
-                els.groupsTbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 text-sm">No groups found.</td></tr>`;
+                els.groupsTbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500 text-sm">No groups found.</td></tr>`;
                 return;
             }
             els.groupsTbody.innerHTML = groupsData.map(group => `
                 <tr data-group-id="${group.id}" class="border-b border-slate-800/70 hover:bg-slate-800/40 cursor-pointer ${selectedGroup?.id === group.id ? 'bg-purple-500/10' : ''}">
                     <td class="py-2 pr-2">
-                        <p class="font-semibold text-white truncate">${group.name || group.id}</p>
-                        <p class="text-[10px] text-slate-500">${group.id}</p>
+                        <p class="font-semibold text-white truncate">${escapeHtml(group.name || group.id)}</p>
+                        <p class="text-[10px] text-slate-500">${escapeHtml(group.id)}</p>
                     </td>
                     <td class="py-2 px-2 text-right text-slate-300">${group.rosterCount}</td>
                     <td class="py-2 px-2 text-right text-slate-300">${group.matchCount}</td>
                     <td class="py-2 px-2 text-right text-[11px] text-slate-400 whitespace-nowrap">${group.createdLabel || '…'}</td>
                     <td class="py-2 px-2 text-right text-[11px] text-slate-400 whitespace-nowrap">${group.lastMatchLabel || '…'}</td>
-                    <td class="py-2 pl-2 text-right text-[11px] text-slate-400 whitespace-nowrap">${group.lastSignInLabel || '…'}</td>
+                    <td class="py-2 px-2 text-right text-[11px] text-slate-400 whitespace-nowrap">${group.lastSignInLabel || '…'}</td>
+                    <td class="py-2 pl-2 text-right text-[11px] text-slate-400 max-w-[10rem] truncate" title="${escapeHtml(group.lastSignInUserLabel || '')}">${escapeHtml(group.lastSignInUserLabel || '…')}</td>
                 </tr>
             `).join('');
 
@@ -575,7 +573,7 @@
         }
 
         async function loadGroupsOverview() {
-            els.groupsTbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 text-sm">Loading groups…</td></tr>`;
+            els.groupsTbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500 text-sm">Loading groups…</td></tr>`;
             const groupSnap = await getDocs(collection(db, 'groups'));
             const groups = [];
             let totalMatches = 0;
@@ -588,7 +586,7 @@
                 const groupId = g.id;
                 const groupData = g.data();
                 if (total > 3) {
-                    els.groupsTbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 text-sm">Loading groups (${i + 1}/${total})…</td></tr>`;
+                    els.groupsTbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500 text-sm">Loading groups (${i + 1}/${total})…</td></tr>`;
                 }
                 const [matchesSnap, rosterSnap] = await Promise.all([
                     getDocs(collection(db, 'groups', groupId, 'matches')),
@@ -607,7 +605,8 @@
                     matchCount: matches.length,
                     createdLabel: formatAdminDate(groupData.createdAt),
                     lastMatchLabel,
-                    lastSignInLabel: formatAdminDate(groupData.lastSignInAt)
+                    lastSignInLabel: formatAdminDate(groupData.lastSignInAt),
+                    lastSignInUserLabel: formatAdminEmail(groupData.lastSignInEmail)
                 });
             }
 
@@ -778,16 +777,7 @@
 
         async function selectGroup(group) {
             selectedGroup = group;
-            const groupSnap = await getDoc(doc(db, 'groups', group.id));
-            const groupData = groupSnap.exists() ? groupSnap.data() : {};
-            const ownerHint = groupData.ownerUid ? ' · owner set' : ' · no owner';
-            const created = formatAdminDate(groupData.createdAt);
-            const lastMatch = group.lastMatchLabel || '…';
-            const lastSignIn = formatAdminDate(groupData.lastSignInAt);
-            els.selectedGroupLabel.innerHTML = `
-                <span class="block font-semibold text-white">${escapeHtml(group.name || group.id)} <span class="text-slate-500 font-normal">(${escapeHtml(group.id)})</span>${ownerHint}</span>
-                <span class="block text-xs text-slate-500 mt-1">Created ${escapeHtml(created)} · Last match ${escapeHtml(lastMatch)} · Last sign-in ${escapeHtml(lastSignIn)}</span>
-            `;
+            setGroupToolsHint(group);
             setActionButtonsEnabled(true);
             if (els.ownerSetStatus) els.ownerSetStatus.textContent = '';
             setPartnerMigrateStatus('');
@@ -944,6 +934,25 @@
             }
         }
 
+        function formatAdminEmail(email) {
+            const val = String(email || '').trim();
+            return val || '…';
+        }
+
+        function setGroupToolsHint(group) {
+            if (!els.groupToolsHint) return;
+            if (!group) {
+                els.groupToolsHint.textContent = 'Select a group in the table above to manage it.';
+                els.groupToolsHint.className = 'text-xs text-slate-500';
+                return;
+            }
+            const label = group.name && group.name !== group.id
+                ? `${group.name} (${group.id})`
+                : group.id;
+            els.groupToolsHint.textContent = `Managing ${label}.`;
+            els.groupToolsHint.className = 'text-xs text-purple-300/90 font-semibold';
+        }
+
         function feedbackTypeLabel(type) {
             if (type === 'bug') return 'Bug';
             if (type === 'idea') return 'Idea';
@@ -1068,7 +1077,7 @@
 
         async function initializeDashboard() {
             setActionButtonsEnabled(false);
-            els.selectedGroupLabel.textContent = 'Select a group on the left.';
+            setGroupToolsHint(null);
             els.ownershipList.innerHTML = 'Select a group to load deck ownership.';
             const [groupsResult, feedbackResult] = await Promise.allSettled([
                 loadGroupsOverview(),
@@ -1078,7 +1087,7 @@
             if (groupsResult.status === 'rejected') {
                 console.error('loadGroupsOverview failed:', groupsResult.reason);
                 errors.push('Groups: ' + (groupsResult.reason?.message || groupsResult.reason));
-                els.groupsTbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-red-300 text-sm">Failed to load groups. Check Firestore rules and admin access.</td></tr>`;
+                els.groupsTbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-red-300 text-sm">Failed to load groups. Check Firestore rules and admin access.</td></tr>`;
             }
             if (feedbackResult.status === 'rejected') {
                 console.error('loadFeedback failed:', feedbackResult.reason);
@@ -1223,7 +1232,7 @@
                 await deleteEntireGroup(selectedGroup.id);
                 selectedGroup = null;
                 setActionButtonsEnabled(false);
-                els.selectedGroupLabel.textContent = 'Select a group on the left.';
+                setGroupToolsHint(null);
                 els.ownershipList.innerHTML = 'Select a group to load deck ownership.';
                 els.adminRosterList.innerHTML = 'Select a group to manage players.';
                 await loadGroupsOverview();
