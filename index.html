@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.44">
+    <meta name="mf-app-version" content="2.9.45">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -2334,6 +2334,34 @@
                 <button id="app-modal-cancel" onclick="window.closeAppModal()" class="hidden px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition bg-slate-800 hover:bg-slate-700 rounded-xl">Cancel</button>
                 <button id="app-modal-confirm" onclick="window.confirmAppModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-lg shadow-purple-500/30">OK</button>
             </div>
+        </div>
+    </div>
+
+    <!-- CARD PREVIEW (winning cards / key cards) -->
+    <div id="card-preview-modal" class="fixed inset-0 z-[300] bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 opacity-0 hidden flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="card-preview-title" onclick="if(event.target === this) window.mfCloseCardPreview()">
+        <div class="glass p-5 md:p-6 rounded-t-2xl sm:rounded-2xl w-full max-w-sm transform scale-95 transition-transform duration-300 shadow-2xl border border-purple-500/30 border-b-0 sm:border-b" onclick="event.stopPropagation()">
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div class="min-w-0">
+                    <p class="text-[10px] uppercase tracking-wider font-bold text-purple-400 mb-1">Card preview</p>
+                    <h3 id="card-preview-title" class="text-lg font-black text-white leading-tight truncate">Card</h3>
+                </div>
+                <button type="button" onclick="window.mfCloseCardPreview()" class="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600 transition touch-manipulation" aria-label="Close card preview">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="relative mx-auto w-56 aspect-[5/7] rounded-xl overflow-hidden border-2 border-slate-600/60 bg-slate-800 shadow-2xl flex items-center justify-center">
+                <div id="card-preview-loading" class="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500 animate-spin" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                    <span class="text-[10px] text-purple-400 font-bold uppercase tracking-widest">Loading art…</span>
+                </div>
+                <div id="card-preview-error" class="absolute inset-0 hidden flex-col items-center justify-center gap-2 z-10 px-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center">Art unavailable</span>
+                </div>
+                <img id="card-preview-img" src="" alt="" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 z-10">
+            </div>
+            <p id="card-preview-scryfall-name" class="mt-3 text-center text-xs text-slate-400 truncate hidden"></p>
+            <button type="button" id="card-preview-flip-btn" onclick="window.mfFlipCardPreview()" class="hidden mt-3 w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-4 py-2.5 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Flip card</button>
         </div>
     </div>
 
@@ -4699,7 +4727,7 @@
                     <p><span class="text-slate-500">Pod:</span> <span class="text-slate-200">${escapeHtml(pod)} players</span>${durLabel ? ` · <span class="text-slate-500">Length:</span> <span class="text-slate-200">${escapeHtml(durLabel)}</span>` : ''}${roundsLabel ? ` · <span class="text-slate-500">Rounds:</span> <span class="text-slate-200">${escapeHtml(roundsLabel)}</span>` : ''}</p>
                 </div>
                 <div class="space-y-2">${rows.length ? rows.join('') : '<p class="text-slate-500 italic text-xs">No seats filled yet.</p>'}</div>
-                ${cards.length ? `<p class="text-[11px] text-slate-500 mt-3 pt-3 border-t border-slate-800">Winning cards: <span class="text-slate-300">${cards.map(c => escapeHtml(c)).join(', ')}</span></p>` : ''}
+                ${cards.length ? `<p class="text-[11px] text-slate-500 mt-3 pt-3 border-t border-slate-800">Winning cards:</p><div class="flex flex-wrap gap-1.5 mt-1.5">${cards.map(c => renderWinningCardChip(c, 'sm')).join('')}</div>` : ''}
                 ${notes ? `<p class="text-[11px] text-slate-500 mt-2">Notes: <span class="text-slate-300">${escapeHtml(notes)}</span></p>` : ''}`;
         }
 
@@ -6429,11 +6457,21 @@
             return Math.max(0, Math.round(diff / 86400000));
         }
 
+        function renderWinningCardChip(cardName, size) {
+            const name = String(cardName || '').trim();
+            if (!name) return '';
+            const compact = size === 'sm';
+            const cls = compact
+                ? 'bg-purple-500/10 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-500/20 font-medium hover:bg-purple-500/25 hover:border-purple-500/40 hover:text-white transition touch-manipulation'
+                : 'bg-purple-500/20 text-purple-300 text-[11px] px-2 py-1 rounded border border-purple-500/30 font-medium hover:bg-purple-500/25 hover:border-purple-500/40 hover:text-white transition touch-manipulation';
+            return `<button type="button" class="${cls}" title="View card art" aria-label="View art for ${escapeHtml(name)}" onclick="event.stopPropagation(); window.mfShowCardPreview('${escapeJsString(name)}')">${escapeHtml(name)}</button>`;
+        }
+
         function renderMatchExtrasBlock(m) {
             const cardsHtml = m.winningCards && m.winningCards.length > 0 ? `
                 <p class="text-[10px] text-purple-400 uppercase font-bold tracking-widest mb-2">Winning Cards</p>
                 <div class="flex flex-wrap gap-2 mb-3">
-                    ${m.winningCards.map(c => `<span class="bg-purple-500/20 text-purple-300 text-[11px] px-2 py-1 rounded border border-purple-500/30 font-medium">${c}</span>`).join('')}
+                    ${m.winningCards.map(c => renderWinningCardChip(c)).join('')}
                 </div>
             ` : '';
             const durationHtml = m.durationMinutes > 0 ? `
@@ -6446,7 +6484,7 @@
             ` : '';
             const notesHtml = m.notes ? `
                 <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Match Notes</p>
-                <p class="text-xs text-slate-300 italic border-l-2 border-slate-600 pl-2 ml-1 whitespace-pre-wrap">"${m.notes}"</p>
+                <p class="text-xs text-slate-300 italic border-l-2 border-slate-600 pl-2 ml-1 whitespace-pre-wrap">"${escapeHtml(m.notes)}"</p>
             ` : '';
             if (!cardsHtml && !durationHtml && !roundsHtml && !notesHtml) return '';
             return `<div class="mt-4 bg-slate-900/50 p-3 rounded-lg border border-slate-800">${cardsHtml}${durationHtml}${roundsHtml}${notesHtml}</div>`;
@@ -7516,6 +7554,148 @@
                 } else if (isBack) {
                     el.classList.add('art-loaded');
                 }
+            }
+        };
+
+        let mfCardPreviewRequestId = 0;
+        let mfCardPreviewShowingBack = false;
+        let mfCardPreviewEntry = null;
+
+        function mfSetCardPreviewState({ loading, error, url }) {
+            const loadingEl = document.getElementById('card-preview-loading');
+            const errorEl = document.getElementById('card-preview-error');
+            const imgEl = document.getElementById('card-preview-img');
+            if (loadingEl) loadingEl.classList.toggle('hidden', !loading);
+            if (errorEl) {
+                errorEl.classList.toggle('hidden', !error);
+                errorEl.classList.toggle('flex', !!error);
+            }
+            if (!imgEl) return;
+            if (url) {
+                imgEl.onload = () => {
+                    imgEl.style.opacity = '1';
+                    if (loadingEl) loadingEl.classList.add('hidden');
+                };
+                imgEl.onerror = () => {
+                    imgEl.style.opacity = '0';
+                    if (loadingEl) loadingEl.classList.add('hidden');
+                    if (errorEl) {
+                        errorEl.classList.remove('hidden');
+                        errorEl.classList.add('flex');
+                    }
+                };
+                imgEl.src = url;
+                imgEl.alt = document.getElementById('card-preview-title')?.textContent || 'Card';
+                if (imgEl.complete && imgEl.naturalWidth) {
+                    imgEl.style.opacity = '1';
+                    if (loadingEl) loadingEl.classList.add('hidden');
+                }
+            } else {
+                imgEl.removeAttribute('src');
+                imgEl.style.opacity = '0';
+            }
+        }
+
+        function mfOnCardPreviewKeydown(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                window.mfCloseCardPreview();
+            }
+        }
+
+        window.mfFlipCardPreview = function() {
+            if (!mfCardPreviewEntry) return;
+            const front = mfCardPreviewEntry.normal;
+            const back = mfCardPreviewEntry.normal_back;
+            if (!front || front === 'error' || !back) return;
+            mfCardPreviewShowingBack = !mfCardPreviewShowingBack;
+            mfSetCardPreviewState({ loading: true, error: false, url: mfCardPreviewShowingBack ? back : front });
+            const flipBtn = document.getElementById('card-preview-flip-btn');
+            if (flipBtn) flipBtn.textContent = mfCardPreviewShowingBack ? 'Show front' : 'Flip card';
+        };
+
+        window.mfCloseCardPreview = function() {
+            const modal = document.getElementById('card-preview-modal');
+            const panel = modal?.querySelector('.glass');
+            document.removeEventListener('keydown', mfOnCardPreviewKeydown);
+            mfCardPreviewRequestId += 1;
+            mfCardPreviewEntry = null;
+            mfCardPreviewShowingBack = false;
+            if (!modal) return;
+            modal.classList.add('opacity-0');
+            if (panel) panel.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                mfSetCardPreviewState({ loading: false, error: false, url: '' });
+            }, 300);
+        };
+
+        window.mfShowCardPreview = async function(cardName) {
+            const name = String(cardName || '').trim();
+            if (!name) return;
+            const modal = document.getElementById('card-preview-modal');
+            const panel = modal?.querySelector('.glass');
+            const titleEl = document.getElementById('card-preview-title');
+            const scryNameEl = document.getElementById('card-preview-scryfall-name');
+            const flipBtn = document.getElementById('card-preview-flip-btn');
+            if (!modal) return;
+
+            const requestId = ++mfCardPreviewRequestId;
+            mfCardPreviewShowingBack = false;
+            mfCardPreviewEntry = null;
+            if (titleEl) titleEl.textContent = name;
+            if (scryNameEl) {
+                scryNameEl.textContent = '';
+                scryNameEl.classList.add('hidden');
+            }
+            if (flipBtn) {
+                flipBtn.classList.add('hidden');
+                flipBtn.textContent = 'Flip card';
+            }
+            mfSetCardPreviewState({ loading: true, error: false, url: '' });
+
+            modal.classList.remove('hidden');
+            document.removeEventListener('keydown', mfOnCardPreviewKeydown);
+            document.addEventListener('keydown', mfOnCardPreviewKeydown);
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                if (panel) panel.classList.remove('scale-95');
+            }, 10);
+
+            try {
+                let entry = window.artCache[name];
+                const needsFetch = !entry || !entry.normal || entry.normal === 'error';
+                if (needsFetch) {
+                    const card = await fetchCardFromScryfall(name);
+                    if (requestId !== mfCardPreviewRequestId) return;
+                    if (card?.rateLimited) {
+                        mfSetCardPreviewState({ loading: false, error: true, url: '' });
+                        return;
+                    }
+                    if (!card) {
+                        mfSetCardPreviewState({ loading: false, error: true, url: '' });
+                        return;
+                    }
+                    entry = buildArtCacheEntry(name, card);
+                    window.artCache[name] = entry;
+                    window.saveArtCache();
+                }
+                if (requestId !== mfCardPreviewRequestId) return;
+                mfCardPreviewEntry = entry;
+                if (entry.scryfallName && scryNameEl && normalizeCardNameKey(entry.scryfallName) !== normalizeCardNameKey(name)) {
+                    scryNameEl.textContent = entry.scryfallName;
+                    scryNameEl.classList.remove('hidden');
+                }
+                if (entry.normal_back && flipBtn) flipBtn.classList.remove('hidden');
+                if (!entry.normal || entry.normal === 'error') {
+                    mfSetCardPreviewState({ loading: false, error: true, url: '' });
+                    return;
+                }
+                mfSetCardPreviewState({ loading: true, error: false, url: entry.normal });
+            } catch (e) {
+                console.error('Card preview failed:', e);
+                if (requestId !== mfCardPreviewRequestId) return;
+                mfSetCardPreviewState({ loading: false, error: true, url: '' });
             }
         };
 
@@ -10283,7 +10463,7 @@
                         const losersHtml = m.losers.map((l) => mfFormatSessionLoserRow(l, m)).join('');
 
                         const cardsHtml = (m.winningCards && m.winningCards.length > 0) 
-                            ? `<div class="flex flex-wrap gap-1 mt-2 mb-1">` + m.winningCards.map(c => `<span class="bg-purple-500/10 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-500/20 font-medium">${c}</span>`).join('') + `</div>`
+                            ? `<div class="flex flex-wrap gap-1 mt-2 mb-1">` + m.winningCards.map(c => renderWinningCardChip(c, 'sm')).join('') + `</div>`
                             : '';
                             
                         return `
@@ -10299,7 +10479,7 @@
                                     ${losersHtml}
                                 </div>
                                 ${cardsHtml}
-                                ${m.notes ? `<p class="text-[10px] text-slate-400 mt-2 italic border-l-2 border-slate-700/50 pl-2 leading-relaxed">"${m.notes}"</p>` : ''}
+                                ${m.notes ? `<p class="text-[10px] text-slate-400 mt-2 italic border-l-2 border-slate-700/50 pl-2 leading-relaxed">"${escapeHtml(m.notes)}"</p>` : ''}
                             </div>
                         `;
                     }).join('');
