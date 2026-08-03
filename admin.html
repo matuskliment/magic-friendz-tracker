@@ -155,7 +155,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div>
                         <h3 class="text-sm font-bold text-white">User feedback</h3>
-                        <p class="text-xs text-slate-500 mt-1">Newest first. Search message, email, group, or type.</p>
+                        <p class="text-xs text-slate-500 mt-1">Newest first. Search message, name, email, group, or type.</p>
                     </div>
                     <input id="feedback-search" type="search" placeholder="Search feedback…" class="w-full sm:w-64 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500" />
                 </div>
@@ -965,6 +965,7 @@
                 if (!term) return true;
                 const hay = [
                     item.message,
+                    item.playerName,
                     item.email,
                     item.groupId,
                     item.groupName,
@@ -1020,8 +1021,12 @@
                     </div>
                     <p class="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed mb-3">${escapeHtml(item.message)}</p>
                     <div class="text-[11px] text-slate-500 space-y-0.5">
+                        <p>From: ${item.playerName
+                            ? `<span class="text-slate-200 font-semibold">${escapeHtml(item.playerName)}</span>`
+                            : '<span class="text-slate-600">Unknown player</span>'}${item.email
+                            ? ` · <span class="text-slate-300">${escapeHtml(item.email)}</span>`
+                            : (!item.uid ? ' · <span class="text-slate-600">anonymous</span>' : '')}</p>
                         ${item.groupId ? `<p>Group: <span class="text-slate-300">${escapeHtml(item.groupName || item.groupId)}</span> <span class="font-mono text-slate-600">(${escapeHtml(item.groupId)})</span></p>` : '<p>Group: <span class="text-slate-600">…</span></p>'}
-                        ${item.email ? `<p>Email: <span class="text-slate-300">${escapeHtml(item.email)}</span></p>` : ''}
                         ${item.uid ? `<p class="font-mono truncate">UID: ${escapeHtml(item.uid)}</p>` : ''}
                         <p>App v${escapeHtml(item.appVersion || '…')} · ${escapeHtml(item.page || '…')}</p>
                     </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.43">
+    <meta name="mf-app-version" content="2.9.44">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -1238,7 +1238,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <button type="button" onclick="window.openFeedbackModal()" class="hidden sm:inline-flex text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1.5 rounded-lg transition min-h-[32px] touch-manipulation whitespace-nowrap items-center">Contact</button>
+                <button type="button" onclick="window.openFeedbackModal()" class="inline-flex text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-2.5 py-1.5 rounded-lg transition min-h-[32px] touch-manipulation whitespace-nowrap items-center">Contact</button>
                 <span id="group-header-access-badge" class="hidden text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-slate-600 text-slate-400 bg-slate-800/80 whitespace-nowrap">View only</span>
                 <button id="group-list-btn" onclick="window.openGroupsHubForCurrentUser()" class="hidden text-xs text-slate-400 hover:text-white bg-slate-800/50 px-2.5 sm:px-3 py-2 rounded-lg items-center gap-1 transition touch-manipulation cursor-pointer whitespace-nowrap" aria-label="All groups">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
@@ -1253,6 +1253,7 @@
         <div id="dashboard-nav-menu" class="hidden fixed top-[4.25rem] right-3 sm:right-4 z-[60] w-[min(100vw-1.5rem,16rem)] glass rounded-2xl border border-slate-700/80 shadow-2xl p-2" role="menu">
             <button type="button" onclick="window.closeDashboardNavMenu(); window.openGroupsHubForCurrentUser();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">All Groups</button>
             <button type="button" onclick="window.closeDashboardNavMenu(); window.switchTab('group');" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Group Settings</button>
+            <button type="button" onclick="window.closeDashboardNavMenu(); window.openFeedbackModal();" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:bg-slate-800/80 transition touch-manipulation" role="menuitem">Contact &amp; feedback</button>
             <button type="button" onclick="window.requestSignOut()" class="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-red-300 hover:bg-red-950/30 transition touch-manipulation mt-1 border-t border-slate-700/60" role="menuitem">Sign out</button>
         </div>
 
@@ -1260,7 +1261,7 @@
             <!-- TAB 1: HOME (DASHBOARD) -->
             <div id="tab-home" class="tab-content block space-y-6">
 
-                <div class="hidden md:flex glass p-4 md:p-5 rounded-xl border border-purple-500/35 bg-purple-950/20 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div class="flex glass p-4 md:p-5 rounded-xl border border-purple-500/35 bg-purple-950/20 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <div class="flex-1 min-w-0">
                         <h3 class="text-sm md:text-base font-bold text-white">Contact &amp; feedback</h3>
                         <p class="text-xs text-slate-400 mt-1 leading-relaxed">Questions, bugs, or ideas. We read every message.</p>
@@ -2315,7 +2316,7 @@
                     <input type="email" id="feedback-email" placeholder="So we can reply (optional)" autocomplete="email" class="mf-clearable w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation" oninput="window.clearFieldError(this)">
                 </div>
                 <p id="feedback-form-error" class="hidden text-xs text-red-400/90"></p>
-                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                <div class="flex flex-row gap-2 pt-1 sticky bottom-0 bg-slate-950/95 backdrop-blur-sm -mx-5 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:static sm:bg-transparent sm:backdrop-blur-none sm:mx-0 sm:px-0 sm:pb-0 sm:pt-1">
                     <button type="button" onclick="window.closeFeedbackModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-4 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation">Cancel</button>
                     <button type="button" id="feedback-submit-btn" onclick="window.submitFeedback()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation disabled:opacity-50">Send message</button>
                 </div>
@@ -8137,6 +8138,9 @@
             } else if (emailEl?.value?.trim()) {
                 email = normalizeEmail(emailEl.value);
             }
+            const playerName = (typeof getMyLinkedPlayerName === 'function' ? getMyLinkedPlayerName() : '')
+                || normalizeName(window.linkedPlayerName || '')
+                || '';
             if (submitBtn) submitBtn.disabled = true;
             try {
                 await addDoc(collection(db, 'feedback'), {
@@ -8147,6 +8151,7 @@
                     groupName: window.groupDisplayName || null,
                     uid: auth.currentUser?.uid || null,
                     email: email || null,
+                    playerName: playerName || null,
                     page: window.groupIdRaw ? 'group-app' : 'landing',
                     appVersion: MF_APP_VERSION,
                     userAgent: String(navigator.userAgent || '').slice(0, 500),
