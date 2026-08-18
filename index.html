@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.46">
+    <meta name="mf-app-version" content="2.9.47">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -1473,6 +1473,22 @@
                         </div>
                     </div>
 
+                    <!-- Unique Deck Builders (EDHREC) -->
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <span class="text-teal-400">🧪</span> Unique Deck Builders
+                            <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <div class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100">
+                                    Median EDHREC commander rank across unique decks this player built. Higher number = less popular in the global Commander meta. Requires deck owners and cached EDHREC data (at least 2 ranked brews).
+                                </div>
+                            </div>
+                        </h3>
+                        <div id="analytics-unique-builders" class="space-y-2">
+                            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500 animate-pulse">Calculating data...</p></div>
+                        </div>
+                    </div>
+
                     <!-- Top Pilot & Deck Combos -->
                     <div>
                         <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
@@ -1739,6 +1755,14 @@
                         <div id="cmd-view-deck-link-wrap" class="hidden w-full flex flex-wrap items-center gap-x-2 gap-y-2 justify-center md:justify-start">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Deck list:</span>
                             <div id="cmd-view-deck-link-content" class="min-w-0 flex flex-wrap items-center gap-2 justify-center md:justify-start"></div>
+                        </div>
+                        <div id="cmd-view-edhrec-wrap" class="hidden w-full flex flex-col items-center md:items-start gap-1">
+                            <div class="flex items-center gap-2 flex-wrap justify-center md:justify-start">
+                                <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Meta:</span>
+                                <a id="cmd-view-edhrec-link" href="https://edhrec.com/" target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-teal-300 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/25 hover:bg-teal-500/20 transition touch-manipulation">EDHREC …</a>
+                            </div>
+                            <p id="cmd-view-edhrec-sub" class="text-[10px] text-slate-500 hidden"></p>
+                            <p id="cmd-view-edhrec-partners" class="text-[10px] text-slate-500 leading-snug hidden"></p>
                         </div>
                     </div>
 
@@ -6586,6 +6610,163 @@
             window.showAppAlert('Card art cache cleared. Images will reload from Scryfall over the next few seconds.', 'Art Refreshed', '🖼️');
         };
 
+        const EDHREC_CACHE_KEY = 'mf_edhrec_cache_v1';
+        const EDHREC_CACHE_SCHEMA_KEY = 'mf_edhrec_cache_schema';
+        const EDHREC_CACHE_SCHEMA = 1;
+        const EDHREC_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+        const EDHREC_ERROR_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+        const EDHREC_FETCH_DELAY_MS = 300;
+        const UNIQUE_BUILDER_MIN_RANKED = 2;
+        let isFetchingEdhrec = false;
+        let edhrecQueuePending = false;
+        const edhrecSlugQueue = [];
+        const edhrecQueuedSlugs = new Set();
+
+        function isEdhrecCacheFresh(entry) {
+            if (!entry || !entry.fetchedAt) return false;
+            const ttl = entry.error ? EDHREC_ERROR_TTL_MS : EDHREC_TTL_MS;
+            return Date.now() - entry.fetchedAt < ttl;
+        }
+
+        function loadEdhrecCacheFromStorage() {
+            try {
+                const schema = parseInt(localStorage.getItem(EDHREC_CACHE_SCHEMA_KEY) || '0', 10);
+                if (schema !== EDHREC_CACHE_SCHEMA) {
+                    localStorage.removeItem(EDHREC_CACHE_KEY);
+                    localStorage.setItem(EDHREC_CACHE_SCHEMA_KEY, String(EDHREC_CACHE_SCHEMA));
+                    return {};
+                }
+                const raw = JSON.parse(localStorage.getItem(EDHREC_CACHE_KEY) || '{}');
+                return raw && typeof raw === 'object' ? raw : {};
+            } catch (e) {
+                console.warn('EDHREC cache unreadable, starting fresh.', e);
+                return {};
+            }
+        }
+
+        window.edhrecCache = loadEdhrecCacheFromStorage();
+        window.saveEdhrecCache = function() {
+            try {
+                localStorage.setItem(EDHREC_CACHE_KEY, JSON.stringify(window.edhrecCache));
+                localStorage.setItem(EDHREC_CACHE_SCHEMA_KEY, String(EDHREC_CACHE_SCHEMA));
+            } catch (e) {
+                console.warn('Could not save EDHREC cache.', e);
+            }
+        };
+
+        function getEdhrecMetaForSlug(slug) {
+            if (!slug) return null;
+            const entry = window.edhrecCache[slug];
+            if (!entry || !isEdhrecCacheFresh(entry)) return null;
+            return entry;
+        }
+
+        function getEdhrecMetaForDeck(cmd) {
+            return getEdhrecMetaForSlug(edhrecSlugForDeck(cmd));
+        }
+
+        async function fetchEdhrecCommanderMeta(slug) {
+            const res = await fetch(
+                `https://json.edhrec.com/pages/commanders/${encodeURIComponent(slug)}.json`,
+                { headers: { Accept: 'application/json' } }
+            );
+            if (!res.ok) throw new Error('EDHREC HTTP ' + res.status);
+            const data = await res.json();
+            const card = data?.container?.json_dict?.card;
+            if (!card || typeof card.rank !== 'number') {
+                return {
+                    slug,
+                    rank: null,
+                    numDecks: typeof card?.num_decks === 'number' ? card.num_decks : null,
+                    fetchedAt: Date.now(),
+                    error: true
+                };
+            }
+            return {
+                slug,
+                rank: card.rank,
+                numDecks: typeof card.num_decks === 'number' ? card.num_decks : null,
+                fetchedAt: Date.now()
+            };
+        }
+
+        function mfOnEdhrecCacheUpdated() {
+            if (window._cmdProfileDeckName) {
+                const cmd = findCommanderByDeckName(window._cmdProfileDeckName);
+                if (cmd) mfRefreshCommanderEdhrecMeta(cmd);
+            }
+            renderUniqueDeckBuilders();
+        }
+
+        function mfQueueEdhrecSlug(slug) {
+            const key = String(slug || '').trim();
+            if (!key) return;
+            if (edhrecQueuedSlugs.has(key)) return;
+            const cached = window.edhrecCache[key];
+            if (cached && isEdhrecCacheFresh(cached)) return;
+            edhrecQueuedSlugs.add(key);
+            edhrecSlugQueue.push(key);
+            window.processEdhrecQueue();
+        }
+
+        function mfQueueEdhrecSlugs(slugs) {
+            (slugs || []).forEach(mfQueueEdhrecSlug);
+        }
+
+        function mfEnqueueEdhrecForAllCommanders() {
+            const slugs = new Set();
+            (window.appData.commanders || []).forEach((cmd) => {
+                const slug = edhrecSlugForDeck(cmd);
+                if (slug) slugs.add(slug);
+                mfCommandersForDeck(cmd).forEach((name) => {
+                    const solo = commanderNameToEdhrecSlug(name);
+                    if (solo) slugs.add(solo);
+                });
+            });
+            mfQueueEdhrecSlugs(Array.from(slugs));
+        }
+
+        window.processEdhrecQueue = async function() {
+            if (isFetchingEdhrec) {
+                edhrecQueuePending = true;
+                return;
+            }
+            isFetchingEdhrec = true;
+            edhrecQueuePending = false;
+            let updated = false;
+            try {
+                while (edhrecSlugQueue.length) {
+                    const slug = edhrecSlugQueue.shift();
+                    edhrecQueuedSlugs.delete(slug);
+                    if (window.edhrecCache[slug] && isEdhrecCacheFresh(window.edhrecCache[slug])) continue;
+                    try {
+                        window.edhrecCache[slug] = await fetchEdhrecCommanderMeta(slug);
+                        window.saveEdhrecCache();
+                        updated = true;
+                    } catch (e) {
+                        console.warn('EDHREC fetch failed for', slug, e);
+                        window.edhrecCache[slug] = {
+                            slug,
+                            rank: null,
+                            numDecks: null,
+                            fetchedAt: Date.now(),
+                            error: true
+                        };
+                        window.saveEdhrecCache();
+                        updated = true;
+                    }
+                    await new Promise((r) => setTimeout(r, EDHREC_FETCH_DELAY_MS));
+                }
+            } catch (e) {
+                console.error('EDHREC queue error', e);
+            }
+            isFetchingEdhrec = false;
+            if (updated) mfOnEdhrecCacheUpdated();
+            if (edhrecQueuePending || edhrecSlugQueue.length) {
+                setTimeout(() => window.processEdhrecQueue(), 250);
+            }
+        };
+
         function normalizeCardSearchName(cardName) {
             if (!cardName) return "";
             return String(cardName).trim().replace(/\s+/g, " ").replace(/ \([^)]+\)/g, '').trim();
@@ -6604,6 +6785,27 @@
                 return base.split(MF_COMMANDER_PAIR_SEP).map((s) => s.trim()).filter(Boolean);
             }
             return [base];
+        }
+
+        function commanderNameToEdhrecSlug(name) {
+            const cleaned = String(name || '')
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, ' ')
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+            return cleaned;
+        }
+
+        function edhrecSlugForCommanders(commanders) {
+            const list = (commanders || []).map((c) => commanderNameToEdhrecSlug(c)).filter(Boolean);
+            if (!list.length) return '';
+            if (list.length === 1) return list[0];
+            return list.sort().join('-');
+        }
+
+        function edhrecSlugForDeck(cmd) {
+            return edhrecSlugForCommanders(mfCommandersForDeck(cmd));
         }
 
         function mfGetCommanderNamesFromSeat(seat) {
@@ -7148,6 +7350,81 @@
                 tintEl.style.background = mfColorIdentityWash(combined);
                 tintEl.style.opacity = '0.2';
                 tintEl.dataset.metaFilled = '1';
+            }
+        }
+
+        function mfFormatEdhrecDeckCount(numDecks) {
+            if (typeof numDecks !== 'number' || numDecks <= 0) return '';
+            return `${numDecks.toLocaleString()} decks globally`;
+        }
+
+        function mfRefreshCommanderEdhrecMeta(cmd) {
+            const wrap = document.getElementById('cmd-view-edhrec-wrap');
+            const linkEl = document.getElementById('cmd-view-edhrec-link');
+            const subEl = document.getElementById('cmd-view-edhrec-sub');
+            const partnersEl = document.getElementById('cmd-view-edhrec-partners');
+            if (!wrap || !linkEl) return;
+
+            const commanders = mfCommandersForDeck(cmd);
+            const slug = edhrecSlugForCommanders(commanders);
+            if (!slug) {
+                wrap.classList.add('hidden');
+                return;
+            }
+
+            wrap.classList.remove('hidden');
+            const edhrecUrl = `https://edhrec.com/commanders/${slug}`;
+            linkEl.href = edhrecUrl;
+
+            const meta = getEdhrecMetaForSlug(slug);
+            const isQueued = edhrecQueuedSlugs.has(slug);
+
+            if (meta && typeof meta.rank === 'number') {
+                linkEl.textContent = `EDHREC #${meta.rank.toLocaleString()}`;
+                linkEl.classList.remove('text-slate-400');
+                linkEl.classList.add('text-teal-300');
+            } else if (meta && meta.error) {
+                linkEl.textContent = 'EDHREC —';
+                linkEl.classList.add('text-slate-400');
+                linkEl.classList.remove('text-teal-300');
+            } else if (isQueued || !meta) {
+                linkEl.textContent = 'EDHREC …';
+                linkEl.classList.add('text-slate-400');
+                linkEl.classList.remove('text-teal-300');
+                mfQueueEdhrecSlug(slug);
+            }
+
+            if (subEl) {
+                const deckLabel = mfFormatEdhrecDeckCount(meta?.numDecks);
+                if (deckLabel) {
+                    subEl.textContent = deckLabel;
+                    subEl.classList.remove('hidden');
+                } else {
+                    subEl.textContent = '';
+                    subEl.classList.add('hidden');
+                }
+            }
+
+            if (partnersEl) {
+                if (commanders.length >= 2) {
+                    const soloLines = commanders.map((name) => {
+                        const soloSlug = commanderNameToEdhrecSlug(name);
+                        const soloMeta = getEdhrecMetaForSlug(soloSlug);
+                        if (soloMeta && typeof soloMeta.rank === 'number') {
+                            return `${name}: #${soloMeta.rank.toLocaleString()}`;
+                        }
+                        if (soloSlug) mfQueueEdhrecSlug(soloSlug);
+                        return null;
+                    }).filter(Boolean);
+                    if (soloLines.length) {
+                        partnersEl.textContent = `Solo ranks · ${soloLines.join(' · ')}`;
+                        partnersEl.classList.remove('hidden');
+                    } else {
+                        partnersEl.classList.add('hidden');
+                    }
+                } else {
+                    partnersEl.classList.add('hidden');
+                }
             }
         }
 
@@ -8967,6 +9244,7 @@
             window.appData.playerH2H = playerH2H;
             window.appData.eliminationStats = computeEliminationStats(sortedMatches);
             scheduleEnsureMatchPlayersOnRoster();
+            mfEnqueueEdhrecForAllCommanders();
         }
 
         function startMatchListener() {
@@ -10021,6 +10299,98 @@
             safeSetHTML('analytics-builders', html);
         }
 
+        function mfMedian(values) {
+            const nums = (values || []).filter((n) => typeof n === 'number').sort((a, b) => a - b);
+            if (!nums.length) return null;
+            const mid = Math.floor(nums.length / 2);
+            return nums.length % 2 ? nums[mid] : Math.round((nums[mid - 1] + nums[mid]) / 2);
+        }
+
+        /** Rank deck owners by median EDHREC commander rank (higher = more off-meta). */
+        function computeUniqueDeckBuilders() {
+            const byOwner = {};
+            (window.appData.commanders || []).forEach((c) => {
+                const owner = (c.owner || '').trim();
+                if (!owner) return;
+                const slug = edhrecSlugForCommanders(mfCommandersForDeck(c));
+                if (!slug) return;
+                const meta = getEdhrecMetaForSlug(slug);
+                if (!meta || typeof meta.rank !== 'number') return;
+
+                if (!byOwner[owner]) byOwner[owner] = { owner, decks: {} };
+                if (!byOwner[owner].decks[slug]) {
+                    byOwner[owner].decks[slug] = {
+                        slug,
+                        rank: meta.rank,
+                        deckName: c.name
+                    };
+                }
+            });
+
+            return Object.values(byOwner)
+                .map((b) => {
+                    const deckList = Object.values(b.decks);
+                    const ranks = deckList.map((d) => d.rank);
+                    const rarest = deckList.reduce((best, d) => (!best || d.rank > best.rank ? d : best), null);
+                    return {
+                        owner: b.owner,
+                        deckCount: deckList.length,
+                        medianRank: mfMedian(ranks),
+                        rarest,
+                        rankedCount: ranks.length
+                    };
+                })
+                .filter((b) => b.rankedCount >= UNIQUE_BUILDER_MIN_RANKED && b.medianRank != null)
+                .sort((a, b) => b.medianRank - a.medianRank || b.deckCount - a.deckCount);
+        }
+
+        function renderUniqueDeckBuilders() {
+            const host = document.getElementById('analytics-unique-builders');
+            if (!host) return;
+
+            const builders = computeUniqueDeckBuilders();
+            if (builders.length) {
+                const medal = (i) => i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-200' : i === 2 ? 'text-orange-400' : 'text-slate-500';
+                const html = builders.slice(0, 5).map((b, i) => {
+                    const player = (window.appData.players || []).find((p) => p.name === b.owner);
+                    const avatar = player
+                        ? renderPlayerAvatar(player, 'w-10 h-10', 'text-xs', 'shrink-0')
+                        : `<div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 shrink-0"></div>`;
+                    const rarestLabel = b.rarest
+                        ? `Rarest: ${b.rarest.deckName} (#${b.rarest.rank.toLocaleString()})`
+                        : '';
+                    return `
+                    <div class="glass flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-teal-500/30' : 'border-slate-700/50'}">
+                        <div class="w-5 text-center font-black text-lg ${medal(i)} shrink-0">${i + 1}</div>
+                        ${avatar}
+                        <div class="flex-grow min-w-0">
+                            <p class="font-bold text-white truncate">${escapeHtml(b.owner)}</p>
+                            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span class="text-[10px] font-bold text-teal-300 bg-teal-500/15 border border-teal-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.deckCount} ranked ${b.deckCount === 1 ? 'brew' : 'brews'}</span>
+                                ${rarestLabel ? `<span class="text-[10px] text-slate-400 truncate min-w-0" title="${escapeHtml(rarestLabel)}">${escapeHtml(rarestLabel)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0 bg-slate-900/70 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
+                            <div class="font-black text-lg text-teal-300 leading-none">#${b.medianRank.toLocaleString()}</div>
+                            <div class="text-[8px] uppercase tracking-widest font-bold text-slate-300 mt-1">Median</div>
+                        </div>
+                    </div>`;
+                }).join('');
+                safeSetHTML('analytics-unique-builders', html);
+                return;
+            }
+
+            const hasOwners = (window.appData.commanders || []).some((c) => (c.owner || '').trim());
+            const queueActive = edhrecSlugQueue.length > 0 || edhrecQueuedSlugs.size > 0 || isFetchingEdhrec;
+            let message = 'Assign deck owners and log games to compare brew uniqueness.';
+            if (hasOwners && queueActive) {
+                message = 'EDHREC ranks load in the background. Check back in a moment.';
+            } else if (hasOwners) {
+                message = `Need at least ${UNIQUE_BUILDER_MIN_RANKED} unique decks with EDHREC rank data per builder.`;
+            }
+            safeSetHTML('analytics-unique-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">${message}</p></div>`);
+        }
+
         function renderKillLeaderboard() {
             const stats = window.appData.eliminationStats;
             const leaders = stats
@@ -10429,6 +10799,7 @@
                     safeSetHTML('analytics-kill-leaders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Eliminator rankings appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-kill-via', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">How-we-lose stats appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Deck builder rankings appear once games are logged.</p></div>`);
+                    safeSetHTML('analytics-unique-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">EDHREC brew rankings appear once games are logged.</p></div>`);
                     safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet. Log a match or register a deck on a player profile.</div>`);
                     safeSetHTML('home-top-commanders', '');
                     safeSetHTML('roster-list', renderPlayerListHtml());
@@ -10669,6 +11040,7 @@
                 }
 
                 renderDeckBuilders();
+                renderUniqueDeckBuilders();
                 renderKillLeaderboard();
                 renderKillViaBreakdown();
 
@@ -10955,6 +11327,7 @@
             }
 
             updateCommanderDeckLinkUI(cmd);
+            mfRefreshCommanderEdhrecMeta(cmd);
             
             if(pkEloHintEl) pkEloHintEl.classList.toggle('hidden', !cmd.isBaselineOnlyElo);
             const nemesisDeck = renderCommanderMatchup(nemesisEl, nemesisHintEl, cmd.nemesis);
