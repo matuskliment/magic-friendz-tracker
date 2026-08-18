@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.47">
+    <meta name="mf-app-version" content="2.9.48">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -157,6 +158,61 @@
     <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif;margin:0}#landing-page{display:flex;flex-direction:column;min-height:100dvh}#landing-page nav{position:fixed;top:0;left:0;right:0;z-index:50}</style>
     <style>
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        html { color-scheme: dark; }
+        input, textarea, select, button { color-scheme: dark; }
+        /* Native controls default to black text; placeholders are often near-black on dark fields */
+        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]),
+        textarea,
+        select {
+            color: #f8fafc;
+            caret-color: #f8fafc;
+            -webkit-text-fill-color: #f8fafc;
+        }
+        input::placeholder,
+        textarea::placeholder {
+            color: #cbd5e1 !important;
+            -webkit-text-fill-color: #cbd5e1 !important;
+            opacity: 1 !important;
+        }
+        input::-webkit-input-placeholder,
+        textarea::-webkit-input-placeholder {
+            color: #cbd5e1 !important;
+            -webkit-text-fill-color: #cbd5e1 !important;
+            opacity: 1 !important;
+        }
+        input::-moz-placeholder,
+        textarea::-moz-placeholder {
+            color: #cbd5e1 !important;
+            opacity: 1 !important;
+        }
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        textarea:-webkit-autofill,
+        select:-webkit-autofill {
+            -webkit-text-fill-color: #f8fafc !important;
+            caret-color: #f8fafc;
+            box-shadow: 0 0 0 1000px #0f172a inset !important;
+            transition: background-color 99999s ease-out;
+        }
+        input[type="search"] {
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        input[type="search"]::-webkit-search-decoration,
+        input[type="search"]::-webkit-search-cancel-button,
+        input[type="search"]::-webkit-search-results-button,
+        input[type="search"]::-webkit-search-results-decoration {
+            -webkit-appearance: none;
+        }
+        select option {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        /* Secondary copy — Tailwind slate-400/500/600 is too dim on slate-900 */
+        .text-slate-400 { color: #cbd5e1; }
+        .text-slate-500,
+        .text-slate-600 { color: #94a3b8; }
         .landing-showcase-shadow { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); }
         .hero-bg { background-image: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 1)), url('https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070&auto=format&fit=crop'); background-size: cover; background-position: center; }
         .text-gradient { background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -1197,8 +1253,8 @@
                 <a href="/groups.html" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">All Groups</a>
                 <a href="#contact" onclick="window.openFeedbackModal(); return false;" class="text-slate-400 hover:text-white transition font-semibold touch-manipulation">Contact</a>
             </nav>
-            <p class="text-center text-xs text-slate-600 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz by Mat Kliment. Playgroup EDH stats and Elo for your pod&apos;s meta, not a global ladder.</p>
-            <p class="mt-2 text-center text-xs"><a href="/" class="text-slate-500 hover:text-slate-300">Home</a> · <a href="/terms.html" class="text-slate-500 hover:text-slate-300">Terms</a> · <a href="/privacy.html" class="text-slate-500 hover:text-slate-300">Privacy</a></p>
+            <p class="text-center text-xs text-slate-400 mt-5 max-w-lg mx-auto leading-relaxed">Magic Friendz by Mat Kliment. Playgroup EDH stats and Elo for your pod&apos;s meta, not a global ladder.</p>
+            <p class="mt-2 text-center text-xs"><a href="/" class="text-slate-400 hover:text-slate-200">Home</a> · <a href="/terms.html" class="text-slate-400 hover:text-slate-200">Terms</a> · <a href="/privacy.html" class="text-slate-400 hover:text-slate-200">Privacy</a></p>
         </footer>
 
         <div class="w-full overflow-hidden bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md py-3 z-30 shrink-0">
@@ -1319,10 +1375,10 @@
                             <button id="btn-view-player" onclick="window.setLeaderboardView('player')" class="flex-1 sm:px-6 py-2 rounded-md text-sm font-bold text-slate-400 hover:text-slate-200 transition-all">Players</button>
                         </div>
                         <div class="relative flex-grow">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </div>
-                            <input type="text" id="leaderboard-search" oninput="window.filterLeaderboard()" placeholder="Search names, decks..." class="mf-clearable w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg pl-10 pr-3 py-2.5 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-500">
+                            <input type="text" id="leaderboard-search" oninput="window.filterLeaderboard()" placeholder="Search names, decks..." class="mf-clearable w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg pl-10 pr-3 py-2.5 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-400">
                         </div>
                     </div>
                 </div>
@@ -1480,7 +1536,7 @@
                             <div class="group/tooltip relative inline-flex items-center cursor-help mt-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                                 <div class="pointer-events-none absolute left-0 bottom-full z-50 mb-2 w-64 md:w-72 rounded-xl bg-slate-900/95 p-3 text-[10px] font-medium leading-normal text-slate-300 opacity-0 shadow-2xl border border-slate-700/80 backdrop-blur-md transition-opacity duration-200 group-hover/tooltip:opacity-100">
-                                    Median EDHREC commander rank across unique decks this player built. Higher number = less popular in the global Commander meta. Requires deck owners and cached EDHREC data (at least 2 ranked brews).
+                                    Median EDHREC commander rank across unique commanders this player built. Ranks come from EDHREC&apos;s global popularity list (recent meta). Higher number = less popular. Requires deck owners and at least 2 unique commanders with EDHREC data.
                                 </div>
                             </div>
                         </h3>
@@ -1622,8 +1678,8 @@
                     </div>
                 </div>
                 <div class="pt-2 pb-6 text-center">
-                    <p class="text-[11px] text-slate-500">Magic Friendz Tracker</p>
-                    <p class="text-[11px] text-slate-600 mt-0.5">Version <span id="settings-app-version" class="font-mono text-slate-500">…</span></p>
+                    <p class="text-[11px] text-slate-400">Magic Friendz Tracker</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Version <span id="settings-app-version" class="font-mono text-slate-300">…</span></p>
                 </div>
             </div>
         </div>
@@ -1761,8 +1817,8 @@
                                 <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Meta:</span>
                                 <a id="cmd-view-edhrec-link" href="https://edhrec.com/" target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-teal-300 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/25 hover:bg-teal-500/20 transition touch-manipulation">EDHREC …</a>
                             </div>
-                            <p id="cmd-view-edhrec-sub" class="text-[10px] text-slate-500 hidden"></p>
-                            <p id="cmd-view-edhrec-partners" class="text-[10px] text-slate-500 leading-snug hidden"></p>
+                            <p id="cmd-view-edhrec-sub" class="text-[10px] text-slate-400 hidden"></p>
+                            <p id="cmd-view-edhrec-partners" class="text-[10px] text-slate-400 leading-snug hidden"></p>
                         </div>
                     </div>
 
@@ -1810,7 +1866,7 @@
                     <div class="min-w-0 flex-1">
                         <p class="text-[10px] text-red-400 uppercase font-bold tracking-wider">Nemesis (Most Losses)</p>
                         <p id="cmd-view-nemesis" class="font-bold text-white text-sm mt-0.5 truncate">…</p>
-                        <p id="cmd-view-nemesis-hint" class="hidden text-[10px] text-slate-500 mt-1 leading-snug">At least 3 games vs. another deck needed.</p>
+                        <p id="cmd-view-nemesis-hint" class="hidden text-[10px] text-slate-400 mt-1 leading-snug">At least 3 games vs. another deck needed.</p>
                     </div>
                 </div>
                 <div class="bg-green-500/5 p-4 rounded-xl border border-green-500/20 flex items-center gap-3 min-w-0">
@@ -1819,7 +1875,7 @@
                     <div class="min-w-0 flex-1">
                         <p class="text-[10px] text-green-400 uppercase font-bold tracking-wider">Prey (Most Wins)</p>
                         <p id="cmd-view-prey" class="font-bold text-white text-sm mt-0.5 truncate">…</p>
-                        <p id="cmd-view-prey-hint" class="hidden text-[10px] text-slate-500 mt-1 leading-snug">At least 3 games vs. another deck needed.</p>
+                        <p id="cmd-view-prey-hint" class="hidden text-[10px] text-slate-400 mt-1 leading-snug">At least 3 games vs. another deck needed.</p>
                     </div>
                 </div>
             </div>
@@ -1862,11 +1918,11 @@
                 <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-3">Create deck</p>
                 <div class="input-slot-group space-y-3" data-type="deck" id="plr-register-deck-group">
                     <div class="relative mf-search-wrap">
-                        <input type="text" class="mf-clearable new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)…" autocomplete="off">
+                        <input type="text" class="mf-clearable new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-400 shadow-sm" placeholder="Search Scryfall (type 3+ chars)…" autocomplete="off">
                     </div>
-                    <input type="text" class="mf-clearable new-deck-partner-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-500 shadow-sm" placeholder="Partner commander (optional)" autocomplete="off">
-                    <input type="text" class="mf-clearable new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-500 shadow-sm" placeholder="Optional tag if name exists, e.g. Tokens" autocomplete="off">
-                    <input type="url" id="plr-register-link" class="mf-clearable w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-500 shadow-sm" placeholder="Moxfield or Archidekt URL (optional)" autocomplete="off">
+                    <input type="text" class="mf-clearable new-deck-partner-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-400 shadow-sm" placeholder="Partner commander (optional)" autocomplete="off">
+                    <input type="text" class="mf-clearable new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-400 shadow-sm" placeholder="Optional tag if name exists, e.g. Tokens" autocomplete="off">
+                    <input type="url" id="plr-register-link" class="mf-clearable w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 transition placeholder-slate-400 shadow-sm" placeholder="Moxfield or Archidekt URL (optional)" autocomplete="off">
                     <button type="button" onclick="window.submitProfileDeckRegister()" class="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Create Deck</button>
                 </div>
             </div>
@@ -1904,6 +1960,13 @@
             <div id="plr-view-extra" class="grid grid-cols-2 gap-3 mb-6"></div>
 
             <div id="plr-view-elim" class="grid grid-cols-2 gap-3 mb-6 hidden"></div>
+
+            <div id="plr-view-builder" class="hidden mb-6">
+                <h3 class="font-bold text-white mb-3 text-sm flex items-center gap-2">
+                    <span class="text-teal-400" aria-hidden="true">🧪</span> Unique Deck Builder
+                </h3>
+                <div id="plr-view-builder-body" class="grid grid-cols-2 gap-3"></div>
+            </div>
 
             <div id="plr-view-color-profile" class="space-y-3 mb-4 hidden"></div>
             
@@ -2006,7 +2069,7 @@
             <div class="shrink-0 px-4 pt-3 pb-2 border-b border-slate-800 bg-slate-950">
                 <p id="log-match-picker-title" class="text-xs uppercase tracking-wider font-bold text-purple-400 mb-2">Pick player</p>
                 <div id="log-match-picker-search-wrap">
-                    <input type="search" id="log-match-picker-search" enterkeyhint="search" autocomplete="off" placeholder="Search…" class="mf-clearable mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
+                    <input type="search" id="log-match-picker-search" enterkeyhint="search" autocomplete="off" placeholder="Search…" class="mf-clearable mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm placeholder-slate-400">
                 </div>
                 <div id="log-match-picker-deck-extras" class="hidden space-y-3 mt-1">
                     <div class="bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3">
@@ -2015,7 +2078,7 @@
                     </div>
                     <div>
                         <label for="log-match-picker-deck-variant" class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-0.5">Optional tag</label>
-                        <input type="text" id="log-match-picker-deck-variant" autocomplete="off" placeholder="e.g. Tokens" class="mf-clearable mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm placeholder:text-slate-500">
+                        <input type="text" id="log-match-picker-deck-variant" autocomplete="off" placeholder="e.g. Tokens" class="mf-clearable mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm placeholder:text-slate-400">
                     </div>
                     <div>
                         <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 ml-0.5">Deck owner</label>
@@ -2149,7 +2212,7 @@
                             <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to search Scryfall</span>
                         </button>
                         <div class="mf-desktop-card-search mf-search-wrap relative">
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </div>
                             <input type="text" id="form-card-1" placeholder="Card 1 (type 3+ chars to search...)" class="mf-clearable scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
@@ -2161,7 +2224,7 @@
                             <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to search Scryfall</span>
                         </button>
                         <div class="mf-desktop-card-search mf-search-wrap relative">
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </div>
                             <input type="text" id="form-card-2" placeholder="Card 2 (type 3+ chars to search...)" class="mf-clearable scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
@@ -2173,7 +2236,7 @@
                             <span class="mf-mobile-picker-value block truncate text-slate-400 text-sm font-medium">Tap to search Scryfall</span>
                         </button>
                         <div class="mf-desktop-card-search mf-search-wrap relative">
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </div>
                             <input type="text" id="form-card-3" placeholder="Card 3 (type 3+ chars to search...)" class="mf-clearable scryfall-input mf-touch-input w-full bg-slate-900 border border-slate-700 text-white rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-sm">
@@ -2449,6 +2512,7 @@
         window._plrProfilePlayerIndex = -1;
         window._cmdProfileDeckName = '';
         window._cmdDeckLinkEditing = '';
+        window._uniqueBuildersShowAll = false;
 
         function normalizeEmail(email) {
             return String(email || '').trim().toLowerCase();
@@ -4505,7 +4569,7 @@
             if (!l?.killedBy && !l?.killedVia) return '';
             const by = l.killedBy ? mfKilledByDisplayLabel(l.player, l.killedBy) : '…';
             const via = l.killedVia ? mfKillViaLabel(l.killedVia) : '…';
-            return `<span class="text-[9px] text-slate-500 block truncate mt-0.5 normal-case leading-snug"><span class="uppercase tracking-wide text-[8px] font-bold text-slate-600">Killed by</span> <span class="text-slate-500">${escapeHtml(by)}</span><span class="text-slate-600"> · </span><span class="uppercase tracking-wide text-[8px] font-bold text-slate-600">via</span> <span class="text-slate-500">${escapeHtml(via)}</span></span>`;
+            return `<span class="text-[9px] text-slate-400 block truncate mt-0.5 normal-case leading-snug"><span class="uppercase tracking-wide text-[8px] font-bold text-slate-400">Killed by</span> <span class="text-slate-300">${escapeHtml(by)}</span><span class="text-slate-500"> · </span><span class="uppercase tracking-wide text-[8px] font-bold text-slate-400">via</span> <span class="text-slate-300">${escapeHtml(via)}</span></span>`;
         }
 
         function mfFormatSessionLoserRow(l, m) {
@@ -6312,10 +6376,10 @@
                             </button>
                             <div class="flex gap-2 existing-mode">
                                 <div class="relative flex-grow mf-search-wrap">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="mf-clearable local-player-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search pilots…" autocomplete="off">
+                                    <input type="text" class="mf-clearable local-player-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-400 shadow-sm" placeholder="Search pilots…" autocomplete="off">
                                 </div>
                                 <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
                             </div>
@@ -6324,7 +6388,7 @@
                                     <span class="text-[10px] uppercase font-bold ${labelTone} tracking-wider">${newPlayerTitle}</span>
                                     <button type="button" onclick="window.toggleNewMode(this)" class="${cancelBtn}">✕ Cancel</button>
                                 </div>
-                                <input type="text" class="mf-clearable new-player-input mf-touch-input w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm min-h-[48px]" placeholder="${newPlayerPlaceholder}" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
+                                <input type="text" class="mf-clearable new-player-input mf-touch-input w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-400 shadow-sm min-h-[48px]" placeholder="${newPlayerPlaceholder}" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
                                 <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this pilot</button>
                             </div>
                         </div>
@@ -6336,10 +6400,10 @@
                             </button>
                             <div class="flex gap-2 existing-mode">
                                 <div class="relative flex-grow mf-search-wrap">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="mf-clearable local-deck-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search commander decks…" autocomplete="off">
+                                    <input type="text" class="mf-clearable local-deck-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-400 shadow-sm" placeholder="Search commander decks…" autocomplete="off">
                                 </div>
                                 <button type="button" onclick="window.toggleNewMode(this)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold transition flex-shrink-0 shadow-sm min-h-[48px] touch-manipulation">+ New</button>
                             </div>
@@ -6349,10 +6413,10 @@
                                     <button type="button" onclick="window.toggleNewMode(this)" class="${cancelBtn}">✕ Cancel</button>
                                 </div>
                                 <div class="relative mf-search-wrap">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <input type="text" class="mf-clearable new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
+                                    <input type="text" class="mf-clearable new-deck-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-400 shadow-sm" placeholder="Search Scryfall (type 3+ chars)..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
                                 </div>
                                 <div class="mf-deck-partner-panel hidden space-y-2 pt-1 border-t border-slate-700/50">
                                     <p class="text-[10px] uppercase font-bold ${labelTone} tracking-wider">Partner (optional)</p>
@@ -6361,20 +6425,20 @@
                                     <button type="button" class="mf-deck-partner-solo-btn w-full text-[11px] font-bold px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 touch-manipulation min-h-[44px]">Solo commander</button>
                                     <button type="button" class="mf-deck-partner-search-btn w-full text-[11px] font-bold px-3 py-2 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-200 touch-manipulation min-h-[44px]">Search for partner</button>
                                     <div class="relative mf-search-wrap mf-deck-partner-search hidden">
-                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                         </div>
-                                        <input type="text" class="mf-clearable new-deck-partner-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search partner commander…" autocomplete="off">
+                                        <input type="text" class="mf-clearable new-deck-partner-input scryfall-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-400 shadow-sm" placeholder="Search partner commander…" autocomplete="off">
                                     </div>
                                 </div>
                                 <div class="relative mt-2">
-                                    <input type="text" class="mf-clearable new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Optional tag if name exists, e.g. Tokens" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
+                                    <input type="text" class="mf-clearable new-deck-variant-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl px-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-400 shadow-sm" placeholder="Optional tag if name exists, e.g. Tokens" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();window.confirmNewSlotEntry(this);}">
                                 </div>
                                 <div class="relative mf-search-wrap">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                                     </div>
-                                    <input type="text" class="local-owner-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm min-h-[48px] cursor-pointer" placeholder="Default to pilot" autocomplete="off" readonly tabindex="0">
+                                    <input type="text" class="local-owner-input w-full bg-slate-950 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 outline-none ${focusRing} transition-all placeholder-slate-400 shadow-sm min-h-[48px] cursor-pointer" placeholder="Default to pilot" autocomplete="off" readonly tabindex="0">
                                 </div>
                                 <button type="button" onclick="window.confirmNewSlotEntry(this)" class="w-full ${confirmBtn} text-white rounded-xl px-4 py-3 text-sm font-bold transition min-h-[48px] touch-manipulation">Use this commander</button>
                             </div>
@@ -6394,10 +6458,10 @@
                                 </button>
                                 <div class="existing-mode">
                                     <div class="relative flex-grow mf-search-wrap">
-                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                         </div>
-                                        <input type="text" class="mf-clearable local-killed-by-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm" placeholder="Search players…" autocomplete="off">
+                                        <input type="text" class="mf-clearable local-killed-by-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-400 shadow-sm" placeholder="Search players…" autocomplete="off">
                                     </div>
                                 </div>
                                 <input type="hidden" class="killed-by-input" value="">
@@ -6410,10 +6474,10 @@
                                 </button>
                                 <div class="existing-mode">
                                     <div class="relative flex-grow mf-search-wrap">
-                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                         </div>
-                                        <input type="text" class="mf-clearable local-killed-via-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-500 shadow-sm cursor-pointer" placeholder="Choose elimination…" autocomplete="off" readonly>
+                                        <input type="text" class="mf-clearable local-killed-via-input w-full bg-slate-900 border border-slate-700 text-white mf-touch-input rounded-xl pl-9 pr-4 py-3 min-h-[48px] outline-none ${focusRing} transition-all placeholder-slate-400 shadow-sm cursor-pointer" placeholder="Choose elimination…" autocomplete="off" readonly>
                                     </div>
                                 </div>
                                 <input type="hidden" class="killed-via-input" value="">
@@ -6696,6 +6760,10 @@
                 if (cmd) mfRefreshCommanderEdhrecMeta(cmd);
             }
             renderUniqueDeckBuilders();
+            if (window._plrProfilePlayerName) {
+                const player = (window.appData.players || []).find((p) => p.name === window._plrProfilePlayerName);
+                if (player) renderPlayerBuilderInsights(player);
+            }
         }
 
         function mfQueueEdhrecSlug(slug) {
@@ -7290,8 +7358,8 @@
                         ? `Loading color data for ${n} built deck${n === 1 ? '' : 's'}…`
                         : 'Loading color data…';
                     return `<div class="glass p-4 rounded-xl border border-slate-800">
-                        <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">${escapeHtml(label)}</p>
-                        <p class="text-xs text-slate-500 italic">${loadMsg}</p>
+                        <p class="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">${escapeHtml(label)}</p>
+                        <p class="text-xs text-slate-400 italic">${loadMsg}</p>
                     </div>`;
                 }
                 return '';
@@ -7302,9 +7370,9 @@
                 : '';
 
             return `<div class="glass p-4 rounded-xl border border-slate-800">
-                <p class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-3">${escapeHtml(label)}</p>
+                <p class="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-3">${escapeHtml(label)}</p>
                 ${mfRenderColorInclusionBarChart(stats.percents, stats.counts)}
-                <p class="text-[10px] text-slate-600 mt-3 leading-snug">${mfColorProfileFootnote(stats)}</p>
+                <p class="text-[10px] text-slate-400 mt-3 leading-snug">${mfColorProfileFootnote(stats)}</p>
                 ${pendingNote}
             </div>`;
         }
@@ -7355,7 +7423,7 @@
 
         function mfFormatEdhrecDeckCount(numDecks) {
             if (typeof numDecks !== 'number' || numDecks <= 0) return '';
-            return `${numDecks.toLocaleString()} decks globally`;
+            return `${numDecks.toLocaleString()} decks on EDHREC (recent meta)`;
         }
 
         function mfRefreshCommanderEdhrecMeta(cmd) {
@@ -7398,6 +7466,9 @@
                 const deckLabel = mfFormatEdhrecDeckCount(meta?.numDecks);
                 if (deckLabel) {
                     subEl.textContent = deckLabel;
+                    subEl.classList.remove('hidden');
+                } else if (meta && typeof meta.rank === 'number') {
+                    subEl.textContent = 'Global EDHREC rank (recent meta)';
                     subEl.classList.remove('hidden');
                 } else {
                     subEl.textContent = '';
@@ -7582,7 +7653,7 @@
                 const hex = MF_COLOR_HEX[c] || MF_COLOR_HEX.C;
                 const raw = counts ? (counts[c] ?? 0) : null;
                 const valueLabel = raw !== null
-                    ? `${pct}%<span class="text-slate-500 font-medium"> (${raw})</span>`
+                    ? `${pct}%<span class="text-slate-400 font-medium"> (${raw})</span>`
                     : `${pct}%`;
                 return `<div class="flex items-center gap-2 min-h-[1.375rem]">
                     <span class="shrink-0 w-5 flex justify-center">${mfRenderColorIdentityPip(c, 'w-4 h-4')}</span>
@@ -7603,7 +7674,7 @@
                 ${rows}
                 <div class="flex gap-2">
                     <span class="shrink-0 w-5"></span>
-                    <div class="flex-1 flex justify-between text-[8px] text-slate-600 font-semibold tabular-nums">
+                    <div class="flex-1 flex justify-between text-[8px] text-slate-400 font-semibold tabular-nums">
                         <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
                     </div>
                     <span class="shrink-0 w-[4.25rem]"></span>
@@ -9443,7 +9514,7 @@
         function renderArchivedDeckRow(ent) {
             const idJs = String(ent.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             return `<div class="flex justify-between items-center gap-2 bg-slate-900/60 p-2 md:p-3 rounded-lg border border-slate-800/80">
-                <div class="min-w-0"><p class="text-sm text-slate-400 font-medium truncate">${escapeHtml(ent.name)}</p><p class="text-[10px] text-slate-600 uppercase tracking-wide">Archived</p></div>
+                <div class="min-w-0"><p class="text-sm text-slate-300 font-medium truncate">${escapeHtml(ent.name)}</p><p class="text-[10px] text-slate-400 uppercase tracking-wide">Archived</p></div>
                 ${window.canManageDeckFor(ent.owner) ? `<button type="button" onclick="window.mfRestoreOwnedDeck('${idJs}')" class="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-lg touch-manipulation">Restore</button>` : ''}
             </div>`;
         }
@@ -9712,7 +9783,7 @@
 
             const pendingNote = stats.pending && stats.analyzedAppearances < stats.totalAppearances
                 ? `<p class="text-[10px] text-amber-500/80 mt-2 italic">Based on ${stats.analyzedAppearances} of ${stats.totalAppearances} table appearances (still loading colors).</p>`
-                : `<p class="text-[10px] text-slate-600 mt-2 leading-snug">Share of ${stats.totalAppearances} table appearances that included each color. Multicolor decks count toward every pip in their identity.</p>`;
+                : `<p class="text-[10px] text-slate-400 mt-2 leading-snug">Share of ${stats.totalAppearances} table appearances that included each color. Multicolor decks count toward every pip in their identity.</p>`;
 
             const winRows = stats.winRateLeaders.length
                 ? stats.winRateLeaders.map((r, i) => {
@@ -10056,9 +10127,9 @@
                 return `
                     <div class="mf-group-stat group relative overflow-hidden rounded-xl border ${borders[accent] || borders.cyan} p-3 sm:p-3.5 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/5 min-w-0">
                         <div class="absolute -right-2 -top-2 text-2xl opacity-[0.07] pointer-events-none select-none">${icon}</div>
-                        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">${label}</p>
+                        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">${label}</p>
                         <p class="text-xl sm:text-2xl font-black ${values[accent] || values.cyan} leading-none truncate">${escapeHtml(String(value))}</p>
-                        <p class="text-[10px] text-slate-500 font-semibold mt-1.5 truncate">${escapeHtml(String(sub))}</p>
+                        <p class="text-[10px] text-slate-300 font-semibold mt-1.5 truncate">${escapeHtml(String(sub))}</p>
                     </div>`;
             };
 
@@ -10072,10 +10143,10 @@
 
             const highlightCard = (title, value, sub, extraHtml = '') => `
                 <div class="bg-slate-950/50 border border-slate-700/50 rounded-xl p-3 sm:p-4 min-w-0 flex flex-col">
-                    <p class="text-[9px] uppercase font-bold tracking-widest text-slate-500 mb-2">${title}</p>
+                    <p class="text-[9px] uppercase font-bold tracking-widest text-slate-400 mb-2">${title}</p>
                     ${extraHtml}
                     <p class="text-base sm:text-lg font-black text-white leading-tight">${escapeHtml(String(value))}</p>
-                    <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">${escapeHtml(String(sub))}</p>
+                    <p class="text-[10px] text-slate-300 mt-1 leading-relaxed">${escapeHtml(String(sub))}</p>
                 </div>`;
 
             const winSpreadHtml = stats.winRateSpread
@@ -10194,7 +10265,7 @@
                         <div class="flex-grow text-center sm:text-left min-w-0">
                             <h3 class="text-base md:text-lg font-black text-white group-hover:text-purple-400 transition leading-snug">${escapeHtml(combo.player)} &amp; ${escapeHtml(combo.deck)}</h3>
                             <p class="text-[10px] sm:text-xs text-slate-400 leading-relaxed mt-1">With this deck they win <span class="font-bold text-white">${combo.comboWinRate.toFixed(0)}%</span> vs <span class="font-bold text-slate-300">${combo.overallWinRate.toFixed(0)}%</span> overall <span class="font-bold ${liftColor}">(${liftLabel} lift)</span></p>
-                            <p class="text-[10px] text-slate-500 mt-1">${combo.wins}W / ${combo.plays - combo.wins}L in ${combo.plays} games together</p>
+                            <p class="text-[10px] text-slate-300 mt-1">${combo.wins}W / ${combo.plays - combo.wins}L in ${combo.plays} games together</p>
                         </div>
                         <div class="text-center sm:text-right shrink-0 bg-slate-900/60 border border-purple-500/30 rounded-xl px-3 py-2">
                             <p class="text-2xl font-black text-purple-300 leading-none">${combo.comboWinRate.toFixed(0)}%</p>
@@ -10228,7 +10299,7 @@
                             <div class="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <span class="text-[10px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${combo.comboWinRate.toFixed(0)}% combo</span>
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${liftCls}">${liftLabel} lift</span>
-                                <span class="text-[10px] text-slate-400 whitespace-nowrap">${combo.plays} games</span>
+                                <span class="text-[10px] text-slate-300 whitespace-nowrap">${combo.plays} games</span>
                             </div>
                         </div>
                     </div>`;
@@ -10287,7 +10358,7 @@
                             <div class="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <span class="text-[10px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.decks} ${b.decks === 1 ? 'deck' : 'decks'}</span>
                                 <span class="text-[10px] font-bold text-green-300 bg-green-500/15 border border-green-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.wins} ${b.wins === 1 ? 'win' : 'wins'} built</span>
-                                <span class="text-[10px] text-slate-400 truncate min-w-0" title="${escapeHtml(b.best?.name || '')}">Best: ${escapeHtml(b.best?.name || '…')}</span>
+                                <span class="text-[10px] text-slate-300 truncate min-w-0" title="${escapeHtml(b.best?.name || '')}">Best: ${escapeHtml(b.best?.name || '…')}</span>
                             </div>
                         </div>
                         <div class="text-right shrink-0 bg-slate-900/70 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
@@ -10344,52 +10415,100 @@
                 .sort((a, b) => b.medianRank - a.medianRank || b.deckCount - a.deckCount);
         }
 
+        /** EDHREC builder stats for one deck owner (includes unqualified partial data). */
+        function computeUniqueBuilderForOwner(ownerName) {
+            const owner = (ownerName || '').trim();
+            if (!owner) return null;
+
+            const decks = {};
+            let ownedDeckCount = 0;
+            (window.appData.commanders || []).forEach((c) => {
+                if ((c.owner || '').trim() !== owner) return;
+                ownedDeckCount += 1;
+                const slug = edhrecSlugForCommanders(mfCommandersForDeck(c));
+                if (!slug) return;
+                const meta = getEdhrecMetaForSlug(slug);
+                if (!meta || typeof meta.rank !== 'number') return;
+                if (!decks[slug]) {
+                    decks[slug] = { slug, rank: meta.rank, deckName: c.name };
+                }
+            });
+
+            const deckList = Object.values(decks);
+            const ranks = deckList.map((d) => d.rank);
+            const rarest = deckList.reduce((best, d) => (!best || d.rank > best.rank ? d : best), null);
+            const medianRank = ranks.length ? mfMedian(ranks) : null;
+
+            return {
+                owner,
+                ownedDeckCount,
+                deckCount: deckList.length,
+                rankedCount: ranks.length,
+                medianRank,
+                rarest,
+                qualified: ranks.length >= UNIQUE_BUILDER_MIN_RANKED && medianRank != null
+            };
+        }
+
         function renderUniqueDeckBuilders() {
             const host = document.getElementById('analytics-unique-builders');
             if (!host) return;
 
             const builders = computeUniqueDeckBuilders();
             if (builders.length) {
+                const showAll = !!window._uniqueBuildersShowAll;
+                const visible = showAll ? builders : builders.slice(0, 5);
                 const medal = (i) => i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-200' : i === 2 ? 'text-orange-400' : 'text-slate-500';
-                const html = builders.slice(0, 5).map((b, i) => {
+                const rowsHtml = visible.map((b, i) => {
                     const player = (window.appData.players || []).find((p) => p.name === b.owner);
+                    const playerIdx = window.appData.players.findIndex((p) => p.name === b.owner);
                     const avatar = player
                         ? renderPlayerAvatar(player, 'w-10 h-10', 'text-xs', 'shrink-0')
                         : `<div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 shrink-0"></div>`;
-                    const rarestLabel = b.rarest
-                        ? `Rarest: ${b.rarest.deckName} (#${b.rarest.rank.toLocaleString()})`
+                    const offMetaLabel = b.rarest
+                        ? `Most off-meta: ${b.rarest.deckName} (#${b.rarest.rank.toLocaleString()})`
                         : '';
+                    const clickAttr = playerIdx >= 0 ? ` onclick="window.openPlayerProfile(${playerIdx})" role="button" tabindex="0"` : '';
+                    const commanderLabel = b.deckCount === 1 ? 'unique commander' : 'unique commanders';
                     return `
-                    <div class="glass flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-teal-500/30' : 'border-slate-700/50'}">
+                    <div class="glass flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-teal-500/30' : 'border-slate-700/50'} w-full max-w-full min-w-0${playerIdx >= 0 ? ' cursor-pointer hover:bg-slate-800/80 transition' : ''}"${clickAttr}>
                         <div class="w-5 text-center font-black text-lg ${medal(i)} shrink-0">${i + 1}</div>
                         ${avatar}
                         <div class="flex-grow min-w-0">
                             <p class="font-bold text-white truncate">${escapeHtml(b.owner)}</p>
                             <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                                <span class="text-[10px] font-bold text-teal-300 bg-teal-500/15 border border-teal-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.deckCount} ranked ${b.deckCount === 1 ? 'brew' : 'brews'}</span>
-                                ${rarestLabel ? `<span class="text-[10px] text-slate-400 truncate min-w-0" title="${escapeHtml(rarestLabel)}">${escapeHtml(rarestLabel)}</span>` : ''}
+                                <span class="text-[10px] font-bold text-teal-300 bg-teal-500/15 border border-teal-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.deckCount} ${commanderLabel}</span>
+                                ${offMetaLabel ? `<span class="text-[10px] text-slate-300 truncate min-w-0" title="${escapeHtml(offMetaLabel)}">${escapeHtml(offMetaLabel)}</span>` : ''}
                             </div>
                         </div>
                         <div class="text-right shrink-0 bg-slate-900/70 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
                             <div class="font-black text-lg text-teal-300 leading-none">#${b.medianRank.toLocaleString()}</div>
-                            <div class="text-[8px] uppercase tracking-widest font-bold text-slate-300 mt-1">Median</div>
+                            <div class="text-[8px] uppercase tracking-widest font-bold text-slate-300 mt-1">Median rank</div>
                         </div>
                     </div>`;
                 }).join('');
-                safeSetHTML('analytics-unique-builders', html);
+                const toggleBtn = builders.length > 5
+                    ? `<button type="button" onclick="window.toggleUniqueDeckBuildersList()" class="w-full mt-2 py-2.5 rounded-xl text-xs font-bold text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/25 transition min-h-[44px] touch-manipulation">${showAll ? 'Show top 5 only' : `View all ${builders.length} builders`}</button>`
+                    : '';
+                safeSetHTML('analytics-unique-builders', `<div class="space-y-2">${rowsHtml}${toggleBtn}</div>`);
                 return;
             }
 
             const hasOwners = (window.appData.commanders || []).some((c) => (c.owner || '').trim());
             const queueActive = edhrecSlugQueue.length > 0 || edhrecQueuedSlugs.size > 0 || isFetchingEdhrec;
-            let message = 'Assign deck owners and log games to compare brew uniqueness.';
+            let message = 'Assign deck owners and log games to compare commander uniqueness.';
             if (hasOwners && queueActive) {
                 message = 'EDHREC ranks load in the background. Check back in a moment.';
             } else if (hasOwners) {
-                message = `Need at least ${UNIQUE_BUILDER_MIN_RANKED} unique decks with EDHREC rank data per builder.`;
+                message = `Need at least ${UNIQUE_BUILDER_MIN_RANKED} unique commanders with EDHREC rank data per builder.`;
             }
             safeSetHTML('analytics-unique-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">${message}</p></div>`);
         }
+
+        window.toggleUniqueDeckBuildersList = function() {
+            window._uniqueBuildersShowAll = !window._uniqueBuildersShowAll;
+            renderUniqueDeckBuilders();
+        };
 
         function renderKillLeaderboard() {
             const stats = window.appData.eliminationStats;
@@ -10449,7 +10568,7 @@
                         <div class="absolute inset-y-0 left-0 rounded-sm min-w-[2px] ${barTone}" style="width:${barPct}%"></div>
                     </div>
                     <span class="text-[10px] font-bold text-slate-300 tabular-nums text-right shrink-0 w-[3.5rem] leading-tight">${r.count}</span>
-                    <span class="text-[10px] font-semibold text-slate-500 tabular-nums text-right shrink-0 w-[2.25rem] leading-tight">${r.pct}%</span>
+                    <span class="text-[10px] font-semibold text-slate-400 tabular-nums text-right shrink-0 w-[2.25rem] leading-tight">${r.pct}%</span>
                 </div>`;
             }).join('');
 
@@ -10459,7 +10578,7 @@
 
             safeSetHTML('analytics-kill-via', `<div class="glass p-4 rounded-xl border border-slate-800 space-y-3 w-full max-w-full min-w-0">
                 <div class="space-y-2.5">${barRows}</div>
-                <p class="text-[10px] text-slate-600 leading-snug pt-1 border-t border-slate-800/80">${escapeHtml(elimNote)}</p>
+                <p class="text-[10px] text-slate-400 leading-snug pt-1 border-t border-slate-800/80">${escapeHtml(elimNote)}</p>
             </div>`);
         }
 
@@ -10784,6 +10903,7 @@
 
         function initApp() {
             backfillPublicAvatars();
+            window._uniqueBuildersShowAll = false;
             try {
                 if(window.appData.matches.length === 0) {
                     setHomeLeaderboardBlocksVisible(false);
@@ -10799,7 +10919,7 @@
                     safeSetHTML('analytics-kill-leaders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Eliminator rankings appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-kill-via', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">How-we-lose stats appear once games are logged.</p></div>`);
                     safeSetHTML('analytics-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">Deck builder rankings appear once games are logged.</p></div>`);
-                    safeSetHTML('analytics-unique-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">EDHREC brew rankings appear once games are logged.</p></div>`);
+                    safeSetHTML('analytics-unique-builders', `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-500">EDHREC commander rankings appear once games are logged.</p></div>`);
                     safeSetHTML('commander-view', `<div class="text-center text-slate-500 mt-8 p-6">No commanders yet. Log a match or register a deck on a player profile.</div>`);
                     safeSetHTML('home-top-commanders', '');
                     safeSetHTML('roster-list', renderPlayerListHtml());
@@ -10947,7 +11067,7 @@
                             <div class="ml-3 z-10 flex-shrink-0">${avatarHtml}</div>
                             <div class="ml-4 flex-grow z-10 min-w-0">
                                 <h4 class="font-bold text-white truncate">${cmd.name}</h4>
-                                <div class="text-[10px] text-slate-400 font-bold mt-0.5">${cmd.plays} Total Plays</div>
+                                <div class="text-[10px] text-slate-300 font-bold mt-0.5">${cmd.plays} Total Plays</div>
                             </div>
                             <div class="text-right z-10 ml-2">
                                 <span class="text-[10px] sm:text-xs font-bold px-2 py-1 rounded border ${winBadgeColor}">${cmd.winRate}</span>
@@ -11420,7 +11540,6 @@
             const host = document.getElementById('plr-view-extra');
             if (!host) return;
 
-            // Walk match history (already most-recent-first) for this player.
             const matches = window.appData.matches || [];
             const results = [];
             matches.forEach(m => {
@@ -11461,7 +11580,7 @@
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">${label}</p>
                     <p class="text-base font-black ${valueCls} mt-1 truncate" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</p>
-                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
+                    <p class="text-[10px] text-slate-300 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
                 </div>`;
 
             host.innerHTML = [
@@ -11470,6 +11589,58 @@
                 card('Current Streak', streakLabel, streakColor, streakSub),
                 card('Last Played', lastPlayed, 'text-amber-300', results.length ? `${results.length} ${results.length === 1 ? 'game' : 'games'} logged` : 'No games yet')
             ].join('');
+        }
+
+        function renderPlayerBuilderInsights(player) {
+            const wrap = document.getElementById('plr-view-builder');
+            const host = document.getElementById('plr-view-builder-body');
+            if (!wrap || !host) return;
+
+            const stats = computeUniqueBuilderForOwner(player.name);
+            if (!stats || stats.ownedDeckCount === 0) {
+                wrap.classList.add('hidden');
+                host.innerHTML = '';
+                return;
+            }
+
+            wrap.classList.remove('hidden');
+
+            const card = (label, value, valueCls, sub) => `
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">${label}</p>
+                    <p class="text-base font-black ${valueCls} mt-1 truncate" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</p>
+                    <p class="text-[10px] text-slate-300 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
+                </div>`;
+
+            const queueActive = edhrecSlugQueue.length > 0 || edhrecQueuedSlugs.size > 0 || isFetchingEdhrec;
+
+            if (stats.qualified) {
+                const medianLabel = stats.medianRank != null ? `#${stats.medianRank.toLocaleString()}` : '…';
+                const medianSub = 'Median EDHREC rank (recent meta)';
+                const offMetaLabel = stats.rarest ? stats.rarest.deckName : '…';
+                const offMetaSub = stats.rarest
+                    ? `EDHREC #${stats.rarest.rank.toLocaleString()}`
+                    : 'No ranked decks yet';
+
+                host.innerHTML = [
+                    card('Median EDHREC Rank', medianLabel, 'text-teal-300', medianSub),
+                    card('Most Off-Meta', offMetaLabel, 'text-amber-300', offMetaSub),
+                ].join('');
+                return;
+            }
+
+            if (queueActive && stats.rankedCount < stats.ownedDeckCount) {
+                host.innerHTML = `<div class="col-span-2 bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-400">Loading EDHREC ranks for owned decks…</p></div>`;
+                return;
+            }
+
+            if (stats.rankedCount === 0) {
+                host.innerHTML = `<div class="col-span-2 bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-400">Owns ${stats.ownedDeckCount} ${stats.ownedDeckCount === 1 ? 'deck' : 'decks'}, but no EDHREC rank data yet.</p></div>`;
+                return;
+            }
+
+            const need = UNIQUE_BUILDER_MIN_RANKED - stats.rankedCount;
+            host.innerHTML = `<div class="col-span-2 bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center"><p class="text-sm text-slate-400">${stats.rankedCount} ${stats.rankedCount === 1 ? 'commander has' : 'commanders have'} EDHREC data. Need ${need} more unique ${need === 1 ? 'commander' : 'commanders'} to rank.</p></div>`;
         }
 
         function renderPlayerElimInsights(player) {
@@ -11492,7 +11663,7 @@
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">${label}</p>
                     <p class="text-base font-black ${valueCls} mt-1 truncate" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</p>
-                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
+                    <p class="text-[10px] text-slate-300 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
                 </div>`;
 
             const killsSub = insights.kills > 0
@@ -11546,6 +11717,7 @@
 
             renderPlayerInsights(player);
             renderPlayerElimInsights(player);
+            renderPlayerBuilderInsights(player);
             refreshPlayerProfileDecksSection(player);
 
             document.getElementById('plr-deck-create-panel')?.classList.add('hidden');

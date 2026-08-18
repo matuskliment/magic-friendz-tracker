@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
+    <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>All Groups: Magic Friendz EDH Stats Tracker</title>
     <meta name="description" content="View and switch between your Magic Friendz Commander playgroups. Sign in to manage groups and log EDH match stats.">
@@ -56,10 +57,25 @@
     <link rel="stylesheet" href="/styles.css">
     <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif;margin:0}</style>
     <style>
+        html { color-scheme: dark; }
+        input, textarea, select, button { color-scheme: dark; }
         input, textarea, select {
             font-size: 16px !important;
             touch-action: manipulation;
         }
+        input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+        textarea {
+            color: #f8fafc;
+            caret-color: #f8fafc;
+            -webkit-text-fill-color: #f8fafc;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #cbd5e1 !important;
+            -webkit-text-fill-color: #cbd5e1 !important;
+            opacity: 1 !important;
+        }
+        .text-slate-400 { color: #cbd5e1; }
+        .text-slate-500, .text-slate-600 { color: #94a3b8; }
         button {
             touch-action: manipulation;
         }
@@ -120,7 +136,7 @@
                     <section class="mt-6 rounded-xl border border-purple-500/25 bg-purple-950/20 p-5 space-y-3">
                         <h2 class="text-lg font-bold text-white">Create a new group</h2>
                         <div class="space-y-3">
-                            <input id="new-group-name" type="text" placeholder="Group name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation placeholder:text-slate-500" />
+                            <input id="new-group-name" type="text" placeholder="Group name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm text-white outline-none focus:border-purple-500 transition min-h-[44px] touch-manipulation placeholder:text-slate-400" />
                             <button id="create-group-btn" type="button" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-5 py-3 rounded-xl text-sm font-bold transition min-h-[44px] touch-manipulation disabled:opacity-50 disabled:pointer-events-none">Create and open group</button>
                             <p id="create-error" class="hidden text-sm text-red-300"></p>
                         </div>

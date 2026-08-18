@@ -1,3 +1,80 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Dark UI contrast: native controls default to black text; slate-500/600 is too dim on slate-900. */
+html {
+  color-scheme: dark;
+}
+
+input,
+textarea,
+select,
+button {
+  color-scheme: dark;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]),
+textarea,
+select {
+  color: #f8fafc;
+  caret-color: #f8fafc;
+  -webkit-text-fill-color: #f8fafc;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #f8fafc;
+  box-shadow: 0 0 0 1000px #0f172a inset !important;
+  transition: background-color 99999s ease-out;
+}
+
+input[type="search"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+}
+
+select option {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
+.text-slate-400 {
+  color: #cbd5e1;
+}
+
+.text-slate-500,
+.text-slate-600 {
+  color: #94a3b8;
+}
