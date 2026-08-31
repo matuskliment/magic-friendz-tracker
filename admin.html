@@ -364,6 +364,20 @@
 
             await Promise.all(matchUpdates);
 
+            // Rename matching deck entities so registered decks stay aligned with match seats.
+            const decksSnap = await getDocs(collection(db, 'groups', groupId, 'decks'));
+            const deckUpdates = [];
+            decksSnap.docs.forEach((deckDoc) => {
+                const data = deckDoc.data() || {};
+                if (!deckNamesMatch(data.name, oldDeckName)) return;
+                deckUpdates.push(updateDoc(deckDoc.ref, {
+                    name: newDeckName,
+                    commanders: newCommanders,
+                    updatedAt: Date.now()
+                }));
+            });
+            await Promise.all(deckUpdates);
+
             const ownersRef = doc(db, 'groups', groupId, 'settings', 'deckOwners');
             const ownersSnap = await getDoc(ownersRef);
             if (ownersSnap.exists()) {
@@ -376,7 +390,25 @@
                 }
             }
 
-            return { newDeckName, matchCount: matchUpdates.length };
+            // Move deck list links keyed by the old solo deck name.
+            const linksRef = doc(db, 'groups', groupId, 'settings', 'deckLinks');
+            const linksSnap = await getDoc(linksRef);
+            if (linksSnap.exists()) {
+                const links = { ...linksSnap.data() };
+                const linkKey = Object.keys(links).find((k) => deckNamesMatch(k, oldDeckName));
+                if (linkKey !== undefined) {
+                    links[newDeckName] = links[linkKey];
+                    delete links[linkKey];
+                    await setDoc(linksRef, links);
+                }
+            }
+
+            return {
+                oldDeckName,
+                newDeckName,
+                matchCount: matchUpdates.length,
+                deckEntityCount: deckUpdates.length
+            };
         }
 
         function csvEscape(value) {
@@ -736,8 +768,11 @@
                     setPartnerMigrateStatus('Updating matches…', false);
                     try {
                         const result = await addPartnerToExistingDeck(groupId, deckName, partner);
+                        const entityNote = result.deckEntityCount
+                            ? ` · ${result.deckEntityCount} deck entit${result.deckEntityCount === 1 ? 'y' : 'ies'}`
+                            : '';
                         setPartnerMigrateStatus(
-                            `Updated "${result.newDeckName}" across ${result.matchCount} match${result.matchCount === 1 ? '' : 'es'}.`,
+                            `"${result.oldDeckName}" → "${result.newDeckName}" · ${result.matchCount} match${result.matchCount === 1 ? '' : 'es'}${entityNote}.`,
                             false
                         );
                         await loadOwnershipForSelectedGroup(groupId);

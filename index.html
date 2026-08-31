@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.48">
+    <meta name="mf-app-version" content="2.9.49">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -155,7 +155,7 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/styles.css">
-    <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif;margin:0}#landing-page{display:flex;flex-direction:column;min-height:100dvh}#landing-page nav{position:fixed;top:0;left:0;right:0;z-index:50}</style>
+    <style>body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif;margin:0}#landing-page{display:flex;flex-direction:column;min-height:100dvh}#landing-page > nav{position:fixed;top:0;left:0;right:0;z-index:50}</style>
     <style>
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         html { color-scheme: dark; }
@@ -717,6 +717,38 @@
         .mf-dual-avatar-sm .mf-dual-avatar-b {
             width: 1.55rem;
             height: 1.55rem;
+        }
+        .mf-dual-avatar-xs {
+            width: 2rem;
+            height: 2rem;
+        }
+        .mf-dual-avatar-xs .mf-dual-avatar-a {
+            width: 1.1rem;
+            height: 1.1rem;
+            top: 0;
+        }
+        .mf-dual-avatar-xs .mf-dual-avatar-b {
+            width: 1.15rem;
+            height: 1.15rem;
+            bottom: 0;
+        }
+        .mf-dual-avatar-xxs {
+            width: 1.75rem;
+            height: 1.75rem;
+        }
+        .mf-dual-avatar-xxs .mf-dual-avatar-a {
+            width: 0.95rem;
+            height: 0.95rem;
+            top: 0;
+        }
+        .mf-dual-avatar-xxs .mf-dual-avatar-b {
+            width: 1rem;
+            height: 1rem;
+            bottom: 0;
+        }
+        .mf-dual-avatar.grayscale,
+        .mf-dual-avatar.grayscale .set-bg {
+            filter: grayscale(1);
         }
         @media (min-width: 768px) {
             .mf-dual-avatar {
@@ -4575,7 +4607,7 @@
         function mfFormatSessionLoserRow(l, m) {
             const delta = m.eloChanges[l.name];
             const elim = mfFormatLoserElimSubline(l);
-            return `<div class="flex items-center gap-2 bg-slate-900/40 p-2 rounded-lg border border-slate-800/50"><div data-card="${l.name}" data-version="art_crop" class="set-bg bg-cover bg-center w-7 h-7 rounded-full border border-red-500/30 grayscale art-fallback shrink-0"></div><div class="min-w-0 flex-grow"><p class="text-[11px] font-semibold text-slate-300 truncate"><span class="text-red-500/50 mr-1">💀</span>${escapeHtml(l.player)}</p><p class="text-[9px] text-slate-500 truncate">${escapeHtml(l.name)}</p>${elim}</div><span class="text-xs text-red-400/80 font-bold shrink-0">${delta}</span></div>`;
+            return `<div class="flex items-center gap-2 bg-slate-900/40 p-2 rounded-lg border border-slate-800/50">${mfRenderCommanderListAvatar(l.name, { size: 'xxs', borderPrimary: 'border-red-500/30', borderSecondary: 'border-red-500/20', grayscale: true })}<div class="min-w-0 flex-grow"><p class="text-[11px] font-semibold text-slate-300 truncate"><span class="text-red-500/50 mr-1">💀</span>${escapeHtml(l.player)}</p><p class="text-[9px] text-slate-500 truncate">${escapeHtml(l.name)}</p>${elim}</div><span class="text-xs text-red-400/80 font-bold shrink-0">${delta}</span></div>`;
         }
 
         function mfFormatMatchLosersPreview(m) {
@@ -6115,6 +6147,16 @@
             if (opts.hideNewMode && newMode && existingMode) {
                 newMode.classList.add('hidden');
                 existingMode.classList.remove('hidden');
+                // Keep commanders in sync with the visible local deck name (avoids stale partner state after cancel New).
+                if (group.getAttribute('data-type') === 'deck') {
+                    const local = group.querySelector('.local-deck-input');
+                    const name = String(local?.value || '').trim();
+                    if (name) mfWriteCommandersToDeckGroup(group, mfParseCommanderNamesFromDeckName(name));
+                    else {
+                        delete group.dataset.mfCommanders;
+                        delete group.dataset.mfPrimaryCommander;
+                    }
+                }
             }
         }
 
@@ -7531,17 +7573,34 @@
             const size = opts.size || 'md';
             const topThree = !!opts.topThree;
             const commanders = mfParseCommanderNamesFromDeckName(deckName);
-            const borderPrimary = topThree ? 'border-purple-500/40' : 'border-slate-700';
-            const borderSecondary = topThree ? 'border-purple-400/60' : 'border-slate-600';
-            const singleSizes = { sm: 'w-10 h-10', md: 'w-12 h-12 md:w-14 md:h-14', lg: 'w-12 h-12' };
-            const dualWrapSizes = { sm: 'mf-dual-avatar mf-dual-avatar-sm', md: 'mf-dual-avatar', lg: 'mf-dual-avatar mf-dual-avatar-sm' };
+            const borderPrimary = opts.borderPrimary
+                || (topThree ? 'border-purple-500/40' : (opts.borderClass || 'border-slate-700'));
+            const borderSecondary = opts.borderSecondary
+                || (topThree ? 'border-purple-400/60' : (opts.borderClass || 'border-slate-600'));
+            const extra = opts.extraClass || '';
+            const gray = opts.grayscale ? ' grayscale' : '';
+            const singleSizes = {
+                xxs: 'w-7 h-7 border',
+                xs: 'w-8 h-8 border',
+                sm: 'w-10 h-10 border-2',
+                md: 'w-12 h-12 md:w-14 md:h-14 border-2',
+                lg: 'w-12 h-12 border-2'
+            };
+            const dualWrapSizes = {
+                xxs: 'mf-dual-avatar mf-dual-avatar-xxs',
+                xs: 'mf-dual-avatar mf-dual-avatar-xs',
+                sm: 'mf-dual-avatar mf-dual-avatar-sm',
+                md: 'mf-dual-avatar',
+                lg: 'mf-dual-avatar mf-dual-avatar-sm'
+            };
 
             if (commanders.length < 2) {
                 const name = commanders[0] || deckName;
-                return `<div data-card="${escapeHtml(name)}" data-version="art_crop" class="set-bg ${singleSizes[size] || singleSizes.md} rounded-full art-fallback bg-cover bg-center border-2 ${borderPrimary} shadow-md shrink-0 self-center"></div>`;
+                const sizeCls = singleSizes[size] || singleSizes.md;
+                return `<div data-card="${escapeHtml(name)}" data-version="art_crop" class="set-bg ${sizeCls} rounded-full art-fallback bg-cover bg-center ${borderPrimary} shadow-md shrink-0 self-center${gray}${extra ? ' ' + extra : ''}"></div>`;
             }
 
-            return `<div class="${dualWrapSizes[size] || dualWrapSizes.md} shrink-0 self-center" aria-hidden="true">
+            return `<div class="${dualWrapSizes[size] || dualWrapSizes.md} shrink-0 self-center${gray}${extra ? ' ' + extra : ''}" aria-hidden="true">
                 <div data-card="${escapeHtml(commanders[0])}" data-version="art_crop" class="set-bg mf-dual-avatar-a art-fallback bg-cover bg-center border-2 ${borderPrimary}"></div>
                 <div data-card="${escapeHtml(commanders[1])}" data-version="art_crop" class="set-bg mf-dual-avatar-b art-fallback bg-cover bg-center border-2 ${borderSecondary}"></div>
             </div>`;
@@ -8874,12 +8933,13 @@
             if (!artEl || !fallbackEl) return;
             const valid = deckName && !isInsufficientMatchup(deckName);
             if (valid) {
+                const artName = mfPrimaryCommanderArtName(deckName);
                 artEl.classList.remove('hidden');
                 fallbackEl.classList.add('hidden');
-                artEl.setAttribute('data-card', deckName);
+                artEl.setAttribute('data-card', artName);
                 artEl.setAttribute('data-version', 'art_crop');
                 artEl.classList.remove('art-loaded');
-                applyCachedArtToElements(deckName, [artEl]);
+                applyCachedArtToElements(artName, [artEl]);
             } else {
                 artEl.classList.add('hidden');
                 fallbackEl.classList.remove('hidden');
@@ -9501,7 +9561,7 @@
             return `<div onclick="${openCmd}" class="relative aspect-[5/7] w-full md:max-w-[7.5rem] md:justify-self-start bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group shadow-md">
                 ${deleteBtn}
                 ${badges ? `<div class="absolute top-1.5 left-1.5 z-20 flex flex-wrap gap-0.5 max-w-[calc(100%-2.5rem)]">${badges}</div>` : ''}
-                <div data-card="${escapeHtml(c.name)}" data-version="art_crop" class="set-bg absolute inset-0 art-fallback bg-cover bg-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"></div>
+                <div data-card="${escapeHtml(mfPrimaryCommanderArtName(c.name))}" data-version="art_crop" class="set-bg absolute inset-0 art-fallback bg-cover bg-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
                 <div class="absolute inset-x-0 bottom-0 p-2 md:p-1.5 z-10">
                     <h4 class="font-bold text-sm md:text-[11px] text-white leading-snug line-clamp-2 drop-shadow-md" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</h4>
@@ -9577,10 +9637,25 @@
                 primaryInput?.focus();
                 return;
             }
-            const commanders = [primaryInput.dataset.mfScryfallName];
             const partnerInput = group.querySelector('.new-deck-partner-input');
+            let commanders = mfReadCommandersFromDeckGroup(group);
+            if (!commanders.length) {
+                const primaryName = group.dataset.mfPrimaryCommander
+                    || primaryInput.dataset.mfPrimaryCommander
+                    || String(primaryInput.value || '').trim();
+                const parsedPrimary = mfParseCommanderNamesFromDeckName(primaryName);
+                commanders = parsedPrimary.length ? [...parsedPrimary] : (primaryName ? [primaryName] : []);
+            }
+            // Flatten a joined identity if it was stored as a single commander entry.
+            if (commanders.length === 1 && String(commanders[0]).includes(MF_COMMANDER_PAIR_SEP)) {
+                commanders = mfParseCommanderNamesFromDeckName(commanders[0]);
+            }
             const partnerPick = partnerInput?.dataset.mfScryfallName || String(partnerInput?.value || '').trim();
-            if (partnerPick) commanders.push(partnerPick);
+            if (partnerPick && commanders.length === 1) {
+                const p0 = String(commanders[0] || '').trim().toLowerCase();
+                const p1 = String(partnerPick || '').trim().toLowerCase();
+                if (p0 && p1 && p0 !== p1) commanders.push(partnerPick);
+            }
             const variant = String(group.querySelector('.new-deck-variant-input')?.value || '').trim();
             const displayName = mfBuildDeckDisplayName(commanders, variant);
             const deckLink = String(document.getElementById('plr-register-link')?.value || '').trim();
@@ -9596,7 +9671,11 @@
                 group.querySelectorAll('input').forEach((inp) => {
                     inp.value = '';
                     delete inp.dataset.mfScryfallName;
+                    delete inp.dataset.mfPrimaryCommander;
+                    delete inp.dataset.mfCommanders;
                 });
+                delete group.dataset.mfCommanders;
+                delete group.dataset.mfPrimaryCommander;
                 document.getElementById('plr-deck-create-panel')?.classList.add('hidden');
                 const idx = window._plrProfilePlayerIndex;
                 if (typeof idx === 'number' && window.appData.players[idx]) {
@@ -10254,13 +10333,13 @@
 
             safeSetHTML('analytics-synergy', `
                 <div onclick="window.openPlayerProfile(${playerIndex > -1 ? playerIndex : 0})" class="glass p-4 rounded-2xl border border-purple-500/30 bg-gradient-to-r from-slate-900 to-purple-900/20 hover:border-purple-500/50 transition cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] w-full max-w-full min-w-0">
-                    <div data-card="${escapeHtml(combo.deck)}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-20 transition duration-500 mix-blend-luminosity"></div>
+                    <div data-card="${escapeHtml(mfPrimaryCommanderArtName(combo.deck))}" data-version="art_crop" class="set-bg absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-20 transition duration-500 mix-blend-luminosity"></div>
                     <p class="relative z-10 text-[10px] uppercase font-bold tracking-widest text-purple-400 mb-3 text-center sm:text-left">#1 Signature Synergy</p>
                     <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-stretch gap-4 w-full min-w-0">
                         <div class="flex items-center gap-3 shrink-0">
                             ${renderPlayerAvatar(player, 'w-12 h-12', 'text-xs', 'border-2 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)] flex-shrink-0')}
                             <span class="text-purple-400 font-black text-xl">+</span>
-                            <div data-card="${escapeHtml(combo.deck)}" data-version="art_crop" class="set-bg w-12 h-12 rounded-full art-fallback bg-cover bg-center border-2 border-slate-600 shadow-md flex-shrink-0 group-hover:border-purple-400 transition-colors"></div>
+                            ${mfRenderCommanderListAvatar(combo.deck, { size: 'sm', borderClass: 'border-slate-600', extraClass: 'group-hover:border-purple-400 transition-colors' })}
                         </div>
                         <div class="flex-grow text-center sm:text-left min-w-0">
                             <h3 class="text-base md:text-lg font-black text-white group-hover:text-purple-400 transition leading-snug">${escapeHtml(combo.player)} &amp; ${escapeHtml(combo.deck)}</h3>
@@ -10293,7 +10372,7 @@
                     <div class="glass flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-purple-500/30' : 'border-slate-700/50'} w-full max-w-full min-w-0">
                         <div class="w-5 text-center font-black text-lg ${medal(i)} shrink-0">${i + 1}</div>
                         ${avatar}
-                        <div data-card="${escapeHtml(combo.deck)}" data-version="art_crop" class="set-bg w-10 h-10 rounded-full art-fallback bg-cover bg-center border border-slate-600 shrink-0"></div>
+                        ${mfRenderCommanderListAvatar(combo.deck, { size: 'sm', borderClass: 'border-slate-600' })}
                         <div class="flex-grow min-w-0">
                             <p class="font-bold text-white truncate text-sm">${escapeHtml(combo.player)} <span class="text-slate-500 font-normal">·</span> <span class="text-purple-300">${escapeHtml(combo.deck)}</span></p>
                             <div class="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -10478,7 +10557,7 @@
                             <p class="font-bold text-white truncate">${escapeHtml(b.owner)}</p>
                             <div class="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <span class="text-[10px] font-bold text-teal-300 bg-teal-500/15 border border-teal-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">${b.deckCount} ${commanderLabel}</span>
-                                ${offMetaLabel ? `<span class="text-[10px] text-slate-300 truncate min-w-0" title="${escapeHtml(offMetaLabel)}">${escapeHtml(offMetaLabel)}</span>` : ''}
+                                ${offMetaLabel ? `<span class="text-[10px] text-slate-300 min-w-0 w-full basis-full break-words leading-snug" title="${escapeHtml(offMetaLabel)}">${escapeHtml(offMetaLabel)}</span>` : ''}
                             </div>
                         </div>
                         <div class="text-right shrink-0 bg-slate-900/70 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
@@ -10667,7 +10746,7 @@
 
                 return `
                 <div class="flex items-start gap-3 min-w-0">
-                    <div data-card="${w.name}" data-version="art_crop" class="set-bg w-10 h-10 rounded-full art-fallback bg-cover bg-center border-2 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)] shrink-0"></div>
+                    ${mfRenderCommanderListAvatar(w.name, { size: 'sm', borderPrimary: 'border-green-500', borderSecondary: 'border-green-400/70', extraClass: 'shadow-[0_0_10px_rgba(34,197,94,0.3)]' })}
                     <div class="min-w-0 flex-1">
                         <h3 class="font-bold text-white text-sm md:text-base leading-snug flex items-center gap-2 min-w-0">
                             <span class="truncate min-w-0">${w.name}</span>
@@ -10724,7 +10803,7 @@
                             return `
                             <div class="flex justify-between items-center bg-slate-800/50 p-2 md:p-3 rounded-lg border border-slate-700/50 mb-2">
                                 <div class="flex items-center gap-3 min-w-0">
-                                    <div data-card="${w.name}" data-version="art_crop" class="set-bg w-8 h-8 rounded-full art-fallback bg-cover bg-center border border-slate-600 shrink-0"></div>
+                                    ${mfRenderCommanderListAvatar(w.name, { size: 'xs', borderClass: 'border-slate-600' })}
                                     <span class="text-sm text-white font-semibold flex items-center gap-2 truncate min-w-0">
                                         <span class="text-yellow-500 shrink-0">👑</span> <span class="truncate">${w.name}</span> <span class="text-[10px] text-slate-500 hidden sm:inline shrink-0 normal-case">(${pilotDisplay}${ownerTag})</span>
                                     </span>
@@ -10746,7 +10825,7 @@
                             return `
                             <div class="flex justify-between items-center bg-slate-800/30 p-2 md:p-3 rounded-lg border border-slate-700/30 mb-2">
                                 <div class="flex items-center gap-3 opacity-80 min-w-0">
-                                    <div data-card="${l.name}" data-version="art_crop" class="set-bg w-8 h-8 rounded-full art-fallback bg-cover bg-center border border-slate-600 grayscale shrink-0"></div>
+                                    ${mfRenderCommanderListAvatar(l.name, { size: 'xs', borderClass: 'border-slate-600', grayscale: true })}
                                     <div class="min-w-0">
                                         <span class="text-sm text-slate-300 font-semibold flex items-center gap-2 truncate">
                                             <span class="text-red-500/50 shrink-0">💀</span> <span class="truncate">${l.name}</span> <span class="text-[10px] text-slate-500 hidden sm:inline shrink-0 normal-case">(${pilotDisplay}${ownerTag})</span>
@@ -10807,7 +10886,7 @@
                             return `
                             <div class="flex justify-between items-center bg-slate-800/50 p-2 md:p-3 rounded-lg border border-slate-700/50 mb-2">
                                 <div class="flex items-center gap-3">
-                                    <div data-card="${w.name}" data-version="art_crop" class="set-bg w-8 h-8 rounded-full art-fallback bg-cover bg-center border border-slate-600 shrink-0"></div>
+                                    ${mfRenderCommanderListAvatar(w.name, { size: 'xs', borderClass: 'border-slate-600' })}
                                     <span class="text-sm text-white font-semibold flex items-center gap-2 truncate">
                                         <span class="text-yellow-500 shrink-0">👑</span> <span class="truncate">${w.name}</span> <span class="text-[10px] text-slate-500 hidden sm:inline shrink-0">(${w.player})</span>
                                     </span>
@@ -10824,7 +10903,7 @@
                             return `
                             <div class="flex justify-between items-center bg-slate-800/30 p-2 md:p-3 rounded-lg border border-slate-700/30 mb-2">
                                 <div class="flex items-center gap-3 opacity-80 min-w-0">
-                                    <div data-card="${l.name}" data-version="art_crop" class="set-bg w-8 h-8 rounded-full art-fallback bg-cover bg-center border border-slate-600 grayscale shrink-0"></div>
+                                    ${mfRenderCommanderListAvatar(l.name, { size: 'xs', borderClass: 'border-slate-600', grayscale: true })}
                                     <div class="min-w-0">
                                         <span class="text-sm text-slate-300 font-semibold flex items-center gap-2 truncate">
                                             <span class="text-red-500/50 shrink-0">💀</span> <span class="truncate">${l.name}</span> <span class="text-[10px] text-slate-500 hidden sm:inline shrink-0">(${l.player})</span>
@@ -10948,7 +11027,7 @@
                         const matchNum = latestSessionMatches.length - idx;
                         const winnersHtml = m.winners.map(w => {
                             const delta = m.eloChanges[w.name];
-                            return `<div class="flex items-center gap-2 bg-slate-800/40 p-2 rounded-lg border border-slate-700/50"><div data-card="${w.name}" data-version="art_crop" class="set-bg bg-cover bg-center w-7 h-7 rounded-full border border-green-500/50 art-fallback shrink-0 shadow-sm"></div><div class="min-w-0 flex-grow"><p class="text-xs font-bold text-white truncate"><span class="text-yellow-500 mr-1">👑</span>${w.player}</p><p class="text-[9px] text-slate-400 truncate">${w.name}</p></div><span class="text-xs text-green-400 font-bold shrink-0">+${delta}</span></div>`;
+                            return `<div class="flex items-center gap-2 bg-slate-800/40 p-2 rounded-lg border border-slate-700/50">${mfRenderCommanderListAvatar(w.name, { size: 'xxs', borderPrimary: 'border-green-500/50', borderSecondary: 'border-green-400/40', extraClass: 'shadow-sm' })}<div class="min-w-0 flex-grow"><p class="text-xs font-bold text-white truncate"><span class="text-yellow-500 mr-1">👑</span>${w.player}</p><p class="text-[9px] text-slate-400 truncate">${w.name}</p></div><span class="text-xs text-green-400 font-bold shrink-0">+${delta}</span></div>`;
                         }).join('');
                         
                         const losersHtml = m.losers.map((l) => mfFormatSessionLoserRow(l, m)).join('');
@@ -11019,7 +11098,7 @@
                                 
                                 <div class="flex -space-x-3 shrink-0 relative z-10">
                                     ${renderPlayerAvatar(topGainerPlayer, 'w-10 h-10 md:w-12 md:h-12', 'text-xs md:text-sm', 'border-2 border-green-500 z-10 shadow-md')}
-                                    <div data-card="${topGainer.name}" data-version="art_crop" class="set-bg bg-cover bg-center w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-green-400 shadow-[0_0_15px_rgba(74,222,128,0.2)] flex-shrink-0 art-fallback relative z-0"></div>
+                                    ${mfRenderCommanderListAvatar(topGainer.name, { size: 'md', borderPrimary: 'border-green-400', borderSecondary: 'border-green-300/70', extraClass: 'shadow-[0_0_15px_rgba(74,222,128,0.2)] relative z-0' })}
                                 </div>
                                 
                                 <div class="relative z-10 flex-grow min-w-0 pl-1 md:pl-2">
@@ -11605,10 +11684,10 @@
 
             wrap.classList.remove('hidden');
 
-            const card = (label, value, valueCls, sub) => `
+            const card = (label, value, valueCls, sub, wrapValue = false) => `
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-inner min-w-0">
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">${label}</p>
-                    <p class="text-base font-black ${valueCls} mt-1 truncate" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</p>
+                    <p class="text-base font-black ${valueCls} mt-1 ${wrapValue ? 'break-words leading-snug' : 'truncate'}" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</p>
                     <p class="text-[10px] text-slate-300 font-semibold mt-0.5 truncate">${escapeHtml(String(sub))}</p>
                 </div>`;
 
@@ -11624,7 +11703,7 @@
 
                 host.innerHTML = [
                     card('Median EDHREC Rank', medianLabel, 'text-teal-300', medianSub),
-                    card('Most Off-Meta', offMetaLabel, 'text-amber-300', offMetaSub),
+                    card('Most Off-Meta', offMetaLabel, 'text-amber-300', offMetaSub, true),
                 ].join('');
                 return;
             }
@@ -11764,7 +11843,7 @@
                     html += `
                     <div class="flex justify-between items-center bg-slate-900 border border-slate-700 p-2 md:p-3 rounded-lg mb-2">
                         <div class="flex items-center gap-3 min-w-0 pr-2">
-                            <div data-card="${cmd.name}" data-version="art_crop" class="set-bg w-8 h-8 rounded-full art-fallback bg-cover bg-center border border-slate-600 shrink-0"></div>
+                            ${mfRenderCommanderListAvatar(cmd.name, { size: 'xs', borderClass: 'border-slate-600' })}
                             <span class="text-sm font-bold text-white truncate" title="${cmd.name}">${cmd.name}</span>
                         </div>
                         <select onchange="window.updateDeckOwner('${cmd.name.replace(/'/g, "\\'")}', this.value)" class="bg-slate-800 border border-slate-600 text-slate-300 text-xs rounded-lg px-2 py-1.5 outline-none focus:border-purple-500 cursor-pointer w-32 shrink-0">
@@ -13022,9 +13101,15 @@
             const newDeckInput = deckGroup.querySelector('.new-deck-input');
             const variantInput = deckGroup.querySelector('.new-deck-variant-input');
 
-            let commanders = mfReadCommandersFromDeckGroup(deckGroup);
+            let commanders = [];
             const nameSource = (localInput?.value || newDeckInput?.value || '').trim();
-            if (!commanders.length && nameSource) {
+            if (isNewDeck) {
+                commanders = mfReadCommandersFromDeckGroup(deckGroup);
+                if (!commanders.length && nameSource) {
+                    commanders = mfParseCommanderNamesFromDeckName(nameSource);
+                }
+            } else if (nameSource) {
+                // Prefer parse from the visible local name so stale data-mf-commanders cannot overwrite.
                 commanders = mfParseCommanderNamesFromDeckName(nameSource);
             }
 
@@ -13502,7 +13587,10 @@
                         input.value = item.name;
                         mfMarkFieldSelected(input);
                         const group = input.closest('.input-slot-group');
-                        if (group) delete group.dataset.confirmedNew;
+                        if (group) {
+                            delete group.dataset.confirmedNew;
+                            mfWriteCommandersToDeckGroup(group, mfParseCommanderNamesFromDeckName(item.name));
+                        }
                     });
                     dropdown.appendChild(li);
                 });
