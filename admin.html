@@ -188,7 +188,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, addDoc, query, orderBy, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, getDocsFromServer, getDoc, getDocFromServer, doc, setDoc, deleteDoc, addDoc, query, orderBy, updateDoc, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBsMhmoUMFqM4tkOFpY8WtllXZ4_QtU1Cs",
@@ -342,35 +342,87 @@
             return q;
         }
 
-        function mfStripUndefinedDeep(value) {
-            if (Array.isArray(value)) {
-                return value.map(mfStripUndefinedDeep).filter((v) => v !== undefined);
-            }
-            if (value && typeof value === 'object') {
-                const out = {};
-                Object.keys(value).forEach((key) => {
-                    const v = value[key];
-                    if (v === undefined) return;
-                    out[key] = mfStripUndefinedDeep(v);
+        function mfShallowSeatForPartner(seat, newDeckName, newCommanders) {
+            if (!seat || typeof seat !== 'object') return seat;
+            const out = {};
+            Object.keys(seat).forEach((key) => {
+                const v = seat[key];
+                if (v !== undefined) out[key] = v;
+            });
+            out.name = newDeckName;
+            out.commanders = [...newCommanders];
+            return out;
+        }
+
+        function mfShallowObject(data) {
+            if (!data || typeof data !== 'object') return data;
+            const out = {};
+            Object.keys(data).forEach((key) => {
+                const v = data[key];
+                if (v !== undefined) out[key] = v;
+            });
+            return out;
+        }
+
+        async function commitBatchedUpdates(updates) {
+            const BATCH_SIZE = 400;
+            for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+                const batch = writeBatch(db);
+                updates.slice(i, i + BATCH_SIZE).forEach(({ ref, data }) => {
+                    batch.update(ref, data);
                 });
-                return out;
+                await batch.commit();
             }
-            return value;
         }
 
-        function mfEncodeDeckDataAttr(deckName) {
-            return encodeURIComponent(String(deckName || ''));
+        async function verifyPartnerMigration(groupId, oldDeckName, newDeckName) {
+            const [matchesSnap, decksSnap] = await Promise.all([
+                getDocsFromServer(collection(db, 'groups', groupId, 'matches')),
+                getDocsFromServer(collection(db, 'groups', groupId, 'decks'))
+            ]);
+            let stillSolo = 0;
+            let updatedSeats = 0;
+            matchesSnap.docs.forEach((matchDoc) => {
+                const data = matchDoc.data();
+                [...(data.winners || []), ...(data.losers || [])].forEach((seat) => {
+                    if (!seat?.name) return;
+                    if (deckNamesMatch(seat.name, oldDeckName)) stillSolo++;
+                    if (deckNamesMatch(seat.name, newDeckName)) updatedSeats++;
+                });
+            });
+            let updatedDecks = 0;
+            let soloDecks = 0;
+            decksSnap.docs.forEach((deckDoc) => {
+                const name = deckDoc.data()?.name;
+                if (!name) return;
+                if (deckNamesMatch(name, oldDeckName)) soloDecks++;
+                if (deckNamesMatch(name, newDeckName)) updatedDecks++;
+            });
+            return {
+                stillSolo,
+                updatedSeats,
+                soloDecks,
+                updatedDecks,
+                updated: updatedSeats + updatedDecks
+            };
         }
 
-        function mfDecodeDeckDataAttr(raw) {
-            try {
-                return decodeURIComponent(String(raw || ''));
-            } catch (_) {
-                return String(raw || '');
-            }
+        function formatPartnerMigrateSuccess(result) {
+            const entityNote = result.deckEntityCount
+                ? ` · ${result.deckEntityCount} deck entit${result.deckEntityCount === 1 ? 'y' : 'ies'}`
+                : '';
+            const matchNote = `${result.matchCount} match${result.matchCount === 1 ? '' : 'es'}`;
+            const resolvedNote = result.partnerResolved && !deckNamesMatch(result.partnerResolved, result.partnerInput || '')
+                ? ` · resolved as "${result.partnerResolved}"`
+                : '';
+            const verifyNote = result.verify
+                ? ` · verified ${result.verify.updatedSeats} seat${result.verify.updatedSeats === 1 ? '' : 's'}${result.verify.updatedDecks ? `, ${result.verify.updatedDecks} deck entit${result.verify.updatedDecks === 1 ? 'y' : 'ies'}` : ''}`
+                : '';
+            return `"${result.oldDeckName}" → "${result.newDeckName}" · ${matchNote}${entityNote}${resolvedNote}${verifyNote}.`;
         }
 
         async function addPartnerToExistingDeck(groupId, oldDeckName, partnerName) {
+            const partnerInput = normalizeName(partnerName);
             const partner = await resolvePartnerCardName(partnerName);
             if (!partner) throw new Error('Enter a partner commander name.');
 
@@ -384,6 +436,8 @@
             const variant = mfDeckVariantFromName(oldDeckName);
             const newDeckName = mfBuildDeckDisplayName([primary, partner], variant);
             const newCommanders = [primary, partner];
+
+            console.info('[admin] partner migrate start', { groupId, oldDeckName, newDeckName, partner });
 
             const matchesSnap = await getDocs(collection(db, 'groups', groupId, 'matches'));
             const matchUpdates = [];
@@ -401,36 +455,37 @@
                         if (!inferredOwner) {
                             inferredOwner = normalizeName(seat.owner || seat.player || '');
                         }
-                        return mfStripUndefinedDeep({ ...seat, name: newDeckName, commanders: newCommanders });
+                        return mfShallowSeatForPartner(seat, newDeckName, newCommanders);
                     });
                 };
 
                 const winners = mapSeats(data.winners);
                 const losers = mapSeats(data.losers);
                 if (changed) {
-                    matchUpdates.push(updateDoc(matchDoc.ref, mfStripUndefinedDeep({ winners, losers })));
+                    matchUpdates.push({
+                        ref: matchDoc.ref,
+                        data: mfShallowObject({ winners, losers })
+                    });
                 }
             });
 
-            await Promise.all(matchUpdates);
-
-            // Rename matching deck entities so registered decks stay aligned with match seats.
             const decksSnap = await getDocs(collection(db, 'groups', groupId, 'decks'));
             const deckUpdates = [];
             decksSnap.docs.forEach((deckDoc) => {
                 const data = deckDoc.data() || {};
                 if (!deckNamesMatch(data.name, oldDeckName)) return;
                 if (!inferredOwner) inferredOwner = normalizeName(data.owner || '');
-                deckUpdates.push(updateDoc(deckDoc.ref, mfStripUndefinedDeep({
-                    name: newDeckName,
-                    commanders: newCommanders,
-                    updatedAt: Date.now()
-                })));
+                deckUpdates.push({
+                    ref: deckDoc.ref,
+                    data: mfShallowObject({
+                        name: newDeckName,
+                        commanders: newCommanders,
+                        updatedAt: Date.now()
+                    })
+                });
             });
-            await Promise.all(deckUpdates);
 
             if (!matchUpdates.length && !deckUpdates.length) {
-                // Still allow migrate when the deck only exists as an ownership key.
                 const ownersProbe = await getDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners'));
                 const ownersData = ownersProbe.exists() ? ownersProbe.data() : {};
                 const hasOwnerKey = Object.keys(ownersData).some((k) => deckNamesMatch(k, oldDeckName));
@@ -438,6 +493,8 @@
                     throw new Error(`No matches or deck records found for "${oldDeckName}". Nothing to migrate.`);
                 }
             }
+
+            await commitBatchedUpdates([...matchUpdates, ...deckUpdates]);
 
             const ownersRef = doc(db, 'groups', groupId, 'settings', 'deckOwners');
             const ownersSnap = await getDoc(ownersRef);
@@ -461,7 +518,6 @@
             });
             await setDoc(ownersRef, ownerPatch, { merge: true });
 
-            // Move deck list links keyed by the old solo deck name.
             const linksRef = doc(db, 'groups', groupId, 'settings', 'deckLinks');
             const linksSnap = await getDoc(linksRef);
             let linkMoved = false;
@@ -481,14 +537,36 @@
                 }
             }
 
+            const verify = await verifyPartnerMigration(groupId, oldDeckName, newDeckName);
+            const ownersServer = await getDocFromServer(ownersRef);
+            const hasPartnerOwnerKey = ownersServer.exists()
+                && Object.keys(ownersServer.data()).some((k) => deckNamesMatch(k, newDeckName));
+
+            console.info('[admin] partner migrate verify', { oldDeckName, newDeckName, verify, hasPartnerOwnerKey });
+
+            if (matchUpdates.length || deckUpdates.length) {
+                if (verify.stillSolo > 0 || verify.soloDecks > 0) {
+                    throw new Error(
+                        `Migration incomplete: ${verify.stillSolo} match seat(s) and ${verify.soloDecks} deck(s) still use "${oldDeckName}".`
+                    );
+                }
+                if (verify.updated === 0) {
+                    throw new Error(`Migration failed: server has no records for "${newDeckName}".`);
+                }
+            } else if (!hasPartnerOwnerKey) {
+                throw new Error(`Owners updated but "${newDeckName}" was not found on server after save.`);
+            }
+
             return {
                 oldDeckName,
                 newDeckName,
                 partnerResolved: partner,
+                partnerInput,
                 matchCount: matchUpdates.length,
                 deckEntityCount: deckUpdates.length,
                 ownerUpdated: true,
-                linkMoved
+                linkMoved,
+                verify
             };
         }
 
@@ -780,7 +858,7 @@
                 return;
             }
 
-            els.ownershipList.innerHTML = deckNames.map(deck => {
+            els.ownershipList.innerHTML = deckNames.map((deck, deckIndex) => {
                 const currentOwner = owners[deck] || inferredOwners[deck] || '';
                 const ownerOptions = [...rosterNames];
                 if (currentOwner && !ownerOptions.some((n) => deckNamesMatch(n, currentOwner))) {
@@ -791,24 +869,23 @@
                 const commanders = mfParseCommanderNamesFromDeckName(deck);
                 const isPartner = commanders.length >= 2;
                 const deckEsc = escapeHtml(deck);
-                const deckData = mfEncodeDeckDataAttr(deck);
-                const listId = `partner-suggestions-${deckData.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+                const listId = `partner-suggestions-${deckIndex}`;
                 const partnerBlock = isPartner ? `
                     <p class="text-[10px] text-purple-300/90 font-semibold pt-1">Partner deck · ${escapeHtml(commanders.join(' + '))}</p>
                 ` : `
                     <div class="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-800/80 mt-2">
                         <div class="relative flex-1 min-w-0">
-                            <input type="text" list="${listId}" data-deck="${deckData}" class="partner-name-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-purple-500" placeholder="Partner commander (e.g. Frodo, Adventurous Hobbit)" autocomplete="off">
+                            <input type="text" list="${listId}" class="partner-name-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-purple-500" placeholder="Partner commander (e.g. Frodo, Adventurous Hobbit)" autocomplete="off">
                             <datalist id="${listId}"></datalist>
                         </div>
-                        <button type="button" data-deck="${deckData}" class="partner-add-btn shrink-0 text-[10px] font-bold text-purple-200 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-3 py-1.5 rounded-lg transition">Add partner</button>
+                        <button type="button" class="partner-add-btn shrink-0 text-[10px] font-bold text-purple-200 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-3 py-1.5 rounded-lg transition">Add partner</button>
                     </div>
                 `;
                 return `
-                    <div class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 space-y-0">
+                    <div class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 space-y-0" data-deck-row="${deckEsc}">
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-sm font-semibold text-white truncate" title="${deckEsc}">${deckEsc}</span>
-                            <select data-deck="${deckData}" class="ownership-select bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-purple-500 shrink-0 max-w-[45%]">
+                            <select class="ownership-select bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-purple-500 shrink-0 max-w-[45%]">
                                 ${options}
                             </select>
                         </div>
@@ -817,36 +894,41 @@
                 `;
             }).join('');
 
-            els.ownershipList.querySelectorAll('.ownership-select').forEach(sel => {
-                sel.addEventListener('change', async () => {
-                    const deckName = mfDecodeDeckDataAttr(sel.dataset.deck);
-                    await setDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners'), { [deckName]: sel.value }, { merge: true });
-                });
-            });
+            const ownershipRows = [...els.ownershipList.querySelectorAll('[data-deck-row]')];
+            deckNames.forEach((deckName, index) => {
+                const row = ownershipRows[index];
+                if (!row) return;
 
-            els.ownershipList.querySelectorAll('.partner-name-input').forEach((input) => {
-                let timer;
-                input.addEventListener('input', () => {
-                    clearTimeout(timer);
-                    const q = input.value.trim();
-                    const listId = input.getAttribute('list');
-                    const datalist = listId ? document.getElementById(listId) : null;
-                    if (!datalist || q.length < 3) {
-                        if (datalist) datalist.innerHTML = '';
-                        return;
-                    }
-                    timer = setTimeout(async () => {
-                        const names = await fetchPartnerAutocomplete(q);
-                        datalist.innerHTML = names.map((n) => `<option value="${escapeHtml(n)}"></option>`).join('');
-                    }, 280);
-                });
-            });
+                const sel = row.querySelector('.ownership-select');
+                if (sel) {
+                    sel.addEventListener('change', async () => {
+                        await setDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners'), { [deckName]: sel.value }, { merge: true });
+                    });
+                }
 
-            els.ownershipList.querySelectorAll('.partner-add-btn').forEach((btn) => {
+                const input = row.querySelector('.partner-name-input');
+                if (input) {
+                    let timer;
+                    input.addEventListener('input', () => {
+                        clearTimeout(timer);
+                        const q = input.value.trim();
+                        const listId = input.getAttribute('list');
+                        const datalist = listId ? document.getElementById(listId) : null;
+                        if (!datalist || q.length < 3) {
+                            if (datalist) datalist.innerHTML = '';
+                            return;
+                        }
+                        timer = setTimeout(async () => {
+                            const names = await fetchPartnerAutocomplete(q);
+                            datalist.innerHTML = names.map((n) => `<option value="${escapeHtml(n)}"></option>`).join('');
+                        }, 280);
+                    });
+                }
+
+                const btn = row.querySelector('.partner-add-btn');
+                if (!btn) return;
+
                 btn.addEventListener('click', async () => {
-                    const deckName = mfDecodeDeckDataAttr(btn.dataset.deck);
-                    const row = btn.closest('.bg-slate-950');
-                    const input = row?.querySelector('.partner-name-input');
                     const partner = input?.value?.trim();
                     if (!partner) {
                         setPartnerMigrateStatus('Enter a partner commander name first.', true);
@@ -866,18 +948,9 @@
                     setPartnerMigrateStatus('Resolving partner on Scryfall and updating matches…', false);
                     try {
                         const result = await addPartnerToExistingDeck(groupId, deckName, partner);
-                        const entityNote = result.deckEntityCount
-                            ? ` · ${result.deckEntityCount} deck entit${result.deckEntityCount === 1 ? 'y' : 'ies'}`
-                            : '';
-                        const matchNote = `${result.matchCount} match${result.matchCount === 1 ? '' : 'es'}`;
-                        const resolvedNote = result.partnerResolved && !deckNamesMatch(result.partnerResolved, partner)
-                            ? ` · resolved as "${result.partnerResolved}"`
-                            : '';
-                        setPartnerMigrateStatus(
-                            `"${result.oldDeckName}" → "${result.newDeckName}" · ${matchNote}${entityNote}${resolvedNote}.`,
-                            false
-                        );
+                        const successMsg = formatPartnerMigrateSuccess(result);
                         await loadOwnershipForSelectedGroup(groupId);
+                        setPartnerMigrateStatus(successMsg, false);
                     } catch (e) {
                         console.error('addPartnerToExistingDeck failed', e);
                         setPartnerMigrateStatus(e.message || String(e), true);
