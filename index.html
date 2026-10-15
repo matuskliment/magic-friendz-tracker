@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.60">
+    <meta name="mf-app-version" content="2.9.61">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -452,13 +452,10 @@
                 display: none;
             }
         }
-        #cmd-view-retire-mobile-wrap:not(.hidden) {
-            display: flex;
-        }
-        @media (min-width: 768px) {
-            #cmd-view-retire-mobile-wrap {
-                display: none !important;
-            }
+        /* Always show when JS removes .hidden — do not gate on min-width.
+           iOS “Request Desktop Website” reports ~980px and would hide a md-only control. */
+        #cmd-view-retire-action-wrap:not(.hidden) {
+            display: flex !important;
         }
         .mf-sheet-scroll {
             position: relative;
@@ -1876,8 +1873,8 @@
                             <span id="cmd-view-owner" class="text-sm font-bold text-slate-200 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"></span>
                             <span id="cmd-view-retired-badge" class="hidden text-[10px] font-bold uppercase tracking-wider text-slate-300 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-600">Retired</span>
                         </div>
-                        <div id="cmd-view-retire-mobile-wrap" class="hidden w-full justify-center">
-                            <button type="button" id="cmd-view-retire-mobile-btn" class="inline-flex items-center justify-center text-sm font-semibold text-slate-300 hover:text-white px-4 py-2.5 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation">Retire deck</button>
+                        <div id="cmd-view-retire-action-wrap" class="hidden w-full justify-center md:justify-start">
+                            <button type="button" id="cmd-view-retire-action-btn" class="inline-flex items-center justify-center text-sm font-semibold text-slate-200 hover:text-white px-4 py-2.5 rounded-full border border-slate-500 hover:border-slate-400 bg-slate-800 transition min-h-[44px] touch-manipulation">Retire deck</button>
                         </div>
                         <div id="cmd-view-alt-names-container" class="hidden flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 max-w-full">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Also known as:</span>
@@ -3153,8 +3150,8 @@
         function updateCommanderRetireUI(cmd) {
             const badge = document.getElementById('cmd-view-retired-badge');
             const headerBtn = document.getElementById('cmd-view-retire-btn');
-            const mobileWrap = document.getElementById('cmd-view-retire-mobile-wrap');
-            const mobileBtn = document.getElementById('cmd-view-retire-mobile-btn');
+            const actionWrap = document.getElementById('cmd-view-retire-action-wrap');
+            const actionBtn = document.getElementById('cmd-view-retire-action-btn');
             const spacer = document.getElementById('cmd-view-header-spacer');
             if (!cmd) return;
 
@@ -3165,24 +3162,23 @@
                 && !!cmd.deckEntityId
                 && window.canManageDeckFor(cmd.owner);
 
+            const bindRetire = (btn) => {
+                if (!btn) return;
+                btn.disabled = false;
+                btn.onclick = (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    window.mfRetireOwnedDeck(cmd.deckEntityId);
+                };
+            };
+
             if (headerBtn) {
                 headerBtn.classList.toggle('hidden', !canRetire);
-                headerBtn.disabled = false;
-                headerBtn.onclick = (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    window.mfRetireOwnedDeck(cmd.deckEntityId);
-                };
+                bindRetire(headerBtn);
             }
-            if (mobileWrap) mobileWrap.classList.toggle('hidden', !canRetire);
-            if (mobileBtn) {
-                mobileBtn.disabled = false;
-                mobileBtn.onclick = (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    window.mfRetireOwnedDeck(cmd.deckEntityId);
-                };
-            }
+            // Body action is the reliable control on iOS (header can clip; desktop-site mode hides md-only UI).
+            if (actionWrap) actionWrap.classList.toggle('hidden', !canRetire);
+            bindRetire(actionBtn);
             if (spacer) spacer.classList.toggle('hidden', !!canRetire);
         }
 
