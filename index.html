@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.52">
+    <meta name="mf-app-version" content="2.9.53">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -1756,13 +1756,16 @@
 
     <!-- FULL SCREEN VIEW: COMMANDER PROFILE -->
     <div id="view-commander-detail" class="mf-mobile-sheet z-[100] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="cmd-view-title">
-        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800">
-            <button type="button" onclick="window.closeCommanderProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation">
+        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 gap-2">
+            <button type="button" onclick="window.closeCommanderProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 Back
             </button>
-            <h3 id="cmd-view-title" class="text-sm font-bold text-slate-200 truncate max-w-[200px]">Commander</h3>
-            <div class="w-16"></div>
+            <h3 id="cmd-view-title" class="text-sm font-bold text-slate-200 truncate min-w-0 flex-1 text-center px-1">Commander</h3>
+            <div id="cmd-view-retire-wrap" class="hidden shrink-0">
+                <button type="button" id="cmd-view-retire-btn" class="text-slate-200 hover:text-white text-xs font-bold bg-slate-800/80 hover:bg-slate-700 border border-slate-600/70 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation whitespace-nowrap">Retire</button>
+            </div>
+            <div id="cmd-view-header-spacer" class="w-[4.5rem] shrink-0" aria-hidden="true"></div>
         </div>
 
         <div class="mf-sheet-scroll">
@@ -1832,9 +1835,6 @@
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Owner:</span>
                             <span id="cmd-view-owner" class="text-sm font-bold text-slate-200 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"></span>
                             <span id="cmd-view-retired-badge" class="hidden text-[10px] font-bold uppercase tracking-wide text-slate-300 bg-slate-800/90 border border-slate-600/70 px-2 py-1 rounded-md">Retired</span>
-                        </div>
-                        <div id="cmd-view-retire-wrap" class="hidden w-full flex justify-center md:justify-start">
-                            <button type="button" id="cmd-view-retire-btn" class="text-[11px] font-bold text-slate-300 bg-slate-800/80 hover:bg-slate-700 border border-slate-600/70 px-3 py-2 rounded-lg transition touch-manipulation min-h-[40px]">Retire deck</button>
                         </div>
                         <div id="cmd-view-alt-names-container" class="hidden flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 max-w-full">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Also known as:</span>
@@ -3104,6 +3104,7 @@
         function updateCommanderRetireUI(cmd) {
             const badge = document.getElementById('cmd-view-retired-badge');
             const wrap = document.getElementById('cmd-view-retire-wrap');
+            const spacer = document.getElementById('cmd-view-header-spacer');
             const btn = document.getElementById('cmd-view-retire-btn');
             if (!cmd) return;
 
@@ -3114,9 +3115,9 @@
                 && !!cmd.deckEntityId
                 && window.canManageDeckFor(cmd.owner);
             if (wrap) wrap.classList.toggle('hidden', !canRetire);
+            if (spacer) spacer.classList.toggle('hidden', !!canRetire);
             if (!btn) return;
 
-            btn.textContent = 'Retire deck';
             btn.disabled = false;
             btn.onclick = (event) => {
                 event.preventDefault();
