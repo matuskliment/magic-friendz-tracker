@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.53">
+    <meta name="mf-app-version" content="2.9.54">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -1756,16 +1756,20 @@
 
     <!-- FULL SCREEN VIEW: COMMANDER PROFILE -->
     <div id="view-commander-detail" class="mf-mobile-sheet z-[100] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="cmd-view-title">
-        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 gap-2">
-            <button type="button" onclick="window.closeCommanderProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                Back
-            </button>
-            <h3 id="cmd-view-title" class="text-sm font-bold text-slate-200 truncate min-w-0 flex-1 text-center px-1">Commander</h3>
-            <div id="cmd-view-retire-wrap" class="hidden shrink-0">
-                <button type="button" id="cmd-view-retire-btn" class="text-slate-200 hover:text-white text-xs font-bold bg-slate-800/80 hover:bg-slate-700 border border-slate-600/70 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation whitespace-nowrap">Retire</button>
+        <div class="mf-sheet-header glass px-4 py-3 flex items-center justify-between border-b border-slate-800 gap-2 relative">
+            <div class="flex items-center justify-start min-w-[5.75rem] shrink-0 z-10">
+                <button type="button" onclick="window.closeCommanderProfile()" class="inline-flex items-center justify-center gap-1 text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                    Back
+                </button>
             </div>
-            <div id="cmd-view-header-spacer" class="w-[4.5rem] shrink-0" aria-hidden="true"></div>
+            <h3 id="cmd-view-title" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm font-bold text-slate-200 truncate max-w-[42%] text-center pointer-events-none">Commander</h3>
+            <div class="flex items-center justify-end min-w-[5.75rem] shrink-0 z-10">
+                <div id="cmd-view-retire-wrap" class="hidden">
+                    <button type="button" id="cmd-view-retire-btn" class="inline-flex items-center justify-center text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation whitespace-nowrap">Retire</button>
+                </div>
+                <div id="cmd-view-header-spacer" class="w-[5.75rem]" aria-hidden="true"></div>
+            </div>
         </div>
 
         <div class="mf-sheet-scroll">
@@ -1834,7 +1838,7 @@
                         <div class="flex items-center gap-2 flex-wrap justify-center md:justify-start">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Owner:</span>
                             <span id="cmd-view-owner" class="text-sm font-bold text-slate-200 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"></span>
-                            <span id="cmd-view-retired-badge" class="hidden text-[10px] font-bold uppercase tracking-wide text-slate-300 bg-slate-800/90 border border-slate-600/70 px-2 py-1 rounded-md">Retired</span>
+                            <span id="cmd-view-retired-badge" class="hidden text-[10px] font-bold uppercase tracking-wider text-slate-300 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-600">Retired</span>
                         </div>
                         <div id="cmd-view-alt-names-container" class="hidden flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 max-w-full">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Also known as:</span>
@@ -1939,14 +1943,18 @@
 
     <!-- FULL SCREEN VIEW: PLAYER PROFILE -->
     <div id="view-player-detail" class="mf-mobile-sheet z-[100] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="plr-view-name">
-        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 gap-2">
-            <button type="button" onclick="window.closePlayerProfile()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                Back
-            </button>
-            <h3 class="text-sm font-bold text-slate-200 truncate flex-1 text-center">Player Stats</h3>
-            <button type="button" id="plr-create-deck-btn" onclick="window.toggleProfileDeckCreatePanel()" class="hidden text-purple-200 hover:text-white text-xs font-bold bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation shrink-0 whitespace-nowrap">Create Deck</button>
-            <div id="plr-header-spacer" class="w-16 shrink-0"></div>
+        <div class="mf-sheet-header glass px-4 py-3 flex items-center justify-between border-b border-slate-800 gap-2 relative">
+            <div class="flex items-center justify-start min-w-[5.75rem] shrink-0 z-10">
+                <button type="button" onclick="window.closePlayerProfile()" class="inline-flex items-center justify-center gap-1 text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                    Back
+                </button>
+            </div>
+            <h3 class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm font-bold text-slate-200 truncate max-w-[42%] text-center pointer-events-none">Player Stats</h3>
+            <div class="flex items-center justify-end min-w-[5.75rem] shrink-0 z-10">
+                <button type="button" id="plr-create-deck-btn" onclick="window.toggleProfileDeckCreatePanel()" class="hidden inline-flex items-center justify-center text-sm font-semibold text-purple-200 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-3 py-2 rounded-full transition min-h-[44px] touch-manipulation whitespace-nowrap">Create Deck</button>
+                <div id="plr-header-spacer" class="w-[5.75rem]" aria-hidden="true"></div>
+            </div>
         </div>
 
         <div id="plr-deck-create-panel" class="hidden border-b border-slate-800 bg-slate-900/95 py-4">
@@ -7668,8 +7676,8 @@
 
         function mfRetiredBadgeHtml(size = 'sm') {
             const cls = size === 'xs'
-                ? 'text-[8px] md:text-[7px] font-bold uppercase tracking-wide px-1 py-0.5 rounded border text-slate-300 bg-slate-900/90 border-slate-600/70'
-                : 'text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border text-slate-300 bg-slate-800/90 border-slate-600/70';
+                ? 'inline-flex items-center text-[8px] md:text-[7px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border text-slate-300 bg-slate-900/90 border-slate-600/70'
+                : 'inline-flex items-center text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border text-slate-300 bg-slate-800/90 border-slate-600/70';
             return `<span class="${cls}">Retired</span>`;
         }
 
@@ -7677,10 +7685,16 @@
             const full = String(deckName || '').trim();
             const titleAttr = escapeHtml(full);
             const text = escapeHtml(full);
-            const retired = options.retired ? `<span class="inline-flex shrink-0 ml-1.5 align-middle">${mfRetiredBadgeHtml()}</span>` : '';
+            const retiredBadge = options.retired ? mfRetiredBadgeHtml() : '';
             return {
-                mobileHeader: `<h4 class="md:hidden font-bold text-sm text-white group-hover:text-purple-400 transition leading-snug line-clamp-2 mb-1" title="${titleAttr}">${text}${retired}</h4>`,
-                desktopTitle: `<h4 class="hidden md:block font-bold text-lg text-white group-hover:text-purple-400 transition drop-shadow truncate leading-snug" title="${titleAttr}">${text}${retired}</h4>`
+                mobileHeader: `<div class="md:hidden mb-1.5 space-y-1.5" title="${titleAttr}">
+                    <h4 class="font-bold text-sm text-white group-hover:text-purple-400 transition leading-snug line-clamp-2">${text}</h4>
+                    ${retiredBadge ? `<div class="flex">${retiredBadge}</div>` : ''}
+                </div>`,
+                desktopTitle: `<div class="hidden md:flex md:items-center md:gap-2.5 min-w-0 mb-0.5" title="${titleAttr}">
+                    <h4 class="font-bold text-lg text-white group-hover:text-purple-400 transition drop-shadow truncate leading-snug min-w-0">${text}</h4>
+                    ${retiredBadge ? `<span class="shrink-0">${retiredBadge}</span>` : ''}
+                </div>`
             };
         }
 
@@ -9616,7 +9630,7 @@
 
             const badge = (text, cls) => `<span class="text-[8px] md:text-[7px] font-bold uppercase tracking-wide px-1 py-0.5 rounded border backdrop-blur-sm ${cls}">${text}</span>`;
             const badges = [
-                retired ? badge('Retired', 'text-slate-200 bg-slate-950/90 border-slate-500/60') : '',
+                retired ? badge('Retired', 'text-slate-200 bg-slate-950/90 border-slate-500/60 rounded-full') : '',
                 owned ? badge('Owned', 'text-emerald-300 bg-emerald-950/80 border-emerald-500/40') : '',
                 piloted ? badge('Piloted', 'text-sky-300 bg-sky-950/80 border-sky-500/40') : '',
                 notOwned ? badge('Not owned', 'text-amber-300 bg-amber-950/80 border-amber-500/40') : '',
