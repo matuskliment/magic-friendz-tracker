@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.51">
+    <meta name="mf-app-version" content="2.9.52">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -3116,14 +3116,12 @@
             if (wrap) wrap.classList.toggle('hidden', !canRetire);
             if (!btn) return;
 
-            mfResetRetireConfirmButton(btn);
-            btn.dataset.mfRetireDeck = cmd.deckEntityId || '';
-            btn.dataset.mfRetireLabel = 'Retire deck';
             btn.textContent = 'Retire deck';
+            btn.disabled = false;
             btn.onclick = (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                window.mfRetireOwnedDeck(cmd.deckEntityId, btn);
+                window.mfRetireOwnedDeck(cmd.deckEntityId);
             };
         }
 
@@ -9610,18 +9608,9 @@
                 ? `window.closePlayerProfile(); setTimeout(() => window.openCommanderProfile(${idx}), 300);`
                 : '';
             const idJs = c.deckEntityId ? String(c.deckEntityId).replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
-            const canManage = !!c.deckEntityId && window.canManageDeckFor(playerName);
-            const canDelete = unplayed && canManage && !retired;
-            const canRetire = canManage && !retired;
-            const actionBtns = [];
-            if (canRetire) {
-                actionBtns.push(`<button type="button" data-mf-retire-deck="${idJs}" onclick="event.stopPropagation(); window.mfRetireOwnedDeck('${idJs}', this)" class="text-[9px] font-bold text-slate-200 bg-slate-950/85 hover:bg-slate-900 border border-slate-500/50 px-1.5 py-0.5 rounded-md touch-manipulation backdrop-blur-sm">Retire</button>`);
-            }
-            if (canDelete) {
-                actionBtns.push(`<button type="button" onclick="event.stopPropagation(); window.mfDeleteOwnedDeck('${idJs}')" class="text-[9px] font-bold text-red-200 bg-red-950/80 hover:bg-red-900 border border-red-500/40 px-1.5 py-0.5 rounded-md touch-manipulation backdrop-blur-sm">Delete</button>`);
-            }
-            const actionsHtml = actionBtns.length
-                ? `<div class="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">${actionBtns.join('')}</div>`
+            const canDelete = unplayed && !retired && c.deckEntityId && window.canManageDeckFor(playerName);
+            const deleteBtn = canDelete
+                ? `<button type="button" onclick="event.stopPropagation(); window.mfDeleteOwnedDeck('${idJs}')" class="absolute top-2 right-2 z-20 text-[9px] font-bold text-red-200 bg-red-950/80 hover:bg-red-900 border border-red-500/40 px-1.5 py-0.5 rounded-md touch-manipulation backdrop-blur-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">Delete</button>`
                 : '';
 
             const badge = (text, cls) => `<span class="text-[8px] md:text-[7px] font-bold uppercase tracking-wide px-1 py-0.5 rounded border backdrop-blur-sm ${cls}">${text}</span>`;
@@ -9639,7 +9628,7 @@
             const cardBorder = retired ? 'border-slate-700 opacity-90' : 'border-slate-800 hover:border-purple-500/50';
 
             return `<div onclick="${openCmd}" class="relative aspect-[5/7] w-full md:max-w-[7.5rem] md:justify-self-start bg-slate-900 rounded-xl overflow-hidden border ${cardBorder} transition cursor-pointer group shadow-md">
-                ${actionsHtml}
+                ${deleteBtn}
                 ${badges ? `<div class="absolute top-1.5 left-1.5 z-20 flex flex-wrap gap-0.5 max-w-[calc(100%-2.5rem)]">${badges}</div>` : ''}
                 <div data-card="${escapeHtml(mfPrimaryCommanderArtName(c.name))}" data-version="art_crop" class="set-bg absolute inset-0 art-fallback bg-cover bg-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
@@ -9786,65 +9775,34 @@
             );
         };
 
-        window._mfRetireConfirmTimers = window._mfRetireConfirmTimers || {};
-
-        function mfResetRetireConfirmButton(btn) {
-            if (!btn) return;
-            const key = btn.dataset.mfRetireKey || btn.id || '';
-            if (key && window._mfRetireConfirmTimers[key]) {
-                clearTimeout(window._mfRetireConfirmTimers[key]);
-                delete window._mfRetireConfirmTimers[key];
-            }
-            delete btn.dataset.confirming;
-            btn.disabled = false;
-            btn.textContent = btn.dataset.mfRetireLabel || 'Retire';
-            if (btn.dataset.mfRetireClass) btn.className = btn.dataset.mfRetireClass;
-        }
-
-        function mfArmRetireConfirmButton(btn, idleLabel) {
-            if (!btn) return false;
-            const key = btn.dataset.mfRetireDeck || btn.id || String(Math.random());
-            btn.dataset.mfRetireKey = key;
-            if (!btn.dataset.mfRetireLabel) btn.dataset.mfRetireLabel = idleLabel || btn.textContent || 'Retire';
-            if (!btn.dataset.mfRetireClass) btn.dataset.mfRetireClass = btn.className;
-            if (btn.dataset.confirming === '1') return true;
-            btn.dataset.confirming = '1';
-            btn.textContent = 'Are you sure?';
-            btn.classList.add('text-amber-100', 'bg-amber-950/90', 'border-amber-500/50');
-            if (window._mfRetireConfirmTimers[key]) clearTimeout(window._mfRetireConfirmTimers[key]);
-            window._mfRetireConfirmTimers[key] = setTimeout(() => mfResetRetireConfirmButton(btn), 4000);
-            return false;
-        }
-
-        window.mfRetireOwnedDeck = async function(deckId, btn) {
+        window.mfRetireOwnedDeck = function(deckId) {
             if (!deckId) return;
-            const armed = mfArmRetireConfirmButton(btn, btn?.dataset?.mfRetireLabel || 'Retire');
-            if (!armed) return;
-            if (btn) btn.disabled = true;
-            try {
-                await window.retireDeckEntity(deckId);
-                mfResetRetireConfirmButton(btn);
-                const idx = window._plrProfilePlayerIndex;
-                if (typeof idx === 'number' && window.appData.players[idx]) {
-                    refreshPlayerProfileDecksSection(window.appData.players[idx]);
-                }
-                if (window._cmdProfileDeckName) {
-                    const cmd = getCommanderByName(window._cmdProfileDeckName);
-                    if (cmd) updateCommanderRetireUI(cmd);
-                }
-                const adminModal = document.getElementById('view-admin-modal');
-                if (adminModal && !adminModal.classList.contains('hidden')) {
-                    window.openAdminModal();
-                }
-                window.mfToast('Deck retired. It stays on rankings with a Retired label, but can’t be picked for new matches.', {
-                    title: 'Retired',
-                    type: 'success',
-                    icon: '🏁'
-                });
-            } catch (err) {
-                mfResetRetireConfirmButton(btn);
-                window.showAppAlert(err.message || 'Could not retire deck.', 'Error', '❌');
-            }
+            window.showAppConfirm(
+                'Retire this deck? It will stay on rankings with a Retired label, but can’t be picked for new matches. This can’t be undone.',
+                async () => {
+                    try {
+                        await window.retireDeckEntity(deckId);
+                        const idx = window._plrProfilePlayerIndex;
+                        if (typeof idx === 'number' && window.appData.players[idx]) {
+                            refreshPlayerProfileDecksSection(window.appData.players[idx]);
+                        }
+                        if (window._cmdProfileDeckName) {
+                            const cmd = getCommanderByName(window._cmdProfileDeckName);
+                            if (cmd) updateCommanderRetireUI(cmd);
+                        }
+                        const adminModal = document.getElementById('view-admin-modal');
+                        if (adminModal && !adminModal.classList.contains('hidden')) {
+                            window.openAdminModal();
+                        }
+                        window.mfToast('Deck retired.', { title: 'Retired', type: 'success', icon: '🏁' });
+                    } catch (err) {
+                        window.showAppAlert(err.message || 'Could not retire deck.', 'Error', '❌');
+                    }
+                },
+                'Retire deck',
+                '🏁',
+                { confirmLabel: 'Retire', confirmClass: 'bg-slate-600 hover:bg-slate-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition' }
+            );
         };
 
         window.mfDeleteOwnedDeck = function(deckId) {
@@ -11988,7 +11946,7 @@
                     const idJs = cmd.deckEntityId ? String(cmd.deckEntityId).replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
                     const canRetire = !retired && !!cmd.deckEntityId && window.canManageDeckFor(cmd.owner);
                     const retireBtn = canRetire
-                        ? `<button type="button" data-mf-retire-deck="${idJs}" data-mf-retire-label="Retire" onclick="window.mfRetireOwnedDeck('${idJs}', this)" class="text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-1.5 rounded-lg touch-manipulation shrink-0">Retire</button>`
+                        ? `<button type="button" onclick="window.mfRetireOwnedDeck('${idJs}')" class="text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-1.5 rounded-lg touch-manipulation shrink-0">Retire</button>`
                         : (retired ? `<span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 shrink-0">Retired</span>` : '');
                     html += `
                     <div class="flex justify-between items-center gap-2 bg-slate-900 border border-slate-700 p-2 md:p-3 rounded-lg mb-2">
