@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.59">
+    <meta name="mf-app-version" content="2.9.60">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -425,29 +425,40 @@
             border-color: rgb(30 41 59);
         }
         .mf-sheet-header-bar {
-            display: flex;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
             align-items: center;
             gap: 0.5rem;
             min-height: 44px;
         }
         .mf-sheet-header-side {
-            flex: 0 0 auto;
             display: flex;
             align-items: center;
-            min-width: 4.75rem;
+            min-width: 0;
         }
         .mf-sheet-header-side--end {
             justify-content: flex-end;
-            min-width: 4.75rem;
         }
         .mf-sheet-header-title {
-            flex: 1 1 0;
             min-width: 0;
             margin: 0;
             text-align: center;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        @media (max-width: 420px) {
+            .mf-sheet-header-back-label {
+                display: none;
+            }
+        }
+        #cmd-view-retire-mobile-wrap:not(.hidden) {
+            display: flex;
+        }
+        @media (min-width: 768px) {
+            #cmd-view-retire-mobile-wrap {
+                display: none !important;
+            }
         }
         .mf-sheet-scroll {
             position: relative;
@@ -1784,17 +1795,15 @@
         <div class="mf-sheet-header glass px-4 py-3 border-b border-slate-800">
             <div class="mf-sheet-header-bar">
                 <div class="mf-sheet-header-side">
-                    <button type="button" onclick="window.closeCommanderProfile()" class="inline-flex items-center justify-center gap-1 text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation">
+                    <button type="button" onclick="window.closeCommanderProfile()" class="inline-flex items-center justify-center gap-1 text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation" aria-label="Back">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-                        Back
+                        <span class="mf-sheet-header-back-label">Back</span>
                     </button>
                 </div>
                 <h3 id="cmd-view-title" class="mf-sheet-header-title text-sm font-bold text-slate-200">Commander</h3>
                 <div class="mf-sheet-header-side mf-sheet-header-side--end">
-                    <div id="cmd-view-retire-wrap" class="hidden">
-                        <button type="button" id="cmd-view-retire-btn" class="inline-flex items-center justify-center text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation whitespace-nowrap">Retire</button>
-                    </div>
-                    <div id="cmd-view-header-spacer" aria-hidden="true"></div>
+                    <button type="button" id="cmd-view-retire-btn" class="hidden inline-flex items-center justify-center text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation whitespace-nowrap">Retire</button>
+                    <div id="cmd-view-header-spacer" class="w-11 h-11" aria-hidden="true"></div>
                 </div>
             </div>
         </div>
@@ -1866,6 +1875,9 @@
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Owner:</span>
                             <span id="cmd-view-owner" class="text-sm font-bold text-slate-200 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"></span>
                             <span id="cmd-view-retired-badge" class="hidden text-[10px] font-bold uppercase tracking-wider text-slate-300 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-600">Retired</span>
+                        </div>
+                        <div id="cmd-view-retire-mobile-wrap" class="hidden w-full justify-center">
+                            <button type="button" id="cmd-view-retire-mobile-btn" class="inline-flex items-center justify-center text-sm font-semibold text-slate-300 hover:text-white px-4 py-2.5 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation">Retire deck</button>
                         </div>
                         <div id="cmd-view-alt-names-container" class="hidden flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 max-w-full">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Also known as:</span>
@@ -3140,9 +3152,10 @@
 
         function updateCommanderRetireUI(cmd) {
             const badge = document.getElementById('cmd-view-retired-badge');
-            const wrap = document.getElementById('cmd-view-retire-wrap');
+            const headerBtn = document.getElementById('cmd-view-retire-btn');
+            const mobileWrap = document.getElementById('cmd-view-retire-mobile-wrap');
+            const mobileBtn = document.getElementById('cmd-view-retire-mobile-btn');
             const spacer = document.getElementById('cmd-view-header-spacer');
-            const btn = document.getElementById('cmd-view-retire-btn');
             if (!cmd) return;
 
             const retired = isCommanderRetired(cmd);
@@ -3151,16 +3164,26 @@
             const canRetire = !retired
                 && !!cmd.deckEntityId
                 && window.canManageDeckFor(cmd.owner);
-            if (wrap) wrap.classList.toggle('hidden', !canRetire);
-            if (spacer) spacer.classList.toggle('hidden', !!canRetire);
-            if (!btn) return;
 
-            btn.disabled = false;
-            btn.onclick = (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                window.mfRetireOwnedDeck(cmd.deckEntityId);
-            };
+            if (headerBtn) {
+                headerBtn.classList.toggle('hidden', !canRetire);
+                headerBtn.disabled = false;
+                headerBtn.onclick = (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    window.mfRetireOwnedDeck(cmd.deckEntityId);
+                };
+            }
+            if (mobileWrap) mobileWrap.classList.toggle('hidden', !canRetire);
+            if (mobileBtn) {
+                mobileBtn.disabled = false;
+                mobileBtn.onclick = (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    window.mfRetireOwnedDeck(cmd.deckEntityId);
+                };
+            }
+            if (spacer) spacer.classList.toggle('hidden', !!canRetire);
         }
 
         function updateCommanderDeckLinkUI(cmd) {
