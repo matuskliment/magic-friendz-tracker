@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.50">
+    <meta name="mf-app-version" content="2.9.51">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -1831,6 +1831,10 @@
                         <div class="flex items-center gap-2 flex-wrap justify-center md:justify-start">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Owner:</span>
                             <span id="cmd-view-owner" class="text-sm font-bold text-slate-200 bg-slate-800 px-3 py-1 rounded-full border border-slate-700"></span>
+                            <span id="cmd-view-retired-badge" class="hidden text-[10px] font-bold uppercase tracking-wide text-slate-300 bg-slate-800/90 border border-slate-600/70 px-2 py-1 rounded-md">Retired</span>
+                        </div>
+                        <div id="cmd-view-retire-wrap" class="hidden w-full flex justify-center md:justify-start">
+                            <button type="button" id="cmd-view-retire-btn" class="text-[11px] font-bold text-slate-300 bg-slate-800/80 hover:bg-slate-700 border border-slate-600/70 px-3 py-2 rounded-lg transition touch-manipulation min-h-[40px]">Retire deck</button>
                         </div>
                         <div id="cmd-view-alt-names-container" class="hidden flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 max-w-full">
                             <span class="text-xs text-slate-400 uppercase tracking-widest font-bold shrink-0">Also known as:</span>
@@ -2931,6 +2935,23 @@
             return getDeckEntitiesList().filter((d) => d.status !== 'archived');
         }
 
+        function isDeckStatusRetired(status) {
+            return status === 'retired';
+        }
+
+        function isDeckEntityRetired(ent) {
+            return !!(ent && isDeckStatusRetired(ent.status));
+        }
+
+        function isCommanderRetired(cmd) {
+            if (!cmd) return false;
+            if (cmd.isRetired || isDeckStatusRetired(cmd.status)) return true;
+            if (cmd.deckEntityId && window.appData.deckEntities?.[cmd.deckEntityId]) {
+                return isDeckEntityRetired(window.appData.deckEntities[cmd.deckEntityId]);
+            }
+            return isDeckEntityRetired(findDeckEntityByName(cmd.name));
+        }
+
         function getArchivedDeckEntitiesForOwner(ownerName) {
             const owner = normalizeName(ownerName).toLowerCase();
             return getDeckEntitiesList().filter((d) =>
@@ -2945,10 +2966,12 @@
         }
 
         function getSelectableCommanders() {
-            const archivedNames = new Set(
-                getDeckEntitiesList().filter((d) => d.status === 'archived').map((d) => d.name)
+            const blockedNames = new Set(
+                getDeckEntitiesList()
+                    .filter((d) => d.status === 'archived' || d.status === 'retired')
+                    .map((d) => d.name)
             );
-            return (window.appData.commanders || []).filter((c) => !archivedNames.has(c.name));
+            return (window.appData.commanders || []).filter((c) => !blockedNames.has(c.name));
         }
 
         window.canManageDeckFor = function(ownerName) {
@@ -2967,7 +2990,7 @@
                 normalizeName(d.owner).toLowerCase() === ownerNorm.toLowerCase()
                 && String(d.name || '').trim().toLowerCase() === displayName.toLowerCase()
             );
-            if (dup) throw new Error('This player already has an active deck with that name.');
+            if (dup) throw new Error('This player already has a deck with that name.');
             const cmdList = Array.isArray(commanders)
                 ? commanders.map((c) => String(c || '').trim()).filter(Boolean)
                 : mfParseCommanderNamesFromDeckName(displayName);
@@ -2987,8 +3010,22 @@
             const ent = window.appData.deckEntities[deckId];
             if (!ent) throw new Error('Deck not found.');
             if (!window.canManageDeckFor(ent.owner)) throw new Error('Not allowed.');
+            if (isDeckEntityRetired(ent)) throw new Error('Retired decks cannot be archived.');
             await updateDoc(doc(db, 'groups', window.groupIdRaw, 'decks', deckId), {
                 status: 'archived',
+                updatedAt: Date.now()
+            });
+        };
+
+        window.retireDeckEntity = async function(deckId) {
+            const ent = window.appData.deckEntities[deckId];
+            if (!ent) throw new Error('Deck not found.');
+            if (!window.canManageDeckFor(ent.owner)) throw new Error('Not allowed.');
+            if (ent.status === 'archived') throw new Error('Archived decks cannot be retired.');
+            if (isDeckEntityRetired(ent)) throw new Error('This deck is already retired.');
+            await updateDoc(doc(db, 'groups', window.groupIdRaw, 'decks', deckId), {
+                status: 'retired',
+                retiredAt: Date.now(),
                 updatedAt: Date.now()
             });
         };
@@ -2997,6 +3034,8 @@
             const ent = window.appData.deckEntities[deckId];
             if (!ent) throw new Error('Deck not found.');
             if (!window.canManageDeckFor(ent.owner)) throw new Error('Not allowed.');
+            if (isDeckEntityRetired(ent)) throw new Error('Retired decks cannot be restored.');
+            if (ent.status !== 'archived') throw new Error('Only archived decks can be restored.');
             await updateDoc(doc(db, 'groups', window.groupIdRaw, 'decks', deckId), {
                 status: 'active',
                 updatedAt: Date.now()
@@ -3007,9 +3046,10 @@
             const ent = window.appData.deckEntities[deckId];
             if (!ent) throw new Error('Deck not found.');
             if (!window.canManageDeckFor(ent.owner)) throw new Error('Not allowed.');
+            if (isDeckEntityRetired(ent)) throw new Error('Retired decks cannot be deleted.');
             const cmd = (window.appData.commanders || []).find((c) => c.name === ent.name);
             if ((cmd?.plays || 0) > 0) {
-                throw new Error('This deck has logged games. Archive it instead of deleting.');
+                throw new Error('This deck has logged games. Retire it instead of deleting.');
             }
             await deleteDoc(doc(db, 'groups', window.groupIdRaw, 'decks', deckId));
         };
@@ -3055,7 +3095,36 @@
             const view = document.getElementById('view-commander-detail');
             if (!view || view.classList.contains('hidden') || view.classList.contains('translate-x-full')) return;
             const cmd = getCommanderByName(deckName);
-            if (cmd) updateCommanderDeckLinkUI(cmd);
+            if (cmd) {
+                updateCommanderDeckLinkUI(cmd);
+                updateCommanderRetireUI(cmd);
+            }
+        }
+
+        function updateCommanderRetireUI(cmd) {
+            const badge = document.getElementById('cmd-view-retired-badge');
+            const wrap = document.getElementById('cmd-view-retire-wrap');
+            const btn = document.getElementById('cmd-view-retire-btn');
+            if (!cmd) return;
+
+            const retired = isCommanderRetired(cmd);
+            if (badge) badge.classList.toggle('hidden', !retired);
+
+            const canRetire = !retired
+                && !!cmd.deckEntityId
+                && window.canManageDeckFor(cmd.owner);
+            if (wrap) wrap.classList.toggle('hidden', !canRetire);
+            if (!btn) return;
+
+            mfResetRetireConfirmButton(btn);
+            btn.dataset.mfRetireDeck = cmd.deckEntityId || '';
+            btn.dataset.mfRetireLabel = 'Retire deck';
+            btn.textContent = 'Retire deck';
+            btn.onclick = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                window.mfRetireOwnedDeck(cmd.deckEntityId, btn);
+            };
         }
 
         function updateCommanderDeckLinkUI(cmd) {
@@ -7210,12 +7279,16 @@
                     ...existing,
                     owner: ent.owner || existing.owner,
                     commanders: ent.commanders?.length ? ent.commanders : existing.commanders,
-                    deckEntityId: ent.id || existing.deckEntityId
+                    deckEntityId: ent.id || existing.deckEntityId,
+                    status: ent.status || existing.status || 'active',
+                    isRetired: isDeckEntityRetired(ent) || !!existing.isRetired
                 } : {
                     name,
                     owner: ent.owner,
                     commanders: ent.commanders,
                     deckEntityId: ent.id,
+                    status: ent.status || 'active',
+                    isRetired: isDeckEntityRetired(ent),
                     plays: 0,
                     wins: 0,
                     pilots: []
@@ -7594,13 +7667,21 @@
             return mfParseCommanderNamesFromDeckName(deckName)[0] || deckName;
         }
 
-        function mfRenderCommanderListTitles(deckName) {
+        function mfRetiredBadgeHtml(size = 'sm') {
+            const cls = size === 'xs'
+                ? 'text-[8px] md:text-[7px] font-bold uppercase tracking-wide px-1 py-0.5 rounded border text-slate-300 bg-slate-900/90 border-slate-600/70'
+                : 'text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border text-slate-300 bg-slate-800/90 border-slate-600/70';
+            return `<span class="${cls}">Retired</span>`;
+        }
+
+        function mfRenderCommanderListTitles(deckName, options = {}) {
             const full = String(deckName || '').trim();
             const titleAttr = escapeHtml(full);
             const text = escapeHtml(full);
+            const retired = options.retired ? `<span class="inline-flex shrink-0 ml-1.5 align-middle">${mfRetiredBadgeHtml()}</span>` : '';
             return {
-                mobileHeader: `<h4 class="md:hidden font-bold text-sm text-white group-hover:text-purple-400 transition leading-snug line-clamp-2 mb-1" title="${titleAttr}">${text}</h4>`,
-                desktopTitle: `<h4 class="hidden md:block font-bold text-lg text-white group-hover:text-purple-400 transition drop-shadow truncate leading-snug" title="${titleAttr}">${text}</h4>`
+                mobileHeader: `<h4 class="md:hidden font-bold text-sm text-white group-hover:text-purple-400 transition leading-snug line-clamp-2 mb-1" title="${titleAttr}">${text}${retired}</h4>`,
+                desktopTitle: `<h4 class="hidden md:block font-bold text-lg text-white group-hover:text-purple-400 transition drop-shadow truncate leading-snug" title="${titleAttr}">${text}${retired}</h4>`
             };
         }
 
@@ -9271,6 +9352,8 @@
                     deckLink: s.deckLink || '',
                     deckEntityId: ent?.id || '',
                     isRegistered: !!ent,
+                    status: ent?.status || 'active',
+                    isRetired: isDeckEntityRetired(ent),
                     commanders: ent?.commanders?.length ? ent.commanders : undefined,
                     pilots: Array.from(s.pilots),
                     form: buildRecentForm(s.history),
@@ -9399,6 +9482,7 @@
                         const plr = window.appData.players[window._plrProfilePlayerIndex];
                         if (plr) refreshPlayerProfileDecksSection(plr);
                     }
+                    refreshOpenCommanderDeckLinkUI();
                 }
             });
 
@@ -9520,18 +9604,29 @@
         function renderPlayerDeckCard(entry, playerName) {
             const c = entry.deck;
             const { owned, piloted, unplayed, notOwned } = entry.labels;
+            const retired = isCommanderRetired(c);
             const idx = window.appData.commanders.indexOf(c);
             const openCmd = idx >= 0
                 ? `window.closePlayerProfile(); setTimeout(() => window.openCommanderProfile(${idx}), 300);`
                 : '';
             const idJs = c.deckEntityId ? String(c.deckEntityId).replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
-            const canDelete = unplayed && c.deckEntityId && window.canManageDeckFor(playerName);
-            const deleteBtn = canDelete
-                ? `<button type="button" onclick="event.stopPropagation(); window.mfDeleteOwnedDeck('${idJs}')" class="absolute top-2 right-2 z-20 text-[9px] font-bold text-red-200 bg-red-950/80 hover:bg-red-900 border border-red-500/40 px-1.5 py-0.5 rounded-md touch-manipulation backdrop-blur-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">Delete</button>`
+            const canManage = !!c.deckEntityId && window.canManageDeckFor(playerName);
+            const canDelete = unplayed && canManage && !retired;
+            const canRetire = canManage && !retired;
+            const actionBtns = [];
+            if (canRetire) {
+                actionBtns.push(`<button type="button" data-mf-retire-deck="${idJs}" onclick="event.stopPropagation(); window.mfRetireOwnedDeck('${idJs}', this)" class="text-[9px] font-bold text-slate-200 bg-slate-950/85 hover:bg-slate-900 border border-slate-500/50 px-1.5 py-0.5 rounded-md touch-manipulation backdrop-blur-sm">Retire</button>`);
+            }
+            if (canDelete) {
+                actionBtns.push(`<button type="button" onclick="event.stopPropagation(); window.mfDeleteOwnedDeck('${idJs}')" class="text-[9px] font-bold text-red-200 bg-red-950/80 hover:bg-red-900 border border-red-500/40 px-1.5 py-0.5 rounded-md touch-manipulation backdrop-blur-sm">Delete</button>`);
+            }
+            const actionsHtml = actionBtns.length
+                ? `<div class="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">${actionBtns.join('')}</div>`
                 : '';
 
             const badge = (text, cls) => `<span class="text-[8px] md:text-[7px] font-bold uppercase tracking-wide px-1 py-0.5 rounded border backdrop-blur-sm ${cls}">${text}</span>`;
             const badges = [
+                retired ? badge('Retired', 'text-slate-200 bg-slate-950/90 border-slate-500/60') : '',
                 owned ? badge('Owned', 'text-emerald-300 bg-emerald-950/80 border-emerald-500/40') : '',
                 piloted ? badge('Piloted', 'text-sky-300 bg-sky-950/80 border-sky-500/40') : '',
                 notOwned ? badge('Not owned', 'text-amber-300 bg-amber-950/80 border-amber-500/40') : '',
@@ -9541,9 +9636,10 @@
             const elo = c.elo ?? SETTINGS.STARTING_ELO;
             const footerCls = (piloted || (c.plays || 0) > 0) ? 'text-yellow-400' : 'text-slate-400';
             const footerText = `${elo} Elo`;
+            const cardBorder = retired ? 'border-slate-700 opacity-90' : 'border-slate-800 hover:border-purple-500/50';
 
-            return `<div onclick="${openCmd}" class="relative aspect-[5/7] w-full md:max-w-[7.5rem] md:justify-self-start bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group shadow-md">
-                ${deleteBtn}
+            return `<div onclick="${openCmd}" class="relative aspect-[5/7] w-full md:max-w-[7.5rem] md:justify-self-start bg-slate-900 rounded-xl overflow-hidden border ${cardBorder} transition cursor-pointer group shadow-md">
+                ${actionsHtml}
                 ${badges ? `<div class="absolute top-1.5 left-1.5 z-20 flex flex-wrap gap-0.5 max-w-[calc(100%-2.5rem)]">${badges}</div>` : ''}
                 <div data-card="${escapeHtml(mfPrimaryCommanderArtName(c.name))}" data-version="art_crop" class="set-bg absolute inset-0 art-fallback bg-cover bg-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
@@ -9688,6 +9784,67 @@
                 '📦',
                 { confirmLabel: 'Archive', confirmClass: 'bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition' }
             );
+        };
+
+        window._mfRetireConfirmTimers = window._mfRetireConfirmTimers || {};
+
+        function mfResetRetireConfirmButton(btn) {
+            if (!btn) return;
+            const key = btn.dataset.mfRetireKey || btn.id || '';
+            if (key && window._mfRetireConfirmTimers[key]) {
+                clearTimeout(window._mfRetireConfirmTimers[key]);
+                delete window._mfRetireConfirmTimers[key];
+            }
+            delete btn.dataset.confirming;
+            btn.disabled = false;
+            btn.textContent = btn.dataset.mfRetireLabel || 'Retire';
+            if (btn.dataset.mfRetireClass) btn.className = btn.dataset.mfRetireClass;
+        }
+
+        function mfArmRetireConfirmButton(btn, idleLabel) {
+            if (!btn) return false;
+            const key = btn.dataset.mfRetireDeck || btn.id || String(Math.random());
+            btn.dataset.mfRetireKey = key;
+            if (!btn.dataset.mfRetireLabel) btn.dataset.mfRetireLabel = idleLabel || btn.textContent || 'Retire';
+            if (!btn.dataset.mfRetireClass) btn.dataset.mfRetireClass = btn.className;
+            if (btn.dataset.confirming === '1') return true;
+            btn.dataset.confirming = '1';
+            btn.textContent = 'Are you sure?';
+            btn.classList.add('text-amber-100', 'bg-amber-950/90', 'border-amber-500/50');
+            if (window._mfRetireConfirmTimers[key]) clearTimeout(window._mfRetireConfirmTimers[key]);
+            window._mfRetireConfirmTimers[key] = setTimeout(() => mfResetRetireConfirmButton(btn), 4000);
+            return false;
+        }
+
+        window.mfRetireOwnedDeck = async function(deckId, btn) {
+            if (!deckId) return;
+            const armed = mfArmRetireConfirmButton(btn, btn?.dataset?.mfRetireLabel || 'Retire');
+            if (!armed) return;
+            if (btn) btn.disabled = true;
+            try {
+                await window.retireDeckEntity(deckId);
+                mfResetRetireConfirmButton(btn);
+                const idx = window._plrProfilePlayerIndex;
+                if (typeof idx === 'number' && window.appData.players[idx]) {
+                    refreshPlayerProfileDecksSection(window.appData.players[idx]);
+                }
+                if (window._cmdProfileDeckName) {
+                    const cmd = getCommanderByName(window._cmdProfileDeckName);
+                    if (cmd) updateCommanderRetireUI(cmd);
+                }
+                const adminModal = document.getElementById('view-admin-modal');
+                if (adminModal && !adminModal.classList.contains('hidden')) {
+                    window.openAdminModal();
+                }
+                window.mfToast('Deck retired. It stays on rankings with a Retired label, but can’t be picked for new matches.', {
+                    title: 'Retired',
+                    type: 'success',
+                    icon: '🏁'
+                });
+            } catch (err) {
+                mfResetRetireConfirmButton(btn);
+                window.showAppAlert(err.message || 'Could not retire deck.', 'Error', '❌');
+            }
         };
 
         window.mfDeleteOwnedDeck = function(deckId) {
@@ -10648,19 +10805,21 @@
         function generateCommanderRow(cmd, index) {
             const ownerName = cmd.owner || (cmd.pilots && cmd.pilots[0]) || '…';
             const topThree = cmd.rank <= 3 && (cmd.plays || 0) > 0;
+            const retired = isCommanderRetired(cmd);
             const rankDisplay = (cmd.plays || 0) === 0 && cmd.isRegistered ? '…' : cmd.rank;
             const winStrong = parseFloat(cmd.winRate) >= 50;
             const eloStyle = getRankEloChipStyle(cmd.rank);
             const artName = mfPrimaryCommanderArtName(cmd.name);
             const avatarHtml = mfRenderCommanderListAvatar(cmd.name, { size: 'md', topThree });
-            const titles = mfRenderCommanderListTitles(cmd.name);
+            const titles = mfRenderCommanderListTitles(cmd.name, { retired });
             const eloChip = `
                 <div class="shrink-0 self-center ml-0.5 md:ml-1 text-center ${eloStyle.bg} border ${eloStyle.border} rounded-lg px-2.5 py-2 md:px-3 md:py-2">
                     <div class="font-black text-lg md:text-2xl tracking-tight ${eloStyle.value} leading-none">${cmd.elo}</div>
                     <div class="text-[8px] md:text-[9px] uppercase tracking-widest font-bold ${eloStyle.label} mt-1">Elo</div>
                 </div>`;
+            const retiredBorder = retired ? 'border-slate-600/60 opacity-90' : (topThree ? 'border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.12)]' : 'border-slate-700/50');
             return `
-                <div onclick="window.openCommanderProfile(${index})" data-deck-name="${escapeHtml(cmd.name)}" class="glass relative overflow-hidden rounded-xl cursor-pointer transition hover:bg-slate-800/70 group border ${topThree ? 'border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.12)]' : 'border-slate-700/50'}">
+                <div onclick="window.openCommanderProfile(${index})" data-deck-name="${escapeHtml(cmd.name)}" class="glass relative overflow-hidden rounded-xl cursor-pointer transition hover:bg-slate-800/70 group border ${retiredBorder}">
                     <div class="mf-card-tint absolute inset-0 opacity-0 transition-opacity duration-500" data-card="${escapeHtml(artName)}"></div>
                     <div class="mf-card-accent absolute left-0 top-0 bottom-0 w-1.5 opacity-0 transition-opacity duration-500" data-card="${escapeHtml(artName)}"></div>
                     <div class="relative z-10 p-3 sm:p-4">
@@ -11430,6 +11589,7 @@
 
             resetCommanderDetailMeta(cmd.name);
             fillCommanderDetailStats(cmd);
+            updateCommanderRetireUI(cmd);
             
             const backImg = document.getElementById('cmd-view-card-back-img');
             const flipBtn = document.getElementById('cmd-flip-btn');
@@ -11824,15 +11984,27 @@
                 let html = '';
                 sortedDecks.forEach(cmd => {
                     let options = sortedPlayers.map(p => `<option value="${p.name}" ${p.name === cmd.owner ? 'selected' : ''}>${p.avatarInitials || getPlayerInitials(p.name)} ${p.name}</option>`).join('');
+                    const retired = isCommanderRetired(cmd);
+                    const idJs = cmd.deckEntityId ? String(cmd.deckEntityId).replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
+                    const canRetire = !retired && !!cmd.deckEntityId && window.canManageDeckFor(cmd.owner);
+                    const retireBtn = canRetire
+                        ? `<button type="button" data-mf-retire-deck="${idJs}" data-mf-retire-label="Retire" onclick="window.mfRetireOwnedDeck('${idJs}', this)" class="text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-1.5 rounded-lg touch-manipulation shrink-0">Retire</button>`
+                        : (retired ? `<span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 shrink-0">Retired</span>` : '');
                     html += `
-                    <div class="flex justify-between items-center bg-slate-900 border border-slate-700 p-2 md:p-3 rounded-lg mb-2">
+                    <div class="flex justify-between items-center gap-2 bg-slate-900 border border-slate-700 p-2 md:p-3 rounded-lg mb-2">
                         <div class="flex items-center gap-3 min-w-0 pr-2">
                             ${mfRenderCommanderListAvatar(cmd.name, { size: 'xs', borderClass: 'border-slate-600' })}
-                            <span class="text-sm font-bold text-white truncate" title="${cmd.name}">${cmd.name}</span>
+                            <div class="min-w-0">
+                                <span class="text-sm font-bold text-white truncate block" title="${cmd.name}">${cmd.name}</span>
+                                ${retired ? `<span class="text-[9px] font-bold uppercase tracking-wide text-slate-400">Retired</span>` : ''}
+                            </div>
                         </div>
-                        <select onchange="window.updateDeckOwner('${cmd.name.replace(/'/g, "\\'")}', this.value)" class="bg-slate-800 border border-slate-600 text-slate-300 text-xs rounded-lg px-2 py-1.5 outline-none focus:border-purple-500 cursor-pointer w-32 shrink-0">
-                            ${options}
-                        </select>
+                        <div class="flex items-center gap-2 shrink-0">
+                            ${retireBtn}
+                            <select onchange="window.updateDeckOwner('${cmd.name.replace(/'/g, "\\'")}', this.value)" class="bg-slate-800 border border-slate-600 text-slate-300 text-xs rounded-lg px-2 py-1.5 outline-none focus:border-purple-500 cursor-pointer w-32 shrink-0">
+                                ${options}
+                            </select>
+                        </div>
                     </div>`;
                 });
                 
@@ -13031,6 +13203,7 @@
                 if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), copy.errCommanderMissing);
                 else if (!d.valid) {
                     if (d.needsScryfall) addIssue(d.input, copy.errCommanderScryfallNamed(d.value));
+                    else if (isDeckEntityRetired(findDeckEntityByName(d.value))) addIssue(d.input, `"${d.value}" is retired and can’t be used in new matches.`);
                     else addIssue(d.input, copy.errCommanderNotFound(d.value));
                 }
 
@@ -13050,6 +13223,7 @@
                 if (!d.filled) addIssue(d.input || dg?.querySelector('.local-deck-input'), copy.errCommanderMissing);
                 else if (!d.valid) {
                     if (d.needsScryfall) addIssue(d.input, copy.errCommanderScryfallNamed(d.value));
+                    else if (isDeckEntityRetired(findDeckEntityByName(d.value))) addIssue(d.input, `"${d.value}" is retired and can’t be used in new matches.`);
                     else addIssue(d.input, copy.errCommanderNotFound(d.value));
                 }
             });
