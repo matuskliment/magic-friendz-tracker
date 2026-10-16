@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.61">
+    <meta name="mf-app-version" content="2.9.62">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -245,6 +245,38 @@
         .art-loaded:not(.art-error)::before { opacity: 0; }
         .set-bg:not(.art-loaded) { animation: queuePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         @keyframes queuePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .mf-art-loading-status {
+            position: fixed;
+            left: 50%;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+            transform: translateX(-50%);
+            z-index: 9000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 9999px;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(100, 116, 139, 0.45);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            color: #e2e8f0;
+            font-size: 12.5px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            pointer-events: none;
+            max-width: min(92vw, 360px);
+        }
+        .mf-art-loading-status.hidden { display: none; }
+        .mf-art-loading-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(168, 85, 247, 0.25);
+            border-top-color: #a855f7;
+            border-radius: 50%;
+            animation: mfBootSpin 0.75s linear infinite;
+            flex-shrink: 0;
+        }
         
         /* Date Picker Icon Visibility on Dark Background */
         ::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.6; transition: opacity 0.2s; }
@@ -1043,6 +1075,11 @@
     <div id="mf-app-boot-loader" role="status" aria-live="polite" aria-busy="true">
         <div class="mf-boot-spinner" aria-hidden="true"></div>
         <p id="mf-boot-loader-text" class="text-sm font-semibold text-slate-300 tracking-wide">Loading your playgroup…</p>
+    </div>
+
+    <div id="mf-art-loading-status" class="mf-art-loading-status hidden" role="status" aria-live="polite" aria-hidden="true">
+        <span class="mf-art-loading-spinner" aria-hidden="true"></span>
+        <span id="mf-art-loading-status-text">Loading card art…</span>
     </div>
 
     <!-- LANDING PAGE VIEW -->
@@ -6744,16 +6781,55 @@
         const ART_CACHE_SCHEMA_KEY = 'mf_art_cache_schema';
         const ART_CACHE_SCHEMA = 9;
         const SCRYFALL_FETCH_HEADERS = {
-            'Accept': 'application/json',
-            'User-Agent': `MagicFriendzTracker/${MF_APP_VERSION} (playgroup-stat-tracker)`
+            'Accept': 'application/json'
         };
+        const SCRYFALL_MIN_INTERVAL_MS = 100;
+        const SCRYFALL_BACKOFF_START_MS = 5000;
+        const SCRYFALL_BACKOFF_MAX_MS = 60000;
+
+        let mfScryfallChain = Promise.resolve();
+        let mfScryfallLastStart = 0;
+        let mfScryfallBackoffUntil = 0;
+        let mfScryfallBackoffDelay = SCRYFALL_BACKOFF_START_MS;
+        let mfScryfallWarnedBackoff = false;
+
+        function mfScryfallSleep(ms) {
+            return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
+        }
+
+        async function mfScryfallFetch(url) {
+            const run = async () => {
+                const waitBackoff = Math.max(0, mfScryfallBackoffUntil - Date.now());
+                if (waitBackoff > 0) await mfScryfallSleep(waitBackoff);
+                const waitInterval = Math.max(0, SCRYFALL_MIN_INTERVAL_MS - (Date.now() - mfScryfallLastStart));
+                if (waitInterval > 0) await mfScryfallSleep(waitInterval);
+
+                mfScryfallLastStart = Date.now();
+                const res = await fetch(url, { headers: SCRYFALL_FETCH_HEADERS });
+
+                if (res.status === 429) {
+                    mfScryfallBackoffUntil = Date.now() + mfScryfallBackoffDelay;
+                    if (!mfScryfallWarnedBackoff) {
+                        mfScryfallWarnedBackoff = true;
+                        console.warn(`Scryfall rate limit; backing off ${Math.round(mfScryfallBackoffDelay / 1000)}s`);
+                    }
+                    mfScryfallBackoffDelay = Math.min(mfScryfallBackoffDelay * 2, SCRYFALL_BACKOFF_MAX_MS);
+                } else if (res.ok) {
+                    mfScryfallBackoffDelay = SCRYFALL_BACKOFF_START_MS;
+                    mfScryfallWarnedBackoff = false;
+                }
+                return res;
+            };
+            const result = mfScryfallChain.then(run, run);
+            mfScryfallChain = result.then(() => {}, () => {});
+            return result;
+        }
 
         async function mfFetchScryfallAutocomplete(query) {
             const q = String(query || '').trim();
             if (q.length < 3) return [];
-            const res = await fetch(
-                'https://api.scryfall.com/cards/autocomplete?q=' + encodeURIComponent(q),
-                { headers: SCRYFALL_FETCH_HEADERS }
+            const res = await mfScryfallFetch(
+                'https://api.scryfall.com/cards/autocomplete?q=' + encodeURIComponent(q)
             );
             if (!res.ok) throw new Error('Scryfall autocomplete HTTP ' + res.status);
             const data = await res.json();
@@ -7939,7 +8015,7 @@
                 if (mfScryfallCardByNameCache.has(cacheKey)) {
                     return mfScryfallCardByNameCache.get(cacheKey);
                 }
-                let res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(q)}`, { headers: SCRYFALL_FETCH_HEADERS });
+                let res = await mfScryfallFetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(q)}`);
                 if (res.status === 429) return { rateLimited: true };
                 if (res.ok) {
                     const card = await res.json();
@@ -7947,7 +8023,7 @@
                     return card;
                 }
                 if (res.status === 404) {
-                    res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&unique=cards&order=released`, { headers: SCRYFALL_FETCH_HEADERS });
+                    res = await mfScryfallFetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&unique=cards&order=released`);
                     if (res.status === 429) return { rateLimited: true };
                     if (res.ok) {
                         const searchData = await res.json();
@@ -7990,6 +8066,7 @@
 
         let isFetchingArt = false;
         let artQueuePending = false;
+        let artQueueTimer = null;
         const MAX_ART_FETCH_PER_RUN = 8;
 
         function isElementVisibleForArt(el) {
@@ -8007,6 +8084,51 @@
 
         function collectArtElements() {
             return [...document.querySelectorAll('.set-bg:not(.art-loaded), .set-src:not(.art-loaded), .set-src-back:not(.art-loaded)')];
+        }
+
+        function mfCountNeededArtNames() {
+            const visible = collectArtElements().filter(isElementVisibleForArt);
+            const seen = new Set();
+            let count = 0;
+            visible.forEach((el) => {
+                const rawName = el.getAttribute('data-card');
+                if (!rawName || seen.has(rawName)) return;
+                seen.add(rawName);
+                const cached = window.artCache[rawName];
+                if (!cached || cached.art_crop === 'error' || !Array.isArray(cached.colorIdentity)) {
+                    count += 1;
+                }
+            });
+            return count;
+        }
+
+        function mfUpdateArtLoadingStatus({ pendingCount, waiting } = {}) {
+            const el = document.getElementById('mf-art-loading-status');
+            const textEl = document.getElementById('mf-art-loading-status-text');
+            if (!el || !textEl) return;
+            const n = pendingCount != null ? pendingCount : mfCountNeededArtNames();
+            const inBackoff = !!waiting || Date.now() < mfScryfallBackoffUntil;
+            if (n <= 0 && !isFetchingArt && !artQueuePending) {
+                el.classList.add('hidden');
+                el.setAttribute('aria-hidden', 'true');
+                return;
+            }
+            el.classList.remove('hidden');
+            el.setAttribute('aria-hidden', 'false');
+            if (inBackoff) {
+                textEl.textContent = n > 0 ? `Waiting on Scryfall… (${n} left)` : 'Waiting on Scryfall…';
+            } else {
+                textEl.textContent = n > 0 ? `Loading card art… (${n} left)` : 'Loading card art…';
+            }
+        }
+
+        function mfScheduleArtQueue(delayMs = 250) {
+            const wait = Math.max(delayMs, Math.max(0, mfScryfallBackoffUntil - Date.now()));
+            if (artQueueTimer) clearTimeout(artQueueTimer);
+            artQueueTimer = setTimeout(() => {
+                artQueueTimer = null;
+                window.processArtQueue();
+            }, wait);
         }
 
         function applyCachedArtToElements(cardName, elements) {
@@ -8234,7 +8356,8 @@
             }
             isFetchingArt = true;
             artQueuePending = false;
-            
+            let rateLimited = false;
+
             try {
                 const allElements = collectArtElements();
                 const visibleElements = allElements.filter(isElementVisibleForArt);
@@ -8247,11 +8370,12 @@
                     }
                 });
                 window.refreshCardManaCost();
-                
-                if (visibleElements.length === 0) { 
-                    isFetchingArt = false; 
-                    if (artQueuePending) setTimeout(() => window.processArtQueue(), 250);
-                    return; 
+
+                if (visibleElements.length === 0) {
+                    isFetchingArt = false;
+                    mfUpdateArtLoadingStatus({ pendingCount: 0 });
+                    if (artQueuePending) mfScheduleArtQueue(250);
+                    return;
                 }
 
                 const neededNames = [];
@@ -8267,23 +8391,34 @@
                     }
                 });
 
+                mfUpdateArtLoadingStatus({ pendingCount: neededNames.length });
+
+                if (neededNames.length === 0) {
+                    isFetchingArt = false;
+                    mfUpdateArtLoadingStatus({ pendingCount: 0 });
+                    if (artQueuePending) mfScheduleArtQueue(250);
+                    return;
+                }
+
                 let fetchedThisRun = 0;
-                let rateLimited = false;
+                let remaining = neededNames.length;
 
                 for (const rawName of neededNames) {
                     if (fetchedThisRun >= MAX_ART_FETCH_PER_RUN) {
                         artQueuePending = true;
                         break;
                     }
-                    if (window.artCache[rawName]) continue;
+                    if (window.artCache[rawName]) {
+                        remaining = Math.max(0, remaining - 1);
+                        continue;
+                    }
 
                     try {
                         const data = await fetchCardFromScryfall(rawName);
                         if (data && data.rateLimited) {
-                            console.warn("Scryfall rate limit hit. Pausing art queue...");
                             rateLimited = true;
                             artQueuePending = true;
-                            await new Promise(r => setTimeout(r, 3000));
+                            mfUpdateArtLoadingStatus({ pendingCount: remaining, waiting: true });
                             break;
                         }
                         if (data) {
@@ -8310,25 +8445,34 @@
                                 }
                             });
                         }
-                    } catch(e) { 
+                        remaining = Math.max(0, remaining - 1);
+                        mfUpdateArtLoadingStatus({ pendingCount: remaining });
+                    } catch (e) {
                         window.artCache[rawName] = { art_crop: 'error', normal: 'error', colorIdentity: [] };
                         collectArtElements().forEach(el => {
                             if (el.getAttribute('data-card') === rawName && isElementVisibleForArt(el)) {
                                 window.applyArtToElement(el);
                             }
                         });
+                        remaining = Math.max(0, remaining - 1);
+                        mfUpdateArtLoadingStatus({ pendingCount: remaining });
                     }
-                    
+
                     fetchedThisRun++;
-                    
-                    if (!rateLimited) { await new Promise(r => setTimeout(r, 150)); }
+                }
+
+                if (rateLimited) {
+                    artQueuePending = true;
                 }
 
             } catch (e) { console.error("Art queue error", e); }
-            
+
             isFetchingArt = false;
             if (artQueuePending) {
-                setTimeout(() => window.processArtQueue(), 250);
+                mfUpdateArtLoadingStatus({ waiting: Date.now() < mfScryfallBackoffUntil });
+                mfScheduleArtQueue(rateLimited ? 0 : 250);
+            } else {
+                mfUpdateArtLoadingStatus();
             }
         };
 
