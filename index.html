@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.62">
+    <meta name="mf-app-version" content="2.9.63">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -6783,9 +6783,11 @@
         const SCRYFALL_FETCH_HEADERS = {
             'Accept': 'application/json'
         };
-        const SCRYFALL_MIN_INTERVAL_MS = 100;
-        const SCRYFALL_BACKOFF_START_MS = 5000;
-        const SCRYFALL_BACKOFF_MAX_MS = 60000;
+        // Scryfall asks for ~50–100ms between requests; stay well under that and
+        // treat browser CORS/network failures as rate limits (429 often has no CORS headers).
+        const SCRYFALL_MIN_INTERVAL_MS = 200;
+        const SCRYFALL_BACKOFF_START_MS = 10000;
+        const SCRYFALL_BACKOFF_MAX_MS = 120000;
 
         let mfScryfallChain = Promise.resolve();
         let mfScryfallLastStart = 0;
@@ -6797,23 +6799,42 @@
             return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
         }
 
+        function mfApplyScryfallBackoff(reason) {
+            mfScryfallBackoffUntil = Date.now() + mfScryfallBackoffDelay;
+            if (!mfScryfallWarnedBackoff) {
+                mfScryfallWarnedBackoff = true;
+                console.warn(
+                    `Scryfall rate limit (${reason}); backing off ${Math.round(mfScryfallBackoffDelay / 1000)}s`
+                );
+            }
+            mfScryfallBackoffDelay = Math.min(mfScryfallBackoffDelay * 2, SCRYFALL_BACKOFF_MAX_MS);
+        }
+
         async function mfScryfallFetch(url) {
             const run = async () => {
+                // If already rate-limited, wait out the full backoff before another attempt.
                 const waitBackoff = Math.max(0, mfScryfallBackoffUntil - Date.now());
                 if (waitBackoff > 0) await mfScryfallSleep(waitBackoff);
                 const waitInterval = Math.max(0, SCRYFALL_MIN_INTERVAL_MS - (Date.now() - mfScryfallLastStart));
                 if (waitInterval > 0) await mfScryfallSleep(waitInterval);
 
+                // Soft gate: if another caller just tripped backoff while we waited, skip the request.
+                if (Date.now() < mfScryfallBackoffUntil) {
+                    return new Response(null, { status: 429, statusText: 'Too Many Requests' });
+                }
+
                 mfScryfallLastStart = Date.now();
-                const res = await fetch(url, { headers: SCRYFALL_FETCH_HEADERS });
+                let res;
+                try {
+                    res = await fetch(url, { headers: SCRYFALL_FETCH_HEADERS });
+                } catch (_) {
+                    // Chrome reports many Scryfall 429s as CORS/network failures with no status.
+                    mfApplyScryfallBackoff('network');
+                    return new Response(null, { status: 429, statusText: 'Too Many Requests' });
+                }
 
                 if (res.status === 429) {
-                    mfScryfallBackoffUntil = Date.now() + mfScryfallBackoffDelay;
-                    if (!mfScryfallWarnedBackoff) {
-                        mfScryfallWarnedBackoff = true;
-                        console.warn(`Scryfall rate limit; backing off ${Math.round(mfScryfallBackoffDelay / 1000)}s`);
-                    }
-                    mfScryfallBackoffDelay = Math.min(mfScryfallBackoffDelay * 2, SCRYFALL_BACKOFF_MAX_MS);
+                    mfApplyScryfallBackoff('http-429');
                 } else if (res.ok) {
                     mfScryfallBackoffDelay = SCRYFALL_BACKOFF_START_MS;
                     mfScryfallWarnedBackoff = false;
@@ -8041,6 +8062,7 @@
             if (parts.length >= 2) {
                 for (const part of parts) {
                     const card = await tryFetch(part);
+                    if (card?.rateLimited) return card;
                     if (card) return card;
                 }
             }
@@ -8067,7 +8089,7 @@
         let isFetchingArt = false;
         let artQueuePending = false;
         let artQueueTimer = null;
-        const MAX_ART_FETCH_PER_RUN = 8;
+        const MAX_ART_FETCH_PER_RUN = 4;
 
         function isElementVisibleForArt(el) {
             if (!el || !el.isConnected) return false;
@@ -8448,6 +8470,14 @@
                         remaining = Math.max(0, remaining - 1);
                         mfUpdateArtLoadingStatus({ pendingCount: remaining });
                     } catch (e) {
+                        // Never cache network failures as permanent art errors — that caused
+                        // delete-and-retry storms while already rate-limited.
+                        if (Date.now() < mfScryfallBackoffUntil) {
+                            rateLimited = true;
+                            artQueuePending = true;
+                            mfUpdateArtLoadingStatus({ pendingCount: remaining, waiting: true });
+                            break;
+                        }
                         window.artCache[rawName] = { art_crop: 'error', normal: 'error', colorIdentity: [] };
                         collectArtElements().forEach(el => {
                             if (el.getAttribute('data-card') === rawName && isElementVisibleForArt(el)) {
