@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.63">
+    <meta name="mf-app-version" content="2.9.64">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -249,23 +249,24 @@
         .mf-art-loading-status {
             position: fixed;
             left: 50%;
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+            /* Sit above #dashboard-bottom-nav so tabs stay visible */
+            bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
             transform: translateX(-50%);
-            z-index: 9000;
+            z-index: 35;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
+            gap: 8px;
+            padding: 8px 14px;
             border-radius: 9999px;
             background: rgba(30, 41, 59, 0.95);
             border: 1px solid rgba(100, 116, 139, 0.45);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
             color: #e2e8f0;
-            font-size: 12.5px;
+            font-size: 12px;
             font-weight: 600;
             letter-spacing: 0.01em;
             pointer-events: none;
-            max-width: min(92vw, 360px);
+            max-width: min(88vw, 280px);
         }
         .mf-art-loading-status.hidden { display: none; }
         .mf-art-loading-spinner {
@@ -1079,7 +1080,7 @@
 
     <div id="mf-art-loading-status" class="mf-art-loading-status hidden" role="status" aria-live="polite" aria-hidden="true">
         <span class="mf-art-loading-spinner" aria-hidden="true"></span>
-        <span id="mf-art-loading-status-text">Loading card art…</span>
+        <span id="mf-art-loading-status-text">Loading art…</span>
     </div>
 
     <!-- LANDING PAGE VIEW -->
@@ -6927,9 +6928,14 @@
         const EDHREC_TTL_MS = 30 * 24 * 60 * 60 * 1000;
         const EDHREC_ERROR_TTL_MS = 7 * 24 * 60 * 60 * 1000;
         const EDHREC_FETCH_DELAY_MS = 300;
+        const EDHREC_403_CIRCUIT_LIMIT = 3;
+        const EDHREC_403_BLOCK_MS = 60 * 60 * 1000;
         const UNIQUE_BUILDER_MIN_RANKED = 2;
         let isFetchingEdhrec = false;
         let edhrecQueuePending = false;
+        let mfEdhrecConsecutive403 = 0;
+        let mfEdhrecBlockedUntil = 0;
+        let mfEdhrecCircuitWarned = false;
         const edhrecSlugQueue = [];
         const edhrecQueuedSlugs = new Set();
 
@@ -6937,6 +6943,21 @@
             if (!entry || !entry.fetchedAt) return false;
             const ttl = entry.error ? EDHREC_ERROR_TTL_MS : EDHREC_TTL_MS;
             return Date.now() - entry.fetchedAt < ttl;
+        }
+
+        function mfEdhrecIsBlocked() {
+            return Date.now() < mfEdhrecBlockedUntil;
+        }
+
+        function mfClearEdhrecQueue() {
+            while (edhrecSlugQueue.length) {
+                const slug = edhrecSlugQueue.shift();
+                edhrecQueuedSlugs.delete(slug);
+            }
+        }
+
+        function mfArtQueueIsBusy() {
+            return isFetchingArt || artQueuePending || (typeof mfCountNeededArtNames === 'function' && mfCountNeededArtNames() > 0);
         }
 
         function loadEdhrecCacheFromStorage() {
@@ -6981,9 +7002,19 @@
                 `https://json.edhrec.com/pages/commanders/${encodeURIComponent(slug)}.json`,
                 { headers: { Accept: 'application/json' } }
             );
-            if (!res.ok) throw new Error('EDHREC HTTP ' + res.status);
+            if (res.status === 403) {
+                const err = new Error('EDHREC HTTP 403');
+                err.status = 403;
+                throw err;
+            }
+            if (!res.ok) {
+                const err = new Error('EDHREC HTTP ' + res.status);
+                err.status = res.status;
+                throw err;
+            }
             const data = await res.json();
             const card = data?.container?.json_dict?.card;
+            mfEdhrecConsecutive403 = 0;
             if (!card || typeof card.rank !== 'number') {
                 return {
                     slug,
@@ -7016,6 +7047,7 @@
         function mfQueueEdhrecSlug(slug) {
             const key = String(slug || '').trim();
             if (!key) return;
+            if (mfEdhrecIsBlocked()) return;
             if (edhrecQueuedSlugs.has(key)) return;
             const cached = window.edhrecCache[key];
             if (cached && isEdhrecCacheFresh(cached)) return;
@@ -7046,11 +7078,29 @@
                 edhrecQueuePending = true;
                 return;
             }
+            if (mfEdhrecIsBlocked()) {
+                mfClearEdhrecQueue();
+                return;
+            }
+            // Prefer Scryfall art on cold loads; resume EDHREC when art is idle.
+            if (mfArtQueueIsBusy()) {
+                edhrecQueuePending = true;
+                setTimeout(() => window.processEdhrecQueue(), 500);
+                return;
+            }
             isFetchingEdhrec = true;
             edhrecQueuePending = false;
             let updated = false;
             try {
                 while (edhrecSlugQueue.length) {
+                    if (mfEdhrecIsBlocked()) {
+                        mfClearEdhrecQueue();
+                        break;
+                    }
+                    if (mfArtQueueIsBusy()) {
+                        edhrecQueuePending = true;
+                        break;
+                    }
                     const slug = edhrecSlugQueue.shift();
                     edhrecQueuedSlugs.delete(slug);
                     if (window.edhrecCache[slug] && isEdhrecCacheFresh(window.edhrecCache[slug])) continue;
@@ -7059,7 +7109,6 @@
                         window.saveEdhrecCache();
                         updated = true;
                     } catch (e) {
-                        console.warn('EDHREC fetch failed for', slug, e);
                         window.edhrecCache[slug] = {
                             slug,
                             rank: null,
@@ -7069,6 +7118,18 @@
                         };
                         window.saveEdhrecCache();
                         updated = true;
+                        if (e?.status === 403) {
+                            mfEdhrecConsecutive403 += 1;
+                            if (mfEdhrecConsecutive403 >= EDHREC_403_CIRCUIT_LIMIT) {
+                                mfEdhrecBlockedUntil = Date.now() + EDHREC_403_BLOCK_MS;
+                                mfClearEdhrecQueue();
+                                if (!mfEdhrecCircuitWarned) {
+                                    mfEdhrecCircuitWarned = true;
+                                    console.warn('EDHREC blocked (403); pausing rank fetches for 1 hour.');
+                                }
+                                break;
+                            }
+                        }
                     }
                     await new Promise((r) => setTimeout(r, EDHREC_FETCH_DELAY_MS));
                 }
@@ -7078,7 +7139,7 @@
             isFetchingEdhrec = false;
             if (updated) mfOnEdhrecCacheUpdated();
             if (edhrecQueuePending || edhrecSlugQueue.length) {
-                setTimeout(() => window.processEdhrecQueue(), 250);
+                setTimeout(() => window.processEdhrecQueue(), mfArtQueueIsBusy() ? 500 : 250);
             }
         };
 
@@ -8138,9 +8199,9 @@
             el.classList.remove('hidden');
             el.setAttribute('aria-hidden', 'false');
             if (inBackoff) {
-                textEl.textContent = n > 0 ? `Waiting on Scryfall… (${n} left)` : 'Waiting on Scryfall…';
+                textEl.textContent = n > 0 ? `Waiting on Scryfall… (${n})` : 'Waiting on Scryfall…';
             } else {
-                textEl.textContent = n > 0 ? `Loading card art… (${n} left)` : 'Loading card art…';
+                textEl.textContent = n > 0 ? `Loading art… (${n})` : 'Loading art…';
             }
         }
 
@@ -8397,9 +8458,13 @@
                     isFetchingArt = false;
                     mfUpdateArtLoadingStatus({ pendingCount: 0 });
                     if (artQueuePending) mfScheduleArtQueue(250);
+                    else if (edhrecQueuePending || edhrecSlugQueue.length) {
+                        setTimeout(() => window.processEdhrecQueue(), 250);
+                    }
                     return;
                 }
 
+                const inScryfallBackoff = Date.now() < mfScryfallBackoffUntil;
                 const neededNames = [];
                 const seen = new Set();
                 visibleElements.forEach(el => {
@@ -8408,17 +8473,25 @@
                     seen.add(rawName);
                     const cached = window.artCache[rawName];
                     if (!cached || cached.art_crop === 'error' || !Array.isArray(cached.colorIdentity)) {
-                        if (cached?.art_crop === 'error') delete window.artCache[rawName];
+                        // During rate-limit backoff, do not clear error entries to retry —
+                        // that caused re-burst storms after 429s.
+                        if (cached?.art_crop === 'error') {
+                            if (inScryfallBackoff) return;
+                            delete window.artCache[rawName];
+                        }
                         neededNames.push(rawName);
                     }
                 });
 
-                mfUpdateArtLoadingStatus({ pendingCount: neededNames.length });
+                mfUpdateArtLoadingStatus({ pendingCount: neededNames.length, waiting: inScryfallBackoff });
 
                 if (neededNames.length === 0) {
                     isFetchingArt = false;
                     mfUpdateArtLoadingStatus({ pendingCount: 0 });
                     if (artQueuePending) mfScheduleArtQueue(250);
+                    else if (edhrecQueuePending || edhrecSlugQueue.length) {
+                        setTimeout(() => window.processEdhrecQueue(), 250);
+                    }
                     return;
                 }
 
@@ -8503,6 +8576,10 @@
                 mfScheduleArtQueue(rateLimited ? 0 : 250);
             } else {
                 mfUpdateArtLoadingStatus();
+                // Art finished — resume EDHREC rank fetches if anything is queued.
+                if (edhrecQueuePending || edhrecSlugQueue.length) {
+                    setTimeout(() => window.processEdhrecQueue(), 250);
+                }
             }
         };
 
@@ -8698,6 +8775,14 @@
                 window.linkedPlayerName = '';
                 window.userHasAnyGroupAccess = null;
                 window.accessibleGroups = [];
+            }
+            // Attach/detach roster listener when auth changes (roster rules require sign-in).
+            if (window.isGroupValid && window.groupIdRaw) {
+                startRosterListener();
+                if (window.appData.matches) {
+                    recalculateEverything(window.appData.matches);
+                    initApp();
+                }
             }
             updateAccessUI();
             const pendingCreateSlug = window.localStorage.getItem(PENDING_CREATE_GROUP_KEY);
@@ -9675,79 +9760,125 @@
             mfEnqueueEdhrecForAllCommanders();
         }
 
+        let mfFirestorePermWarned = false;
+        function mfOnSnapshotError(err) {
+            if (err?.code === 'permission-denied') {
+                if (!mfFirestorePermWarned) {
+                    mfFirestorePermWarned = true;
+                    console.warn('Firestore permission-denied on a listener (expected when signed out for roster).');
+                }
+                return;
+            }
+            console.error('Firestore listener error', err);
+        }
+
+        function startRosterListener() {
+            if (rosterUnsubscribe) { rosterUnsubscribe(); rosterUnsubscribe = null; }
+            if (!window.groupIdRaw || !auth.currentUser) {
+                window.appData.explicitRoster = [];
+                return;
+            }
+            rosterUnsubscribe = onSnapshot(
+                collection(db, "groups", window.groupIdRaw, "roster"),
+                (snapshot) => {
+                    window.appData.explicitRoster = [];
+                    snapshot.forEach(docSnap => {
+                        const data = docSnap.data();
+                        window.appData.explicitRoster.push({
+                            id: docSnap.id,
+                            name: data.name,
+                            avatarDataUrl: data.avatarDataUrl || '',
+                            email: data.email || '',
+                            uid: data.uid || '',
+                            inviteSentAt: data.inviteSentAt || null,
+                            addedAt: data.addedAt || 0
+                        });
+                    });
+                    if (window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
+                    backfillPublicAvatars();
+                },
+                mfOnSnapshotError
+            );
+        }
+
         function startMatchListener() {
             if (matchUnsubscribe) { matchUnsubscribe(); }
-            if (rosterUnsubscribe) { rosterUnsubscribe(); }
+            if (rosterUnsubscribe) { rosterUnsubscribe(); rosterUnsubscribe = null; }
             if (settingsUnsubscribe) { settingsUnsubscribe(); }
             if (deckLinksUnsubscribe) { deckLinksUnsubscribe(); }
             if (decksUnsubscribe) { decksUnsubscribe(); }
 
-            settingsUnsubscribe = onSnapshot(doc(db, "groups", window.groupIdRaw, "settings", "deckOwners"), (docSnap) => {
-                window.appData.ownerOverrides = docSnap.exists() ? docSnap.data() : {};
-                if(window.appData.matches && window.appData.matches.length > 0) {
-                    recalculateEverything(window.appData.matches);
-                    initApp();
-                }
-            });
+            settingsUnsubscribe = onSnapshot(
+                doc(db, "groups", window.groupIdRaw, "settings", "deckOwners"),
+                (docSnap) => {
+                    window.appData.ownerOverrides = docSnap.exists() ? docSnap.data() : {};
+                    if (window.appData.matches && window.appData.matches.length > 0) {
+                        recalculateEverything(window.appData.matches);
+                        initApp();
+                    }
+                },
+                mfOnSnapshotError
+            );
 
-            deckLinksUnsubscribe = onSnapshot(doc(db, "groups", window.groupIdRaw, "settings", "deckLinks"), (docSnap) => {
-                window.appData.deckLinkOverrides = docSnap.exists() ? docSnap.data() : {};
-                if (window.appData.matches && window.appData.matches.length > 0) {
-                    recalculateEverything(window.appData.matches);
-                    initApp();
-                }
-                refreshOpenCommanderDeckLinkUI();
-            });
-
-            decksUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "decks"), (snapshot) => {
-                const entities = {};
-                snapshot.forEach((docSnap) => {
-                    entities[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
-                });
-                window.appData.deckEntities = entities;
-                if (window.appData.matches) {
-                    recalculateEverything(window.appData.matches);
-                    initApp();
-                    if (typeof window._plrProfilePlayerIndex === 'number') {
-                        const plr = window.appData.players[window._plrProfilePlayerIndex];
-                        if (plr) refreshPlayerProfileDecksSection(plr);
+            deckLinksUnsubscribe = onSnapshot(
+                doc(db, "groups", window.groupIdRaw, "settings", "deckLinks"),
+                (docSnap) => {
+                    window.appData.deckLinkOverrides = docSnap.exists() ? docSnap.data() : {};
+                    if (window.appData.matches && window.appData.matches.length > 0) {
+                        recalculateEverything(window.appData.matches);
+                        initApp();
                     }
                     refreshOpenCommanderDeckLinkUI();
-                }
-            });
+                },
+                mfOnSnapshotError
+            );
+
+            decksUnsubscribe = onSnapshot(
+                collection(db, "groups", window.groupIdRaw, "decks"),
+                (snapshot) => {
+                    const entities = {};
+                    snapshot.forEach((docSnap) => {
+                        entities[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
+                    });
+                    window.appData.deckEntities = entities;
+                    if (window.appData.matches) {
+                        recalculateEverything(window.appData.matches);
+                        initApp();
+                        if (typeof window._plrProfilePlayerIndex === 'number') {
+                            const plr = window.appData.players[window._plrProfilePlayerIndex];
+                            if (plr) refreshPlayerProfileDecksSection(plr);
+                        }
+                        refreshOpenCommanderDeckLinkUI();
+                    }
+                },
+                mfOnSnapshotError
+            );
 
             // Public, PII-free avatar store so view-only (signed-out) users can see profile photos.
             publicAvatarBackfillDone = false;
             if (avatarsUnsubscribe) { avatarsUnsubscribe(); }
-            avatarsUnsubscribe = onSnapshot(doc(db, "groups", window.groupIdRaw, "settings", "avatars"), (docSnap) => {
-                window.publicAvatarMap = docSnap.exists() ? (docSnap.data() || {}) : {};
-                if (window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
-            });
-            
-            rosterUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "roster"), (snapshot) => {
-                window.appData.explicitRoster = [];
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    window.appData.explicitRoster.push({
-                        id: docSnap.id,
-                        name: data.name,
-                        avatarDataUrl: data.avatarDataUrl || '',
-                        email: data.email || '',
-                        uid: data.uid || '',
-                        inviteSentAt: data.inviteSentAt || null,
-                        addedAt: data.addedAt || 0
-                    });
-                });
-                if(window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
-                backfillPublicAvatars();
-            });
+            avatarsUnsubscribe = onSnapshot(
+                doc(db, "groups", window.groupIdRaw, "settings", "avatars"),
+                (docSnap) => {
+                    window.publicAvatarMap = docSnap.exists() ? (docSnap.data() || {}) : {};
+                    if (window.appData.matches) { recalculateEverything(window.appData.matches); initApp(); }
+                },
+                mfOnSnapshotError
+            );
 
-            matchUnsubscribe = onSnapshot(collection(db, "groups", window.groupIdRaw, "matches"), (snapshot) => {
-                let matches = [];
-                snapshot.forEach(docSnap => matches.push(normalizeLoadedMatch(docSnap)));
-                recalculateEverything(matches);
-                initApp();
-            });
+            // Roster requires auth (emails); skip when signed out to avoid permission-denied spam.
+            startRosterListener();
+
+            matchUnsubscribe = onSnapshot(
+                collection(db, "groups", window.groupIdRaw, "matches"),
+                (snapshot) => {
+                    let matches = [];
+                    snapshot.forEach(docSnap => matches.push(normalizeLoadedMatch(docSnap)));
+                    recalculateEverything(matches);
+                    initApp();
+                },
+                mfOnSnapshotError
+            );
         }
 
         function safeSetHTML(id, html) {
