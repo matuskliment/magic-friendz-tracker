@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.67">
+    <meta name="mf-app-version" content="2.9.68">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -723,18 +723,25 @@
         #view-log-match.mf-log-match-wizard #log-match-wizard-progress {
             display: block;
         }
-        /* Mobile wizard: tap-to-pick rows instead of inline autocomplete */
+        /* Touch / wizard: tap-to-pick rows instead of inline autocomplete.
+           .mf-touch-pickers covers phones that open in landscape / Desktop-site
+           width (>767) where wizard alone used to fall back to broken floating dropdowns. */
         #view-log-match.mf-log-match-wizard .input-slot-group .existing-mode,
-        #view-log-match.mf-log-match-wizard .input-slot-group .new-mode {
+        #view-log-match.mf-log-match-wizard .input-slot-group .new-mode,
+        #view-log-match.mf-touch-pickers .input-slot-group .existing-mode,
+        #view-log-match.mf-touch-pickers .input-slot-group .new-mode {
             display: none !important;
         }
-        #view-log-match.mf-log-match-wizard .mf-mobile-field-picker {
+        #view-log-match.mf-log-match-wizard .mf-mobile-field-picker,
+        #view-log-match.mf-touch-pickers .mf-mobile-field-picker {
             display: block;
         }
-        #view-log-match.mf-log-match-wizard .mf-desktop-card-search {
+        #view-log-match.mf-log-match-wizard .mf-desktop-card-search,
+        #view-log-match.mf-touch-pickers .mf-desktop-card-search {
             display: none !important;
         }
-        #view-log-match.mf-log-match-wizard .mf-mobile-card-picker {
+        #view-log-match.mf-log-match-wizard .mf-mobile-card-picker,
+        #view-log-match.mf-touch-pickers .mf-mobile-card-picker {
             display: block;
         }
         #view-log-match.mf-log-match-wizard .mf-notes-input {
@@ -4923,6 +4930,11 @@
         window._logMatchWizardLatched = null;
 
         function mfPreferLogMatchWizard() {
+            // Phones/tablets always get the wizard + sheet pickers — never floating
+            // autocomplete. Viewport width alone fails for landscape / Desktop site.
+            if (typeof mfIsTouchDevice === 'function' ? mfIsTouchDevice() : (navigator.maxTouchPoints || 0) > 0) {
+                return true;
+            }
             try {
                 if (window.matchMedia('(max-width: 767px)').matches) return true;
                 if (window.matchMedia('(pointer: coarse)').matches) return true;
@@ -4934,6 +4946,15 @@
             if (window._logMatchWizardLatched === true) return true;
             if (window._logMatchWizardLatched === false) return false;
             try { return window.matchMedia('(max-width: 767px)').matches; } catch (_) { return false; }
+        }
+
+        function mfSyncTouchPickerClass() {
+            const modal = document.getElementById('view-log-match');
+            if (!modal) return;
+            const touch = typeof mfIsTouchDevice === 'function'
+                ? mfIsTouchDevice()
+                : (navigator.maxTouchPoints || 0) > 0;
+            modal.classList.toggle('mf-touch-pickers', touch);
         }
 
         function mfBuildLogMatchWizardPlan() {
@@ -5274,6 +5295,7 @@
         function mfInitLogMatchWizard() {
             window._logMatchWizardStep = 0;
             window._logMatchWizardLatched = mfPreferLogMatchWizard();
+            mfSyncTouchPickerClass();
             mfSyncLogMatchWizardShell();
             mfSyncDurationStepperDisplay();
             mfSyncRoundsDisplay();
@@ -5370,7 +5392,12 @@
 
         function mfIsMobileWizardPickerMode() {
             const modal = document.getElementById('view-log-match');
-            return !!(modal && modal.classList.contains('mf-log-match-wizard') && mfIsLogMatchWizardViewport());
+            if (!modal || modal.classList.contains('hidden')) return false;
+            // Hard rule: touch devices never use floating Search… autocomplete.
+            if (typeof mfIsTouchDevice === 'function' ? mfIsTouchDevice() : (navigator.maxTouchPoints || 0) > 0) {
+                return true;
+            }
+            return !!(modal.classList.contains('mf-log-match-wizard') && mfIsLogMatchWizardViewport());
         }
 
         function mfSyncMobilePickerLabels() {
@@ -6557,7 +6584,9 @@
         }
 
         function mfMountFloatingDropdown(input, dropdown) {
-            if (mfIsMobileWizardPickerMode()) return;
+            // Never mount body-fixed autocomplete on phones — Android keyboard + resize
+            // routinely breaks these (common Chrome/Android combo-box failure mode).
+            if (mfIsMobileWizardPickerMode() || mfIsTouchDevice()) return;
             // Only one floating dropdown alive at a time. Clear any others first.
             document.querySelectorAll('.mf-floating-dropdown').forEach((d) => {
                 if (d !== dropdown) d.remove();
@@ -13338,7 +13367,7 @@
             mfSetLogMatchModalMode(false);
             const modal = document.getElementById('view-log-match');
             if (modal) {
-                modal.classList.remove('mf-log-match-wizard', 'mf-wizard-on-review');
+                modal.classList.remove('mf-log-match-wizard', 'mf-wizard-on-review', 'mf-touch-pickers');
             }
             document.querySelectorAll('#view-log-match .input-slot-group').forEach((g) => {
                 mfReleaseSlotGroup(g, { hideNewMode: true });
