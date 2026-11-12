@@ -831,7 +831,12 @@
             ]);
             const matches = matchesSnap.docs.map(d => d.data());
             const owners = ownersSnap.exists() ? ownersSnap.data() : {};
-            const rosterNames = rosterSnap.docs.map(d => normalizeName(d.data().name)).filter(Boolean).sort((a, b) => a.localeCompare(b));
+            const rosterNames = [...new Map(
+                rosterSnap.docs
+                    .map((d) => normalizeName(d.data().name))
+                    .filter(Boolean)
+                    .map((n) => [n.toLowerCase(), n])
+            ).values()].sort((a, b) => a.localeCompare(b));
 
             const inferredOwners = {};
             matches.forEach(m => {
@@ -902,7 +907,19 @@
                 const sel = row.querySelector('.ownership-select');
                 if (sel) {
                     sel.addEventListener('change', async () => {
-                        await setDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners'), { [deckName]: sel.value }, { merge: true });
+                        const ownerNorm = normalizeName(sel.value);
+                        await setDoc(doc(db, 'groups', groupId, 'settings', 'deckOwners'), { [deckName]: ownerNorm }, { merge: true });
+                        const matching = decksSnap.docs.filter((d) =>
+                            deckNamesMatch(d.data()?.name, deckName)
+                        );
+                        if (matching.length) {
+                            await Promise.all(matching.map((d) =>
+                                updateDoc(doc(db, 'groups', groupId, 'decks', d.id), {
+                                    owner: ownerNorm,
+                                    updatedAt: Date.now()
+                                })
+                            ));
+                        }
                     });
                 }
 

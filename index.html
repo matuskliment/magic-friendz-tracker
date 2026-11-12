@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.64">
+    <meta name="mf-app-version" content="2.9.67">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -450,16 +450,20 @@
             flex-shrink: 0;
             isolation: isolate;
             background: rgb(2 6 23);
-            padding-top: env(safe-area-inset-top, 0px);
+            /* safe-area alone was overriding Tailwind py-3 and flush-pinning buttons to the top */
+            padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+            padding-bottom: 0.75rem;
             touch-action: manipulation;
         }
         .mf-sheet-header.glass {
             backdrop-filter: none;
             border-color: rgb(30 41 59);
         }
+        /* Equal side columns keep the title optically centered even when
+           Cancel vs Next/Save (or Back vs Retire) have different widths. */
         .mf-sheet-header-bar {
             display: grid;
-            grid-template-columns: auto minmax(0, 1fr) auto;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             align-items: center;
             gap: 0.5rem;
             min-height: 44px;
@@ -467,6 +471,7 @@
         .mf-sheet-header-side {
             display: flex;
             align-items: center;
+            gap: 0.5rem;
             min-width: 0;
         }
         .mf-sheet-header-side--end {
@@ -474,11 +479,62 @@
         }
         .mf-sheet-header-title {
             min-width: 0;
+            max-width: min(14rem, 42vw);
             margin: 0;
             text-align: center;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            justify-self: center;
+        }
+        .mf-sheet-header-title-block {
+            min-width: 0;
+            max-width: min(14rem, 42vw);
+            text-align: center;
+            justify-self: center;
+        }
+        .mf-sheet-header-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            min-height: 44px;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            line-height: 1.25;
+            border-radius: 0.5rem;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+        }
+        .mf-sheet-header-btn--ghost {
+            color: rgb(203 213 225);
+            background: rgb(30 41 59 / 0.8);
+            border: 1px solid rgb(71 85 105);
+        }
+        .mf-sheet-header-btn--ghost:hover {
+            color: #fff;
+            border-color: rgb(100 116 139);
+        }
+        .mf-sheet-header-btn--primary {
+            color: #fff;
+            background: rgb(147 51 234);
+            border: 1px solid rgb(168 85 247 / 0.4);
+        }
+        .mf-sheet-header-btn--primary:hover {
+            background: rgb(168 85 247);
+            color: #fff;
+        }
+        .mf-sheet-header-btn--accent {
+            color: rgb(216 180 254);
+            background: rgb(168 85 247 / 0.1);
+            border: 1px solid rgb(168 85 247 / 0.3);
+        }
+        .mf-sheet-header-btn--accent:hover {
+            color: rgb(233 213 255);
+            background: rgb(168 85 247 / 0.2);
         }
         @media (max-width: 420px) {
             .mf-sheet-header-back-label {
@@ -636,65 +692,64 @@
                 max-width: 28rem;
             }
         }
-        /* Log Match mobile wizard (≤767px); desktop keeps scroll-all form */
-        @media (max-width: 767px) {
-            #view-log-match.mf-log-match-wizard #log-match-scroll > .p-4 {
-                padding-bottom: 1rem;
-            }
-            #view-log-match.mf-log-match-wizard .log-match-step-panel {
-                display: none !important;
-            }
-            #view-log-match.mf-log-match-wizard .log-match-step-panel.is-wizard-active {
-                display: block !important;
-            }
-            #view-log-match.mf-log-match-wizard .mf-sheet-bottom-spacer {
-                display: none;
-            }
-            #view-log-match.mf-log-match-wizard #log-match-save-btn {
-                display: none !important;
-            }
-            #view-log-match.mf-log-match-wizard #log-match-next-btn {
-                display: inline-flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-            }
-            #view-log-match.mf-log-match-wizard.mf-wizard-on-review #log-match-next-btn {
-                display: none !important;
-            }
-            #view-log-match.mf-log-match-wizard.mf-wizard-on-review #log-match-save-btn {
-                display: inline-flex !important;
-            }
-            #view-log-match.mf-log-match-wizard #log-match-wizard-progress {
-                display: block;
-            }
-            /* Mobile wizard: tap-to-pick rows instead of inline autocomplete */
-            #view-log-match.mf-log-match-wizard .input-slot-group .existing-mode,
-            #view-log-match.mf-log-match-wizard .input-slot-group .new-mode {
-                display: none !important;
-            }
-            #view-log-match.mf-log-match-wizard .mf-mobile-field-picker {
-                display: block;
-            }
-            #view-log-match.mf-log-match-wizard .mf-desktop-card-search {
-                display: none !important;
-            }
-            #view-log-match.mf-log-match-wizard .mf-mobile-card-picker {
-                display: block;
-            }
-            #view-log-match.mf-log-match-wizard .mf-notes-input {
-                min-height: 11rem;
-            }
-            #view-log-match.mf-picker-open #log-match-scroll {
-                display: none !important;
-            }
-            #view-log-match.mf-picker-open #log-match-picker {
-                display: flex !important;
-            }
-            #view-log-match.mf-picker-open #log-match-next-btn,
-            #view-log-match.mf-picker-open #log-match-save-btn {
-                visibility: hidden;
-                pointer-events: none;
-            }
+        /* Log Match mobile wizard: driven by JS class (latched for open session),
+           not viewport media — so keyboard resize / Desktop-site width cannot drop it. */
+        #view-log-match.mf-log-match-wizard #log-match-scroll > .p-4 {
+            padding-bottom: 1rem;
+        }
+        #view-log-match.mf-log-match-wizard .log-match-step-panel {
+            display: none !important;
+        }
+        #view-log-match.mf-log-match-wizard .log-match-step-panel.is-wizard-active {
+            display: block !important;
+        }
+        #view-log-match.mf-log-match-wizard .mf-sheet-bottom-spacer {
+            display: none;
+        }
+        #view-log-match.mf-log-match-wizard #log-match-save-btn {
+            display: none !important;
+        }
+        #view-log-match.mf-log-match-wizard #log-match-next-btn {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        #view-log-match.mf-log-match-wizard.mf-wizard-on-review #log-match-next-btn {
+            display: none !important;
+        }
+        #view-log-match.mf-log-match-wizard.mf-wizard-on-review #log-match-save-btn {
+            display: inline-flex !important;
+        }
+        #view-log-match.mf-log-match-wizard #log-match-wizard-progress {
+            display: block;
+        }
+        /* Mobile wizard: tap-to-pick rows instead of inline autocomplete */
+        #view-log-match.mf-log-match-wizard .input-slot-group .existing-mode,
+        #view-log-match.mf-log-match-wizard .input-slot-group .new-mode {
+            display: none !important;
+        }
+        #view-log-match.mf-log-match-wizard .mf-mobile-field-picker {
+            display: block;
+        }
+        #view-log-match.mf-log-match-wizard .mf-desktop-card-search {
+            display: none !important;
+        }
+        #view-log-match.mf-log-match-wizard .mf-mobile-card-picker {
+            display: block;
+        }
+        #view-log-match.mf-log-match-wizard .mf-notes-input {
+            min-height: 11rem;
+        }
+        #view-log-match.mf-picker-open #log-match-scroll {
+            display: none !important;
+        }
+        #view-log-match.mf-picker-open #log-match-picker {
+            display: flex !important;
+        }
+        #view-log-match.mf-picker-open #log-match-next-btn,
+        #view-log-match.mf-picker-open #log-match-save-btn {
+            visibility: hidden;
+            pointer-events: none;
         }
         .mf-mobile-field-picker {
             display: none;
@@ -852,14 +907,15 @@
             box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35);
         }
         @media (min-width: 768px) {
-            #log-match-next-btn,
-            #log-match-wizard-progress {
+            /* Desktop scroll-all form only — do not override latched mobile wizard */
+            #view-log-match:not(.mf-log-match-wizard) #log-match-next-btn,
+            #view-log-match:not(.mf-log-match-wizard) #log-match-wizard-progress {
                 display: none !important;
             }
-            #log-match-save-btn {
+            #view-log-match:not(.mf-log-match-wizard) #log-match-save-btn {
                 display: inline-flex !important;
             }
-            #log-match-step-review {
+            #view-log-match:not(.mf-log-match-wizard) #log-match-step-review {
                 display: none !important;
             }
             /* Log match setup: compact desktop controls (mobile wizard keeps touch size) */
@@ -1830,15 +1886,15 @@
         <div class="mf-sheet-header glass px-4 py-3 border-b border-slate-800">
             <div class="mf-sheet-header-bar">
                 <div class="mf-sheet-header-side">
-                    <button type="button" onclick="window.closeCommanderProfile()" class="inline-flex items-center justify-center gap-1 text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation" aria-label="Back">
+                    <button type="button" onclick="window.closeCommanderProfile()" class="mf-sheet-header-btn mf-sheet-header-btn--ghost" aria-label="Back">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
                         <span class="mf-sheet-header-back-label">Back</span>
                     </button>
                 </div>
                 <h3 id="cmd-view-title" class="mf-sheet-header-title text-sm font-bold text-slate-200">Commander</h3>
                 <div class="mf-sheet-header-side mf-sheet-header-side--end">
-                    <button type="button" id="cmd-view-retire-btn" class="hidden inline-flex items-center justify-center text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation whitespace-nowrap">Retire</button>
-                    <div id="cmd-view-header-spacer" class="w-11 h-11" aria-hidden="true"></div>
+                    <button type="button" id="cmd-view-retire-btn" class="hidden mf-sheet-header-btn mf-sheet-header-btn--ghost">Retire</button>
+                    <div id="cmd-view-header-spacer" class="hidden" aria-hidden="true"></div>
                 </div>
             </div>
         </div>
@@ -2020,15 +2076,15 @@
         <div class="mf-sheet-header glass px-4 py-3 border-b border-slate-800">
             <div class="mf-sheet-header-bar">
                 <div class="mf-sheet-header-side">
-                    <button type="button" onclick="window.closePlayerProfile()" class="inline-flex items-center justify-center gap-1 text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-full border border-slate-600 hover:border-slate-500 bg-slate-800/80 transition min-h-[44px] touch-manipulation">
+                    <button type="button" onclick="window.closePlayerProfile()" class="mf-sheet-header-btn mf-sheet-header-btn--ghost" aria-label="Back">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-                        Back
+                        <span class="mf-sheet-header-back-label">Back</span>
                     </button>
                 </div>
                 <h3 class="mf-sheet-header-title text-sm font-bold text-slate-200">Player Stats</h3>
                 <div class="mf-sheet-header-side mf-sheet-header-side--end">
-                    <button type="button" id="plr-create-deck-btn" onclick="window.toggleProfileDeckCreatePanel()" class="hidden inline-flex items-center justify-center text-sm font-semibold text-purple-200 hover:text-white bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-3 py-2 rounded-full transition min-h-[44px] touch-manipulation whitespace-nowrap">Create Deck</button>
-                    <div id="plr-header-spacer" aria-hidden="true"></div>
+                    <button type="button" id="plr-create-deck-btn" onclick="window.toggleProfileDeckCreatePanel()" class="hidden mf-sheet-header-btn mf-sheet-header-btn--accent">Create Deck</button>
+                    <div id="plr-header-spacer" class="hidden" aria-hidden="true"></div>
                 </div>
             </div>
         </div>
@@ -2109,13 +2165,17 @@
 
     <!-- FULL SCREEN VIEW: ADMIN MODAL -->
     <div id="view-admin-modal" class="mf-mobile-sheet z-[120] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true">
-        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
-            <button type="button" onclick="window.closeAdminModal()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                Back
-            </button>
-            <h3 class="text-sm font-bold text-slate-200">Admin Tools</h3>
-            <div class="w-16"></div>
+        <div class="mf-sheet-header glass px-4 py-3 border-b border-slate-800">
+            <div class="mf-sheet-header-bar">
+                <div class="mf-sheet-header-side">
+                    <button type="button" onclick="window.closeAdminModal()" class="mf-sheet-header-btn mf-sheet-header-btn--ghost" aria-label="Back">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                        <span class="mf-sheet-header-back-label">Back</span>
+                    </button>
+                </div>
+                <h3 class="mf-sheet-header-title text-sm font-bold text-slate-200">Admin Tools</h3>
+                <div class="mf-sheet-header-side mf-sheet-header-side--end" aria-hidden="true"></div>
+            </div>
         </div>
 
         <div class="mf-sheet-scroll">
@@ -2150,13 +2210,17 @@
 
     <!-- FULL SCREEN VIEW: ART DIAGNOSTICS -->
     <div id="view-art-diagnostics" class="mf-mobile-sheet z-[130] bg-slate-950 transform translate-x-full transition-transform duration-300 hidden" role="dialog" aria-modal="true">
-        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md">
-            <button type="button" onclick="window.closeArtDiagnostics()" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                Back
-            </button>
-            <h3 class="text-sm font-bold text-slate-200">Art Diagnostics</h3>
-            <div class="w-16"></div>
+        <div class="mf-sheet-header glass px-4 py-3 border-b border-slate-800">
+            <div class="mf-sheet-header-bar">
+                <div class="mf-sheet-header-side">
+                    <button type="button" onclick="window.closeArtDiagnostics()" class="mf-sheet-header-btn mf-sheet-header-btn--ghost" aria-label="Back">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                        <span class="mf-sheet-header-back-label">Back</span>
+                    </button>
+                </div>
+                <h3 class="mf-sheet-header-title text-sm font-bold text-slate-200">Art Diagnostics</h3>
+                <div class="mf-sheet-header-side mf-sheet-header-side--end" aria-hidden="true"></div>
+            </div>
         </div>
 
         <div class="mf-sheet-scroll">
@@ -2171,18 +2235,24 @@
 
     <!-- FULL SCREEN VIEW: LOG MATCH MODAL -->
     <div id="view-log-match" class="mf-mobile-sheet z-[120] bg-slate-950 transform translate-y-full transition-transform duration-300 hidden" role="dialog" aria-modal="true" aria-labelledby="log-match-title">
-        <div class="mf-sheet-header glass px-4 py-3 flex justify-between items-center border-b border-slate-800 shadow-md gap-2">
-            <button type="button" id="log-match-header-left-btn" onclick="window.mfLogMatchHeaderLeft(event)" class="text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg transition min-h-[44px] touch-manipulation shrink-0">
-                <svg id="log-match-header-left-icon-close" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                <svg id="log-match-header-left-icon-back" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                <span id="log-match-header-left-label" class="text-sm font-semibold">Cancel</span>
-            </button>
-            <div class="flex-1 min-w-0 text-center px-1">
-                <h3 id="log-match-title" class="text-sm font-bold text-slate-200 truncate">Log New Match</h3>
-                <p id="log-match-wizard-progress" class="hidden text-[10px] text-slate-500 font-medium mt-0.5 truncate">Step 1 of 5</p>
+        <div class="mf-sheet-header glass px-4 py-3 border-b border-slate-800">
+            <div class="mf-sheet-header-bar">
+                <div class="mf-sheet-header-side">
+                    <button type="button" id="log-match-header-left-btn" onclick="window.mfLogMatchHeaderLeft(event)" class="mf-sheet-header-btn mf-sheet-header-btn--ghost">
+                        <svg id="log-match-header-left-icon-close" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        <svg id="log-match-header-left-icon-back" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                        <span id="log-match-header-left-label">Cancel</span>
+                    </button>
+                </div>
+                <div class="mf-sheet-header-title-block">
+                    <h3 id="log-match-title" class="text-sm font-bold text-slate-200 truncate m-0">Log New Match</h3>
+                    <p id="log-match-wizard-progress" class="hidden text-[10px] text-slate-500 font-medium mt-0.5 truncate">Step 1 of 5</p>
+                </div>
+                <div class="mf-sheet-header-side mf-sheet-header-side--end">
+                    <button type="button" id="log-match-next-btn" onclick="window.mfLogMatchWizardNext(event)" class="hidden mf-sheet-header-btn mf-sheet-header-btn--primary min-w-[4.5rem]">Next</button>
+                    <button type="button" id="log-match-save-btn" onclick="window.mfSaveMatchHeader(event)" class="mf-sheet-header-btn mf-sheet-header-btn--accent">Save Match</button>
+                </div>
             </div>
-            <button type="button" id="log-match-next-btn" onclick="window.mfLogMatchWizardNext(event)" class="hidden text-white font-bold hover:text-purple-100 transition px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg border border-purple-500/40 min-h-[44px] min-w-[72px] text-center whitespace-nowrap touch-manipulation shrink-0">Next</button>
-            <button type="button" id="log-match-save-btn" onclick="window.mfSaveMatchHeader(event)" class="text-purple-400 font-bold hover:text-purple-300 transition px-3 py-1.5 bg-purple-500/10 rounded-lg border border-purple-500/30 min-h-[44px] min-w-[112px] text-center whitespace-nowrap touch-manipulation shrink-0">Save Match</button>
         </div>
 
         <div id="log-match-picker" class="mf-sheet-scroll" aria-hidden="true">
@@ -4848,7 +4918,21 @@
             };
         }
 
+        // Latched for the open log/edit modal session so Android keyboard resize
+        // (or Desktop-site width flicker) cannot drop the mobile wizard mid-flow.
+        window._logMatchWizardLatched = null;
+
+        function mfPreferLogMatchWizard() {
+            try {
+                if (window.matchMedia('(max-width: 767px)').matches) return true;
+                if (window.matchMedia('(pointer: coarse)').matches) return true;
+            } catch (_) {}
+            return false;
+        }
+
         function mfIsLogMatchWizardViewport() {
+            if (window._logMatchWizardLatched === true) return true;
+            if (window._logMatchWizardLatched === false) return false;
             try { return window.matchMedia('(max-width: 767px)').matches; } catch (_) { return false; }
         }
 
@@ -5189,6 +5273,7 @@
 
         function mfInitLogMatchWizard() {
             window._logMatchWizardStep = 0;
+            window._logMatchWizardLatched = mfPreferLogMatchWizard();
             mfSyncLogMatchWizardShell();
             mfSyncDurationStepperDisplay();
             mfSyncRoundsDisplay();
@@ -6501,6 +6586,21 @@
             let startX = 0;
             let startY = 0;
             let moved = false;
+            let pickLock = false;
+
+            const runPick = (evt) => {
+                if (pickLock || moved) return;
+                pickLock = true;
+                if (evt) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                }
+                mfDropdownPickPending = true;
+                onPick();
+                mfDismissFloatingDropdown(input);
+                requestAnimationFrame(() => { mfDropdownPickPending = false; });
+                setTimeout(() => { pickLock = false; }, 350);
+            };
 
             li.addEventListener('pointerdown', (evt) => {
                 if (evt.pointerType === 'mouse' && evt.button !== 0) return;
@@ -6521,12 +6621,7 @@
                 if (evt.pointerId !== activePointer) return;
                 activePointer = null;
                 if (moved) return;
-                evt.preventDefault();
-                evt.stopPropagation();
-                mfDropdownPickPending = true;
-                onPick();
-                mfDismissFloatingDropdown(input);
-                requestAnimationFrame(() => { mfDropdownPickPending = false; });
+                runPick(evt);
             };
 
             li.addEventListener('pointerup', finishPick);
@@ -6534,6 +6629,8 @@
                 activePointer = null;
                 moved = false;
             });
+            // Firefox / Android: pointerup can be dropped after list scroll; click is a safe fallback.
+            li.addEventListener('click', (evt) => runPick(evt));
         }
 
         /** Shared winner / defeated seat fields (identical behavior, theme colors only). */
@@ -9588,9 +9685,19 @@
                 snapshotDeckPeakRanks(deckElo, deckStats);
             });
 
+            const ownerOverrideForDeck = (deckName) => {
+                const overrides = window.appData.ownerOverrides || {};
+                if (overrides[deckName]) return overrides[deckName];
+                const key = normalizeName(deckName).toLowerCase();
+                if (!key) return '';
+                const matchKey = Object.keys(overrides).find((k) => normalizeName(k).toLowerCase() === key);
+                return matchKey ? overrides[matchKey] : '';
+            };
+
             Object.keys(deckStats).forEach(deckName => {
-                if (window.appData.ownerOverrides[deckName]) {
-                    deckStats[deckName].owner = window.appData.ownerOverrides[deckName];
+                const overrideOwner = ownerOverrideForDeck(deckName);
+                if (overrideOwner) {
+                    deckStats[deckName].owner = overrideOwner;
                 }
                 if (window.appData.deckLinkOverrides[deckName]) {
                     deckStats[deckName].deckLink = window.appData.deckLinkOverrides[deckName];
@@ -9616,7 +9723,8 @@
                 const name = String(ent.name || '').trim();
                 if (!name || !deckStats[name]) return;
                 entityByDeckName[name] = ent;
-                if (ent.owner) deckStats[name].owner = ent.owner;
+                // Admin overrides win over entity.owner until entities are synced.
+                if (ent.owner && !ownerOverrideForDeck(name)) deckStats[name].owner = ent.owner;
                 if (ent.deckLink) deckStats[name].deckLink = ent.deckLink;
             });
 
@@ -12303,11 +12411,16 @@
             const container = document.getElementById('admin-ownership-list');
             if (container) {
                 const sortedDecks = [...window.appData.commanders].sort((a,b) => a.name.localeCompare(b.name));
-                const sortedPlayers = [...window.appData.players].sort((a,b) => a.name.localeCompare(b.name));
+                const uniquePlayers = [...new Map(
+                    (window.appData.players || [])
+                        .filter((p) => p && p.name)
+                        .map((p) => [normalizeName(p.name).toLowerCase(), p])
+                ).values()];
+                const sortedPlayers = uniquePlayers.sort((a,b) => a.name.localeCompare(b.name));
                 
                 let html = '';
                 sortedDecks.forEach(cmd => {
-                    let options = sortedPlayers.map(p => `<option value="${p.name}" ${p.name === cmd.owner ? 'selected' : ''}>${p.avatarInitials || getPlayerInitials(p.name)} ${p.name}</option>`).join('');
+                    let options = sortedPlayers.map(p => `<option value="${p.name}" ${normalizeName(p.name).toLowerCase() === normalizeName(cmd.owner).toLowerCase() ? 'selected' : ''}>${p.avatarInitials || getPlayerInitials(p.name)} ${p.name}</option>`).join('');
                     const retired = isCommanderRetired(cmd);
                     const idJs = cmd.deckEntityId ? String(cmd.deckEntityId).replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
                     const canRetire = !retired && !!cmd.deckEntityId && window.canManageDeckFor(cmd.owner);
@@ -12376,9 +12489,22 @@
                 return;
             }
             try {
+                const ownerNorm = normalizeName(newOwner);
+                const deckKey = normalizeName(deckName);
                 await setDoc(doc(db, "groups", window.groupIdRaw, "settings", "deckOwners"), {
-                    [deckName]: newOwner
+                    [deckName]: ownerNorm
                 }, { merge: true });
+                const matching = getDeckEntitiesList().filter((ent) =>
+                    normalizeName(ent.name).toLowerCase() === deckKey.toLowerCase()
+                );
+                if (matching.length) {
+                    await Promise.all(matching.map((ent) =>
+                        updateDoc(doc(db, 'groups', window.groupIdRaw, 'decks', ent.id), {
+                            owner: ownerNorm,
+                            updatedAt: Date.now()
+                        })
+                    ));
+                }
             } catch(e) {
                 console.error(e);
                 window.showAppAlert("Failed to update owner.", "Error", "❌");
@@ -13208,6 +13334,7 @@
             window.editingMatchId = null;
             window._logMatchEditSeed = null;
             window._logMatchWizardStep = 0;
+            window._logMatchWizardLatched = null;
             mfSetLogMatchModalMode(false);
             const modal = document.getElementById('view-log-match');
             if (modal) {
