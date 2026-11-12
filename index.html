@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.68">
+    <meta name="mf-app-version" content="2.9.69">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -5146,6 +5146,7 @@
             const modal = document.getElementById('view-log-match');
             if (!modal || modal.classList.contains('hidden')) return;
             const useWizard = mfIsLogMatchWizardViewport();
+            const wasWizard = modal.classList.contains('mf-log-match-wizard');
             modal.classList.toggle('mf-log-match-wizard', useWizard);
             if (!useWizard) {
                 document.querySelectorAll('.log-match-step-panel').forEach(p => p.classList.remove('is-wizard-active'));
@@ -5155,7 +5156,11 @@
                 if (titleEl) titleEl.textContent = isEdit ? 'Edit Match' : 'Log New Match';
                 return;
             }
-            mfApplyLogMatchWizardStep();
+            // Only enter wizard UI here. Re-applying the step on every Android keyboard
+            // resize calls mfCloseMobileFieldPicker() and makes the picker "weird".
+            if (!wasWizard) {
+                mfApplyLogMatchWizardStep();
+            }
         }
 
         function mfAfterLogMatchSlotsUpdated() {
@@ -6070,7 +6075,15 @@
         let mfLogMatchWizardResizeTimer = null;
         window.addEventListener('resize', () => {
             clearTimeout(mfLogMatchWizardResizeTimer);
-            mfLogMatchWizardResizeTimer = setTimeout(mfSyncLogMatchWizardShell, 120);
+            mfLogMatchWizardResizeTimer = setTimeout(() => {
+                // Latched touch/wizard session: keyboard resize must not re-run the
+                // wizard shell (that closes the open pilot/deck picker).
+                if (window._logMatchWizardLatched === true) {
+                    mfSyncTouchPickerClass();
+                    return;
+                }
+                mfSyncLogMatchWizardShell();
+            }, 120);
         });
 
         function getMatchFirestoreId(match) {
