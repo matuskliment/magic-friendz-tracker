@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verify picker survives resize</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 1.5rem; }
+    h1 { font-size: 1.125rem; margin: 0 0 1rem; }
+    pre { background: #020617; border: 1px solid #334155; border-radius: 0.75rem; padding: 1rem; white-space: pre-wrap; font-size: 12px; line-height: 1.5; }
+    .pass { color: #4ade80; }
+    .fail { color: #f87171; }
+    iframe { width: 390px; height: 720px; border: 1px solid #334155; border-radius: 1rem; background: #020617; }
+  </style>
+</head>
+<body>
+  <h1>Mobile picker × Android resize regression</h1>
+  <p style="color:#94a3b8;font-size:13px;margin:0 0 1rem">Loads the app in an iframe, forces touch + wizard, opens the pilot picker, fires window resize (keyboard simulation), asserts the picker stays open.</p>
+  <pre id="log">Starting…</pre>
+  <iframe id="app" title="app" src="/index.html?group=magic-friendz"></iframe>
+  <script>
+    const logEl = document.getElementById('log');
+    const lines = [];
+    function log(msg, cls) {
+      lines.push(cls ? `<span class="${cls}">${msg}</span>` : msg);
+      logEl.innerHTML = lines.join('\n');
+    }
+
+    function waitFor(fn, timeoutMs, label) {
+      const start = Date.now();
+      return new Promise((resolve, reject) => {
+        const tick = () => {
+          try {
+            const v = fn();
+            if (v) return resolve(v);
+          } catch (_) {}
+          if (Date.now() - start > timeoutMs) return reject(new Error('Timeout: ' + label));
+          setTimeout(tick, 50);
+        };
+        tick();
+      });
+    }
+
+    (async () => {
+      const iframe = document.getElementById('app');
+      await new Promise((r) => { iframe.addEventListener('load', r, { once: true }); });
+      const w = iframe.contentWindow;
+      const d = iframe.contentDocument;
+
+      // Force the same conditions Android phones hit.
+      w.navigator.__defineGetter__?.('maxTouchPoints', () => 5);
+      Object.defineProperty(w.navigator, 'maxTouchPoints', { configurable: true, get: () => 5 });
+      w.matchMedia = (q) => {
+        if (String(q).includes('pointer: coarse')) return { matches: true, media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} };
+        if (String(q).includes('max-width: 767px')) return { matches: true, media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} };
+        return { matches: false, media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} };
+      };
+
+      await waitFor(() => typeof w.openLogMatchModal === 'function' && typeof w.mfOpenMobileFieldPicker === 'function', 15000, 'app boot');
+      log('App booted');
+
+      // Bypass write gate for structural UI test.
+      w.canWrite = () => true;
+      w.openLogMatchModal();
+      await waitFor(() => {
+        const modal = d.getElementById('view-log-match');
+        return modal && !modal.classList.contains('hidden') && modal.classList.contains('mf-log-match-wizard');
+      }, 5000, 'wizard open');
+      log(`Wizard latched=${w._logMatchWizardLatched} touchClass=${d.getElementById('view-log-match').classList.contains('mf-touch-pickers')}`);
+
+      // Jump to a seat step that has pilot/deck pickers.
+      const planLen = (d.querySelectorAll('.log-match-step-panel').length);
+      // Session=0, Pod=1, first winner usually 2
+      w._logMatchWizardStep = Math.min(2, Math.max(0, planLen - 1));
+      // Re-apply step intentionally (this closes picker — expected).
+      const apply = [...w.document.scripts].length; // keep w alive
+      // Call apply via advancing if available, else set step and sync init path
+      if (typeof w.mfLogMatchWizardNext === 'function') {
+        // Force apply by toggling wizard class off/on is bad; call internal via Next from session.
+      }
+      // Directly invoke by dispatching through exposed path: rebuild shell with wasWizard false once.
+      const modal = d.getElementById('view-log-match');
+      // Find first mobile pilot picker and ensure its step is active
+      let pilotBtn = d.querySelector('.winner-slot .mf-mobile-field-picker[data-picker-kind="player"]');
+      if (!pilotBtn) {
+        // Activate winner slots by setting step until found
+        for (let i = 0; i < 12; i++) {
+          w._logMatchWizardStep = i;
+          // Need mfApplyLogMatchWizardStep — not exported. Use Next repeatedly from 0.
+        }
+        w._logMatchWizardStep = 0;
+        // Close and reopen to re-init at 0, then click Next twice via buttons
+        const next = d.getElementById('log-match-next-btn');
+        // Session -> Pod -> Winner
+        next?.click();
+        await new Promise((r) => setTimeout(r, 80));
+        next?.click();
+        await new Promise((r) => setTimeout(r, 80));
+        pilotBtn = d.querySelector('.winner-slot.is-wizard-active .mf-mobile-field-picker[data-picker-kind="player"], .winner-slot .mf-mobile-field-picker[data-picker-kind="player"]');
+      }
+      if (!pilotBtn) {
+        // Make winner slot active manually
+        const slot = d.querySelector('.winner-slot');
+        d.querySelectorAll('.log-match-step-panel').forEach((p) => p.classList.remove('is-wizard-active'));
+        slot?.classList.add('is-wizard-active');
+        pilotBtn = slot?.querySelector('.mf-mobile-field-picker[data-picker-kind="player"]');
+      }
+      if (!pilotBtn) throw new Error('No pilot picker button found');
+      log('Found pilot picker button');
+
+      w.mfOpenMobileFieldPicker(pilotBtn);
+      await waitFor(() => modal.classList.contains('mf-picker-open'), 2000, 'picker open');
+      log('Picker opened', 'pass');
+
+      // Simulate Android keyboard resize bursts (the failure mode).
+      for (let i = 0; i < 8; i++) {
+        w.dispatchEvent(new Event('resize'));
+        await new Promise((r) => setTimeout(r, 140));
+      }
+
+      const stillOpen = modal.classList.contains('mf-picker-open');
+      const listVisible = d.getElementById('log-match-picker')?.getAttribute('aria-hidden') === 'false';
+      if (stillOpen && listVisible) {
+        log('PASS: picker stayed open after 8 resize events', 'pass');
+        document.title = 'PASS picker resize';
+      } else {
+        log(`FAIL: pickerOpen=${stillOpen} listVisible=${listVisible}`, 'fail');
+        document.title = 'FAIL picker resize';
+        throw new Error('Picker closed after resize');
+      }
+
+      // Control: intentional step apply should still close picker.
+      w._logMatchWizardStep = (w._logMatchWizardStep || 2);
+      // Trigger apply by temporarily clearing wizard class then syncing enter — or click Next
+      const nextBtn = d.getElementById('log-match-next-btn');
+      // Re-open picker then click header Back which should close within picker first
+      // Instead call close path: Next from seat validates and may not advance without data.
+      // Use direct close via sync entering wizard from cold:
+      modal.classList.remove('mf-log-match-wizard');
+      // Force apply by making wasWizard false
+      // Call the same function resize used when not latched — but we are latched.
+      // Expose assertion that apply closes: reopen then use header left after picking mode list
+      w.mfOpenMobileFieldPicker(pilotBtn);
+      await waitFor(() => modal.classList.contains('mf-picker-open'), 2000, 'picker reopen');
+      // Header back while picker open should close picker (intentional)
+      w.mfLogMatchHeaderLeft({ preventDefault() {}, stopPropagation() {} });
+      await new Promise((r) => setTimeout(r, 50));
+      if (!modal.classList.contains('mf-picker-open')) {
+        log('PASS: intentional Back still closes picker', 'pass');
+      } else {
+        log('FAIL: Back did not close picker', 'fail');
+        throw new Error('Back did not close picker');
+      }
+
+      log('All checks passed.', 'pass');
+    })().catch((err) => {
+      log(String(err && err.stack || err), 'fail');
+      document.title = 'FAIL picker resize';
+    });
+  </script>
+</body>
+</html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="dark">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <meta name="mf-app-version" content="2.9.69">
+    <meta name="mf-app-version" content="2.9.70">
     <title>Magic Friendz: EDH Commander Playgroup Stats Tracker</title>
     <meta name="description" content="Magic Friendz is a free Commander playgroup tracker with playgroup Elo for your pod. Rankings reflect your table's meta, not a global ladder. Log matches, win rates, decks, and session history.">
     <meta name="keywords" content="Magic Friendz, Mat Kliment, EDH stats tracker, Commander playgroup, playgroup Elo, playgroup meta, MTG pod tracker, commander leaderboard, match history">
@@ -5145,6 +5145,9 @@
         function mfSyncLogMatchWizardShell() {
             const modal = document.getElementById('view-log-match');
             if (!modal || modal.classList.contains('hidden')) return;
+            // Invariant: never disturb an open pilot/deck picker from shell sync.
+            // Android keyboard resize used to re-enter here and close the picker.
+            if (modal.classList.contains('mf-picker-open')) return;
             const useWizard = mfIsLogMatchWizardViewport();
             const wasWizard = modal.classList.contains('mf-log-match-wizard');
             modal.classList.toggle('mf-log-match-wizard', useWizard);
@@ -6076,6 +6079,9 @@
         window.addEventListener('resize', () => {
             clearTimeout(mfLogMatchWizardResizeTimer);
             mfLogMatchWizardResizeTimer = setTimeout(() => {
+                const modal = document.getElementById('view-log-match');
+                // Hard stop: keyboard/viewport resize must never close an open picker.
+                if (modal?.classList.contains('mf-picker-open')) return;
                 // Latched touch/wizard session: keyboard resize must not re-run the
                 // wizard shell (that closes the open pilot/deck picker).
                 if (window._logMatchWizardLatched === true) {
@@ -6085,6 +6091,29 @@
                 mfSyncLogMatchWizardShell();
             }, 120);
         });
+
+        /** Regression helper: open picker, fire resizes, return whether it stayed open. */
+        window.__mfVerifyPickerSurvivesResize = function(times = 8) {
+            const modal = document.getElementById('view-log-match');
+            if (!modal) return { ok: false, reason: 'no-modal' };
+            if (!modal.classList.contains('mf-picker-open')) {
+                const btn = modal.querySelector('.mf-mobile-field-picker[data-picker-kind="player"], .mf-mobile-field-picker[data-picker-kind="deck"]');
+                if (!btn || typeof window.mfOpenMobileFieldPicker !== 'function') {
+                    return { ok: false, reason: 'no-picker-button' };
+                }
+                window.mfOpenMobileFieldPicker(btn);
+            }
+            if (!modal.classList.contains('mf-picker-open')) {
+                return { ok: false, reason: 'picker-did-not-open' };
+            }
+            for (let i = 0; i < times; i++) window.dispatchEvent(new Event('resize'));
+            return {
+                ok: modal.classList.contains('mf-picker-open'),
+                reason: modal.classList.contains('mf-picker-open') ? 'survived' : 'closed-after-resize',
+                latched: window._logMatchWizardLatched,
+                version: document.querySelector('meta[name="mf-app-version"]')?.content || ''
+            };
+        };
 
         function getMatchFirestoreId(match) {
             if (!match) return '';
